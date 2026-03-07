@@ -10,13 +10,13 @@
 
 import type { Plugin } from 'esbuild';
 
-import { toPosixPath } from '../../../Path.ts';
-import { replaceAll } from '../../../String.ts';
+import { toPosixPath } from '../../../path.ts';
+import { replaceAll } from '../../../string.ts';
 import {
   existsSync,
   readFile,
   writeFile
-} from '../../NodeModules.ts';
+} from '../../node-modules.ts';
 
 interface SourceMap {
   sources: string[];

@@ -18,19 +18,19 @@ import { context } from 'esbuild';
 import {
   getFolderName,
   join
-} from '../../../Path.ts';
-import { trimStart } from '../../../String.ts';
-import { ensureNonNullable } from '../../../TypeGuards.ts';
+} from '../../../path.ts';
+import { trimStart } from '../../../string.ts';
+import { ensureNonNullable } from '../../../type-guards.ts';
 import {
   builtinModules,
   createRequire
-} from '../../NodeModules.ts';
-import { readPackageJson } from '../../Npm.ts';
-import { ObsidianDevUtilsRepoPaths } from '../../ObsidianDevUtilsRepoPaths.ts';
+} from '../../node-modules.ts';
+import { readPackageJson } from '../../npm.ts';
+import { ObsidianDevUtilsRepoPaths } from '../../obsidian-dev-utils-repo-paths.ts';
 import {
   banner,
   invokeEsbuild
-} from './ObsidianPluginBuilder.ts';
+} from './obsidian-plugin-builder.ts';
 import { preprocessPlugin } from './preprocessPlugin.ts';
 
 const esmRequire = createRequire(import.meta.url);
