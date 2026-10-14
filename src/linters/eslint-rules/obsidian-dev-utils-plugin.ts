@@ -5,22 +5,23 @@
  */
 import type { ESLint } from 'eslint';
 
+import { noAsyncCallbackToUnsafeReturn } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/no-async-callback-to-unsafe-return';
+import { noUnresolvedJsdocLink } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/no-unresolved-jsdoc-link';
+import { noUnusedParamsMembers } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/no-unused-params-members';
+import { noUsedUnderscoreVariables } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/no-used-underscore-variables';
+import { paramsOptionsNameMatch } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/params-options-name-match';
+import { preferNoopAsync } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/prefer-noop-async';
+import { readonlyParamsOptionsResultMembers } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/readonly-params-options-result-members';
+import { requireMethodTemplate } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/require-method-template';
+import { requireSuperCall } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/require-super-call';
+
 import { manifestDescription } from './manifest-description.ts';
 import { manifestId } from './manifest-id.ts';
 import { manifestName } from './manifest-name.ts';
 import { manifestSchema } from './manifest-schema.ts';
-import { noAsyncCallbackToUnsafeReturn } from './no-async-callback-to-unsafe-return.ts';
 import { noOverCapWaitInEvalInObsidian } from './no-over-cap-wait-in-eval-in-obsidian.ts';
-import { noUnresolvedJsdocLink } from './no-unresolved-jsdoc-link.ts';
 import { noUntrustedInputEvents } from './no-untrusted-input-events.ts';
-import { noUnusedParamsMembers } from './no-unused-params-members.ts';
-import { noUsedUnderscoreVariables } from './no-used-underscore-variables.ts';
-import { paramsOptionsNameMatch } from './params-options-name-match.ts';
-import { preferNoopAsync } from './prefer-noop-async.ts';
-import { readonlyParamsOptionsResultMembers } from './readonly-params-options-result-members.ts';
 import { requireComponentSuffix } from './require-component-suffix.ts';
-import { requireMethodTemplate } from './require-method-template.ts';
-import { requireSuperCall } from './require-super-call.ts';
 
 /**
  * ESLint plugin bundling every `obsidian-dev-utils` custom rule, registered under the `obsidian-dev-utils` namespace.

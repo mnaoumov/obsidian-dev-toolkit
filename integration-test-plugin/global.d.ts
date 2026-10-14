@@ -6,7 +6,7 @@
  */
 
 // eslint-disable-next-line import-x/no-namespace -- Need entire module for typeof.
-import type * as obsidianDevUtils from '../src/index.ts';
+import type * as obsidianDevUtils from '@mnaoumov/obsidian-lib';
 
 declare global {
   interface Window {

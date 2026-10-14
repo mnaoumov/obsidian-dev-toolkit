@@ -23,7 +23,7 @@ import type {
 import type { Rule } from 'eslint';
 import type { Type } from 'typescript';
 
-import { toTSESTreeNode } from './ts-estree-node.ts';
+import { toTSESTreeNode } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/ts-estree-node';
 
 /**
 Message ID reported when a class extends `Component` but its name does not end with `Component`.

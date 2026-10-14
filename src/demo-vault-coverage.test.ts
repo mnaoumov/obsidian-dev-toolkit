@@ -1,4 +1,9 @@
 import {
+  dirname,
+  join,
+  toPosixPath
+} from '@mnaoumov/typescript-lib/path';
+import {
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -14,16 +19,11 @@ import {
   it
 } from 'vitest';
 
-import { ObsidianPluginRepoPaths } from '../obsidian/plugin/obsidian-plugin-repo-paths.ts';
-import {
-  dirname,
-  join,
-  toPosixPath
-} from '../path.ts';
 import {
   DemoVaultCoverageChecker,
   registerDemoVaultCoverageSuite
 } from './demo-vault-coverage.ts';
+import { ObsidianPluginRepoPaths } from './obsidian-plugin-repo-paths.ts';
 
 const CONTEXT_SOURCE = `export interface DemoContext {
   doThing(): void;

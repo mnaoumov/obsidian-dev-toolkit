@@ -11,7 +11,7 @@
 /// <reference path="./global.d.ts" />
 
 // eslint-disable-next-line import-x/no-namespace -- Need entire module.
-import * as obsidianDevUtils from '../src/index.ts';
+import * as obsidianDevUtils from '@mnaoumov/obsidian-lib';
 
 import { Plugin } from 'obsidian';
 

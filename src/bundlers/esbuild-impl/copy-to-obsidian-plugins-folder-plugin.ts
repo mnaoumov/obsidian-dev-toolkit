@@ -14,6 +14,16 @@ import type { PluginManifest } from 'obsidian';
 import type { ObsidianTransport } from 'obsidian-integration-testing';
 
 import {
+  invokeAsyncSafely,
+  sleep
+} from '@mnaoumov/typescript-lib/async';
+import { getLibDebugger } from '@mnaoumov/typescript-lib/debug';
+import {
+  dirname,
+  join,
+  toPosixPath
+} from '@mnaoumov/typescript-lib/path';
+import {
   cp,
   mkdir
 } from 'node:fs/promises';
@@ -23,17 +33,6 @@ import {
   DesktopCdpTransport,
   evalInObsidian
 } from 'obsidian-integration-testing';
-
-import {
-  invokeAsyncSafely,
-  sleep
-} from '../../../async.ts';
-import { getLibDebugger } from '../../../debug.ts';
-import {
-  dirname,
-  join,
-  toPosixPath
-} from '../../../path.ts';
 
 /**
  * Parameters for {@link copyToObsidianPluginsFolderPlugin}.

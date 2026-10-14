@@ -8,11 +8,11 @@
 
 import type { Plugin } from 'esbuild';
 
+import { join } from '@mnaoumov/typescript-lib/path';
 import { existsSync } from 'node:fs';
 import { rename } from 'node:fs/promises';
 
-import { ObsidianPluginRepoPaths } from '../../../obsidian/plugin/obsidian-plugin-repo-paths.ts';
-import { join } from '../../../path.ts';
+import { ObsidianPluginRepoPaths } from '../../obsidian-plugin-repo-paths.ts';
 
 /**
  * Plugin that renames the CSS file to the correct name.

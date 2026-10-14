@@ -1,3 +1,4 @@
+import { EMPTY } from '@mnaoumov/typescript-lib/string';
 import {
   describe,
   expect,
@@ -6,7 +7,6 @@ import {
 
 import type { DemoVaultAppJson } from './demo-vault-app-json.ts';
 
-import { EMPTY } from '../string.ts';
 import {
   buildArchivedDemoVaultAppJsonContent,
   DEMO_VAULT_APP_JSON_SETTINGS,

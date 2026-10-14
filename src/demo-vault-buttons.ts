@@ -15,6 +15,7 @@
  * `globalSetup` and name CodeScript Toolkit in `enableCommunityPlugins`.
  */
 
+import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
 import {
   readdirSync,
   readFileSync
@@ -32,8 +33,6 @@ import {
   expect,
   it
 } from 'vitest';
-
-import { getRootFolder } from './root.ts';
 
 /**
  * CodeScript Toolkit's manifest id. It is still the plugin's original `fix-require-modules` id, which

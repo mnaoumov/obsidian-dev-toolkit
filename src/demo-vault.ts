@@ -20,6 +20,22 @@
  * pushed, so an in-place write would leave an uncommitted change behind a published release.
  */
 
+import type { DemoVaultHelperSettings } from '@mnaoumov/obsidian-lib/demo-vault-helper-settings';
+
+import {
+  getDemoVaultArchiveFileName,
+  getDemoVaultFolderName
+} from '@mnaoumov/obsidian-lib/demo-vault-naming';
+import { readdirPosix } from '@mnaoumov/typescript-dev-toolkit/fs';
+import {
+  getRootFolder,
+  resolvePathFromRootSafe
+} from '@mnaoumov/typescript-dev-toolkit/root';
+import {
+  getFolderName,
+  join,
+  relative
+} from '@mnaoumov/typescript-lib/path';
 import { zipSync } from 'fflate';
 import { existsSync } from 'node:fs';
 import {
@@ -29,30 +45,14 @@ import {
   writeFile
 } from 'node:fs/promises';
 
-import type { DemoVaultHelperSettings } from '../obsidian/demo-vault-helper-settings.ts';
 import type { DemoVaultAppJson } from './demo-vault-app-json.ts';
 
-import {
-  getDemoVaultArchiveFileName,
-  getDemoVaultFolderName
-} from '../obsidian/demo-vault-naming.ts';
-import { ObsidianPluginRepoPaths } from '../obsidian/plugin/obsidian-plugin-repo-paths.ts';
-import {
-  getFolderName,
-  join,
-  relative
-} from '../path.ts';
 import {
   buildArchivedDemoVaultAppJsonContent,
   findOwnedDemoVaultAppJsonSettings,
   parseDemoVaultAppJson
 } from './demo-vault-app-json.ts';
-import { readdirPosix } from './fs.ts';
-import { ObsidianDevUtilsRepoPaths } from './obsidian-dev-utils-repo-paths.ts';
-import {
-  getRootFolder,
-  resolvePathFromRootSafe
-} from './root.ts';
+import { ObsidianPluginRepoPaths } from './obsidian-plugin-repo-paths.ts';
 
 const DEMO_VAULT_HELPER_PLUGIN_ID = 'demo-vault-helper';
 const DATA_JSON_FILE_NAME = 'data.json';
@@ -230,7 +230,7 @@ async function injectDemoVaultHelper(demoedPluginId: string): Promise<void> {
     throw new Error('Could not resolve the obsidian-dev-utils package folder to inject the demo-vault-helper plugin.');
   }
 
-  const helperSourcePath = join(packageFolder, ObsidianDevUtilsRepoPaths.DistDemoVaultHelper);
+  const helperSourcePath = join(packageFolder, ObsidianPluginRepoPaths.DistDemoVaultHelper);
   const helperFolder = resolvePathFromRootSafe({
     path: join(
       ObsidianPluginRepoPaths.DemoVault,

@@ -31,7 +31,7 @@
  */
 
 /* v8 ignore start -- Thin setup-file glue; exercised end-to-end by the Obsidian integration suites. */
-import { registerIntegrationTestLibResolver } from './script-utils/test-runners/integration-test-plugin.ts';
+import { registerIntegrationTestLibResolver } from './test-runners/integration-test-plugin.ts';
 
 registerIntegrationTestLibResolver();
 /* v8 ignore stop */

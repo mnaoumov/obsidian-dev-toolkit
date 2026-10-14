@@ -22,6 +22,7 @@
 
 import type { TestProject } from 'vitest/node';
 
+import { toPosixPath } from '@mnaoumov/typescript-lib/path';
 import {
   existsSync,
   readdirSync,
@@ -33,8 +34,7 @@ import {
   sep
 } from 'node:path';
 
-import { ObsidianPluginRepoPaths } from '../../obsidian/plugin/obsidian-plugin-repo-paths.ts';
-import { toPosixPath } from '../../path.ts';
+import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 
 /**
  * Parameters for {@link findStaleBuild}.

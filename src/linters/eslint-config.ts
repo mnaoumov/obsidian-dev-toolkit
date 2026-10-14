@@ -17,6 +17,10 @@ import type { Linter } from 'eslint';
 import commentsConfigs from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import { includeIgnoreFile } from '@eslint/config-helpers';
 import eslint from '@eslint/js';
+import { noRestrictedSyntaxRuleEntries } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-no-restricted-syntax';
+import { CLAUDE_WORKTREES_IGNORE_GLOB } from '@mnaoumov/typescript-dev-toolkit/linters/lint-ignores';
+import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
+import { join } from '@mnaoumov/typescript-lib/path';
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `plugin` is too confusing.
 import stylistic from '@stylistic/eslint-plugin';
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
@@ -37,13 +41,9 @@ import { existsSync } from 'node:fs';
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `_default` is too confusing.
 import tseslint from 'typescript-eslint';
 
-import { ObsidianPluginRepoPaths } from '../../obsidian/plugin/obsidian-plugin-repo-paths.ts';
-import { join } from '../../path.ts';
-import { getRootFolder } from '../root.ts';
-import { noRestrictedSyntaxRuleEntries } from './eslint-no-restricted-syntax.ts';
+import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 import { jsonPlugin } from './eslint-rules/manifest-helpers.ts';
 import { obsidianDevUtilsPlugin } from './eslint-rules/obsidian-dev-utils-plugin.ts';
-import { CLAUDE_WORKTREES_IGNORE_GLOB } from './lint-ignores.ts';
 import { stripOwnedRuleCustomMessageEntries } from './obsidianmd-rule-custom-message.ts';
 
 /**
@@ -86,6 +86,13 @@ export class EslintConfigContext {
   public readonly sourceFiles: string[] = [];
 
   /**
+   * The folders holding the project's sources, by default `src` alone. A workspace whose packages each have their own
+   * `src` adds them here, so the rules keyed on a file's name inside a source folder (`main.ts`, `desktop-*.ts`,
+   * `*.integration.test.ts`) reach those packages too.
+   */
+  public readonly sourceFolders: string[] = [];
+
+  /**
    * The test files.
    */
   public readonly testFiles: string[] = [];
@@ -110,6 +117,7 @@ export class EslintConfigContext {
  */
 export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): Linter.Config[] {
   const context = new EslintConfigContext();
+  context.sourceFolders.push(ObsidianPluginRepoPaths.Src);
   context.rootConfigFiles.push(
     ObsidianPluginRepoPaths.CommitlintConfigTs,
     ObsidianPluginRepoPaths.EslintConfigMts,
@@ -168,7 +176,7 @@ export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): L
     ...getObsidianDevUtilsPluginConfigs(context),
     ...getNodeCompatConfigs(context),
     ...getNodeBuiltinsConfigs(context),
-    ...getIntegrationTestConfigs(),
+    ...getIntegrationTestConfigs(context),
     ...getManifestConfigs(),
     ...getLicenseConfigs(),
     ...customConfigs
@@ -435,7 +443,7 @@ function getImportXConfigs(context: EslintConfigContext): Linter.Config[] {
     {
       files: [
         ...context.rootConfigFiles,
-        join(ObsidianPluginRepoPaths.Src, ObsidianPluginRepoPaths.MainTs)
+        ...context.sourceFolders.map((sourceFolder) => join(sourceFolder, ObsidianPluginRepoPaths.MainTs))
       ],
       rules: {
         'import-x/no-default-export': 'off'
@@ -444,7 +452,7 @@ function getImportXConfigs(context: EslintConfigContext): Linter.Config[] {
   ]);
 }
 
-function getIntegrationTestConfigs(): Linter.Config[] {
+function getIntegrationTestConfigs(context: EslintConfigContext): Linter.Config[] {
   return defineConfig([
     {
       /*
@@ -460,7 +468,7 @@ function getIntegrationTestConfigs(): Linter.Config[] {
        * equivalent — a file reaching for those has to branch on `Platform.isDesktopApp`, which is the same
        * thing a `*.cross-platform.*` file has always had to do.
        */
-      files: [join(ObsidianPluginRepoPaths.Src, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyIntegrationTestTs)],
+      files: context.sourceFolders.map((sourceFolder) => join(sourceFolder, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyIntegrationTestTs)),
       rules: {
         'obsidian-dev-utils/no-untrusted-input-events': 'error'
       }
@@ -549,7 +557,7 @@ function getNodeBuiltinsConfigs(context: EslintConfigContext): Linter.Config[] {
   return defineConfig([
     {
       // Integration tests run in a Node environment and legitimately read files / paths, so the Node-builtins bans do not apply to them.
-      files: [join(ObsidianPluginRepoPaths.Src, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyIntegrationTestTs)],
+      files: context.sourceFolders.map((sourceFolder) => join(sourceFolder, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyIntegrationTestTs)),
       rules: {
         'import-x/no-nodejs-modules': 'off',
         'obsidianmd/no-nodejs-modules': 'off'
@@ -567,7 +575,7 @@ function getNodeBuiltinsConfigs(context: EslintConfigContext): Linter.Config[] {
        * that skips the prefix keeps reporting, and a cross-platform module that wrongly takes it gets an exemption
        * it should not have.
        */
-      files: [join(ObsidianPluginRepoPaths.Src, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyDesktopTs)],
+      files: context.sourceFolders.map((sourceFolder) => join(sourceFolder, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyDesktopTs)),
       rules: {
         'import-x/no-nodejs-modules': 'off',
         'obsidianmd/no-nodejs-modules': 'off'
@@ -606,8 +614,8 @@ function getNodeCompatConfigs(context: EslintConfigContext): Linter.Config[] {
       files: context.sourceFiles,
       ignores: [
         ...context.testFiles,
-        // Dev-only tooling (build, lint, version) under `src/script-utils/**` runs via `jiti` in the consumer's Node environment when building a plugin and never ships into the Obsidian runtime, so the Node-16 floor does not apply to it.
-        join(ObsidianPluginRepoPaths.ScriptUtils, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyTs)
+        // Dev-only tooling (build, lint, version) runs via `jiti` in the developer's Node environment and never ships into the Obsidian runtime, so the Node-16 floor does not apply to it.
+        ...context.scriptFiles
       ],
       plugins: {
         n: nodePlugin
@@ -845,7 +853,7 @@ function getUnicornConfigs(context: EslintConfigContext): Linter.Config[] {
          * These entries are not abbreviations to be expanded — they are established vocabulary here.
          *
          * Brand: `dev`, `lib`, `util`/`utils` spell the product's own name. Left on, the rule rewrites
-         * `ObsidianDevUtilsRepoPaths` to `ObsidianDevelopmentUtilitiesRepoPaths` and `getLibDebugger` to
+         * `RepoPaths` to `ObsidianDevelopmentUtilitiesRepoPaths` and `getLibDebugger` to
          * `getLibraryDebugger`, renaming exported API after the package it belongs to.
          *
          * Convention: `params` is the parameter-bag convention, enforced by
@@ -863,7 +871,7 @@ function getUnicornConfigs(context: EslintConfigContext): Linter.Config[] {
          * Domain words: `doc`/`docs`, `env`, `dist` and `src` are the clearer spelling in this codebase.
          * Expanding `doc` also picks the wrong word — the `api-doc-*` modules generate API *documentation*, not
          * documents. `src` additionally corrupts code: the fixer renames the `Src` member of the exported
-         * `ObsidianPluginRepoPaths` / `ObsidianDevUtilsRepoPaths` enums while leaving every `.Src` reference
+         * `ObsidianPluginRepoPaths` / `RepoPaths` enums while leaving every `.Src` reference
          * dangling, because `checkProperties` exempts property accesses but not the declarations they point at.
          *
          * Disabling the replacement entries protects these permanently; an `allowList` would instead need every

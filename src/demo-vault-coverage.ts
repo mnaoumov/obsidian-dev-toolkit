@@ -68,6 +68,14 @@
  *   a plugin's `demo-vault.no-app.integration.test.ts` is a single declarative call.
  */
 
+import { normalizeOptionalProperties } from '@mnaoumov/typescript-lib/object-utils';
+import {
+  dirname,
+  join,
+  relative
+} from '@mnaoumov/typescript-lib/path';
+import { getMandatoryNamedGroup } from '@mnaoumov/typescript-lib/reg-exp';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   existsSync,
   readdirSync,
@@ -79,19 +87,11 @@ import {
   it
 } from 'vitest';
 
-import { normalizeOptionalProperties } from '../object-utils.ts';
-import { ObsidianPluginRepoPaths } from '../obsidian/plugin/obsidian-plugin-repo-paths.ts';
-import {
-  dirname,
-  join,
-  relative
-} from '../path.ts';
-import { getMandatoryNamedGroup } from '../reg-exp.ts';
-import { ensureNonNullable } from '../type-guards.ts';
 import {
   findOwnedDemoVaultAppJsonSettings,
   parseDemoVaultAppJson
 } from './demo-vault-app-json.ts';
+import { ObsidianPluginRepoPaths } from './obsidian-plugin-repo-paths.ts';
 
 /**
  * Tunes the always-on authoring checks. It cannot disable them — see the file overview.

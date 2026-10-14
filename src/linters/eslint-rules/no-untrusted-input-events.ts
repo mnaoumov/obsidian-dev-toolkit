@@ -35,7 +35,7 @@ import type {
   Scope
 } from 'eslint';
 
-import { toTSESTreeNode } from './ts-estree-node.ts';
+import { toTSESTreeNode } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/ts-estree-node';
 
 /**
 Message ID reported when an integration test drives the UI with a dispatched input event.

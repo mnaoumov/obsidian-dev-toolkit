@@ -17,21 +17,19 @@
 
 /* eslint-disable unicorn/prefer-module -- The CommonJS surface is the subject here, not an oversight. This plugin emits the interop shims that let a bundle run under either module system, so it has to name `__filename` and `require` to detect and bridge them. `import.meta.filename` is precisely what is unavailable in the environment these branches exist to serve. */
 
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type { Plugin } from 'esbuild';
 import type { pathToFileURL } from 'node:url';
-
-import { readFile } from 'node:fs/promises';
-
-import type { GenericObject } from '../../../type-guards.ts';
 
 import {
   FunctionHandlingMode,
   toJson
-} from '../../../object-utils.ts';
+} from '@mnaoumov/typescript-lib/object-utils';
 import {
   makeValidVariableName,
   replaceAll
-} from '../../../string.ts';
+} from '@mnaoumov/typescript-lib/string';
+import { readFile } from 'node:fs/promises';
 
 /**
  * A browser-flavored stand-in for Node's `process` global.
