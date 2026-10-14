@@ -124,13 +124,13 @@ import type {
   Scope
 } from 'eslint';
 
+import { toTSESTreeNode } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/ts-estree-node';
 import { DEFAULT_EVAL_CAP_IN_MILLISECONDS } from 'obsidian-integration-testing';
 
 import {
   DESKTOP_PERFORMANCE_TEST_FILE_SUFFIX,
   PERFORMANCE_EVAL_CAP_IN_MILLISECONDS
 } from '../../test-runners/performance-eval-cap.ts';
-import { toTSESTreeNode } from './ts-estree-node.ts';
 
 /**
  * Message ID reported when an in-Obsidian closure declares more waiting than the transport's cap allows.

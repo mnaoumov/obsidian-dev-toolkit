@@ -3,6 +3,8 @@ import type {
   PluginBuild
 } from 'esbuild';
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import {
   afterEach,
   describe,
@@ -11,8 +13,6 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../../../strict-proxy.ts';
-import { assertNonNullable } from '../../../type-guards.ts';
 import { copyToObsidianPluginsFolderPlugin } from './copy-to-obsidian-plugins-folder-plugin.ts';
 
 interface EvalInObsidianCall {

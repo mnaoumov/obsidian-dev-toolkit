@@ -34,7 +34,7 @@ import { createSetup } from 'obsidian-integration-testing/vitest-global-setup-pl
 import {
   getIntegrationTestPluginPopulate,
   OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID
-} from './script-utils/test-runners/integration-test-plugin.ts';
+} from './test-runners/integration-test-plugin.ts';
 
 const globalSetup = createSetup({
   enableCommunityPlugins: [OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID],

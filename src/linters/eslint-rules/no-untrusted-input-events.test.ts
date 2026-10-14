@@ -1,3 +1,4 @@
+import { toRuleTesterModule } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/rule-tester-helper';
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import {
   afterAll,
@@ -9,7 +10,6 @@ import {
   MESSAGE_ID,
   noUntrustedInputEvents
 } from './no-untrusted-input-events.ts';
-import { toRuleTesterModule } from './rule-tester-helper.ts';
 
 RuleTester.afterAll = afterAll;
 RuleTester.describe = describe;

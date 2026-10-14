@@ -14,6 +14,17 @@ import type {
   Plugin
 } from 'esbuild';
 
+import { customEsbuildOptionsPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/custom-esbuild-options-plugin';
+import { fixEsmPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/fix-esm-plugin';
+import { svelteWrapperPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/svelte-wrapper-plugin';
+import { CliTaskResult } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
+import { readPackageJson } from '@mnaoumov/typescript-dev-toolkit/npm';
+import { npmRun } from '@mnaoumov/typescript-dev-toolkit/npm-run';
+import { resolvePathFromRoot } from '@mnaoumov/typescript-dev-toolkit/root';
+import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
+import { extractDefaultExportInterop } from '@mnaoumov/typescript-lib/object-utils';
+import { join } from '@mnaoumov/typescript-lib/path';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { context } from 'esbuild';
 // eslint-disable-next-line import-x/no-rename-default -- We need a temp variable to apply `extractDefaultExportInterop()` fix below.
 import sassPlugin_ from 'esbuild-sass-plugin';
@@ -30,22 +41,11 @@ import {
 import { builtinModules } from 'node:module';
 import process, { loadEnvFile } from 'node:process';
 
-import { invokeAsyncSafely } from '../../../async.ts';
-import { extractDefaultExportInterop } from '../../../object-utils.ts';
-import { ObsidianPluginRepoPaths } from '../../../obsidian/plugin/obsidian-plugin-repo-paths.ts';
-import { join } from '../../../path.ts';
-import { ensureNonNullable } from '../../../type-guards.ts';
-import { CliTaskResult } from '../../cli-utils.ts';
-import { npmRun } from '../../npm-run.ts';
-import { readPackageJson } from '../../npm.ts';
-import { resolvePathFromRoot } from '../../root.ts';
+import { ObsidianPluginRepoPaths } from '../../obsidian-plugin-repo-paths.ts';
 import { copyToObsidianPluginsFolderPlugin } from './copy-to-obsidian-plugins-folder-plugin.ts';
-import { customEsbuildOptionsPlugin } from './custom-esbuild-options-plugin.ts';
-import { fixEsmPlugin } from './fix-esm-plugin.ts';
 import { fixSourceMapsPlugin } from './fix-source-maps-plugin.ts';
 import { preprocessPlugin } from './preprocess-plugin.ts';
 import { renameCssPlugin } from './rename-css-plugin.ts';
-import { svelteWrapperPlugin } from './svelte-wrapper-plugin.ts';
 
 const sassPlugin = extractDefaultExportInterop(sassPlugin_);
 

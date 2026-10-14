@@ -1,5 +1,6 @@
 import type { TestProject } from 'vitest/node';
 
+import { castTo } from '@mnaoumov/typescript-lib/object-utils';
 import {
   mkdirSync,
   mkdtempSync,
@@ -20,7 +21,6 @@ import {
   it
 } from 'vitest';
 
-import { castTo } from '../../object-utils.ts';
 import {
   findStaleBuild,
   formatStaleBuildMessage,

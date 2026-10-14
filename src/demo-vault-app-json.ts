@@ -24,7 +24,7 @@
  * archiver the latter, and neither may reach the other's environment.
  */
 
-import { toJson } from '../object-utils.ts';
+import { toJson } from '@mnaoumov/typescript-lib/object-utils';
 
 /**
  * Parameters for {@link buildArchivedDemoVaultAppJsonContent}.

@@ -10,14 +10,13 @@
 
 import type { Plugin } from 'esbuild';
 
+import { toPosixPath } from '@mnaoumov/typescript-lib/path';
+import { replaceAll } from '@mnaoumov/typescript-lib/string';
 import { existsSync } from 'node:fs';
 import {
   readFile,
   writeFile
 } from 'node:fs/promises';
-
-import { toPosixPath } from '../../../path.ts';
-import { replaceAll } from '../../../string.ts';
 
 /**
  * Parameters for {@link fixSourceMapsPlugin}.

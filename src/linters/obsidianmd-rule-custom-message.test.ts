@@ -7,6 +7,7 @@
 
 import type { Linter as LinterType } from 'eslint';
 
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { Linter } from 'eslint';
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `plugin` is too confusing.
 import obsidianmd from 'eslint-plugin-obsidianmd';
@@ -16,7 +17,6 @@ import {
   it
 } from 'vitest';
 
-import { assertNonNullable } from '../../type-guards.ts';
 import {
   RULE_CUSTOM_MESSAGE_RULE_NAME,
   stripOwnedRuleCustomMessageEntries

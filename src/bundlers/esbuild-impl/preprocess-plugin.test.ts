@@ -1,10 +1,11 @@
+import type { GenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import type {
   Plugin,
   PluginBuild
 } from 'esbuild';
 
+import { ensureGenericObject } from '@mnaoumov/typescript-lib/type-guards';
 import { build as bundle } from 'esbuild';
-import { join } from 'node:path';
 import {
   createContext,
   runInContext
@@ -17,9 +18,6 @@ import {
   vi
 } from 'vitest';
 
-import type { GenericObject } from '../../../type-guards.ts';
-
-import { ensureGenericObject } from '../../../type-guards.ts';
 import {
   ensureBrowserProcess,
   ensureDisposeSymbols,
@@ -292,7 +290,7 @@ describe('using a library disposable on an engine without Symbol.dispose', { tim
   `;
 
   const ENTRY = `
-    import { AsyncCallbackDisposable, CallbackDisposable } from './disposable.ts';
+    import { AsyncCallbackDisposable, CallbackDisposable } from '@mnaoumov/typescript-lib/disposable';
     globalThis.probe = { disposed: false, error: null, asyncDisposed: false, asyncError: null };
     try {
       using _disposable = new CallbackDisposable({ callback: () => { globalThis.probe.disposed = true; } });
@@ -319,6 +317,8 @@ describe('using a library disposable on an engine without Symbol.dispose', { tim
   async function runOnEngineWithoutDisposeSymbols(plugins: Plugin[]): Promise<Probe> {
     const result = await bundle({
       bundle: true,
+      // Bundles the library's disposables from their source, as every build inside this repository does.
+      conditions: ['@mnaoumov/source'],
       format: 'iife',
       logLevel: 'silent',
       plugins,
@@ -326,7 +326,7 @@ describe('using a library disposable on an engine without Symbol.dispose', { tim
         contents: ENTRY,
         loader: 'ts',
         // eslint-disable-next-line unicorn/name-replacements -- esbuild's own option name.
-        resolveDir: join(import.meta.dirname, '../../..')
+        resolveDir: import.meta.dirname
       },
       target: 'es2022',
       write: false

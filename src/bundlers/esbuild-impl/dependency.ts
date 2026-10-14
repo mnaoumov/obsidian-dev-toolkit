@@ -13,20 +13,20 @@ import type {
   Plugin
 } from 'esbuild';
 
+import { readPackageJson } from '@mnaoumov/typescript-dev-toolkit/npm';
+import { RepoPaths } from '@mnaoumov/typescript-dev-toolkit/repo-paths';
+import {
+  getFolderName,
+  join
+} from '@mnaoumov/typescript-lib/path';
+import { trimStart } from '@mnaoumov/typescript-lib/string';
+import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import { context } from 'esbuild';
 import {
   builtinModules,
   createRequire
 } from 'node:module';
 
-import {
-  getFolderName,
-  join
-} from '../../../path.ts';
-import { trimStart } from '../../../string.ts';
-import { ensureNonNullable } from '../../../type-guards.ts';
-import { readPackageJson } from '../../npm.ts';
-import { ObsidianDevUtilsRepoPaths } from '../../obsidian-dev-utils-repo-paths.ts';
 import {
   banner,
   invokeEsbuild
@@ -68,7 +68,7 @@ export async function getDependenciesToBundle(): Promise<string[]> {
       js: banner
     },
     bundle: true,
-    entryPoints: [join(ObsidianDevUtilsRepoPaths.Src, ObsidianDevUtilsRepoPaths.AnyPath, ObsidianDevUtilsRepoPaths.AnyTs)],
+    entryPoints: [join(RepoPaths.Src, RepoPaths.AnyPath, RepoPaths.AnyTs)],
     format: 'cjs',
     logLevel: 'info',
     outdir: 'nothing-will-be-written-on-disk-so-this-does-not-matter',
@@ -133,7 +133,7 @@ function extractDependenciesToBundlePlugin(params: ExtractDependenciesToBundlePl
     name: 'test',
     setup(build): void {
       build.onResolve({ filter: /^[^./]/ }, ($arguments) => {
-        if (!$arguments.importer.endsWith(ObsidianDevUtilsRepoPaths.DtsExtension)) {
+        if (!$arguments.importer.endsWith(RepoPaths.DtsExtension)) {
           const moduleName = trimStart({
             $string: ensureNonNullable($arguments.path.split('/', 1)[0], 'Wrong path'),
             prefix: 'node:'

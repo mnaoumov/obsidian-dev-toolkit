@@ -17,16 +17,15 @@
  * `obsidian-dev-utils/integration-test-setup` are the turnkey endpoints that call these for you.
  */
 
-import { readFileSync } from 'node:fs';
-import { registerLibResolver } from 'obsidian-integration-testing';
-
-import { ObsidianPluginRepoPaths } from '../../obsidian/plugin/obsidian-plugin-repo-paths.ts';
+import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
 import {
   getFolderName,
   join
-} from '../../path.ts';
-import { ObsidianDevUtilsRepoPaths } from '../obsidian-dev-utils-repo-paths.ts';
-import { getRootFolder } from '../root.ts';
+} from '@mnaoumov/typescript-lib/path';
+import { readFileSync } from 'node:fs';
+import { registerLibResolver } from 'obsidian-integration-testing';
+
+import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 
 /**
  * The id of the integration-test harness plugin — the folder name it is seeded into, and the value to pass
@@ -64,7 +63,7 @@ export function getIntegrationTestPluginPopulate(): Record<string, Uint8Array> {
     throw new Error('Could not resolve the obsidian-dev-utils package folder to seed the integration-test harness plugin.');
   }
 
-  const pluginSourceFolder = join(packageFolder, ObsidianDevUtilsRepoPaths.DistIntegrationTestPlugin);
+  const pluginSourceFolder = join(packageFolder, ObsidianPluginRepoPaths.DistIntegrationTestPlugin);
   const pluginVaultFolder = join(
     ObsidianPluginRepoPaths.DotObsidian,
     ObsidianPluginRepoPaths.Plugins,

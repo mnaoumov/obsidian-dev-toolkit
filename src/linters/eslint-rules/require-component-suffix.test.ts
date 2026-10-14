@@ -1,5 +1,8 @@
 import type { Rule } from 'eslint';
 
+import { toRuleTesterModule } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/rule-tester-helper';
+import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import {
   afterAll,
@@ -9,15 +12,12 @@ import {
   vi
 } from 'vitest';
 
-import { strictProxy } from '../../../strict-proxy.ts';
-import { assertNonNullable } from '../../../type-guards.ts';
 import {
   MESSAGE_ID_ABSTRACT_NEEDS_BASE,
   MESSAGE_ID_BASE_NOT_ABSTRACT,
   MESSAGE_ID_MISSING_SUFFIX,
   requireComponentSuffix
 } from './require-component-suffix.ts';
-import { toRuleTesterModule } from './rule-tester-helper.ts';
 
 const TYPE_CHECK_TIMEOUT_IN_MILLISECONDS = 60_000;
 

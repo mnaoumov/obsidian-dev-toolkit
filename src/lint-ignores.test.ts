@@ -1,3 +1,5 @@
+import { CLAUDE_WORKTREES_IGNORE_GLOB } from '@mnaoumov/typescript-dev-toolkit/linters/lint-ignores';
+import { obsidianDevUtilsConfig } from '@mnaoumov/typescript-dev-toolkit/linters/markdownlint-cli2-config';
 import {
   describe,
   expect,
@@ -5,8 +7,6 @@ import {
 } from 'vitest';
 
 import { defineEslintConfigs } from './linters/eslint-config.ts';
-import { CLAUDE_WORKTREES_IGNORE_GLOB } from './linters/lint-ignores.ts';
-import { obsidianDevUtilsConfig } from './linters/markdownlint-cli2-config.ts';
 
 describe('CLAUDE_WORKTREES_IGNORE_GLOB', () => {
   it('should match everything under Claude Code\'s worktree folder', () => {

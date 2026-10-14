@@ -1,3 +1,25 @@
+/* eslint-disable import-x/no-namespace -- Namespace import needed to force v8 to load type-only module for coverage. */
+import * as AttachmentPath from '@mnaoumov/obsidian-lib/attachment-path';
+import * as Backlink from '@mnaoumov/obsidian-lib/backlink';
+import * as CodeBlockMarkdownInformation from '@mnaoumov/obsidian-lib/code-block-markdown-information';
+import * as StateFieldSpec from '@mnaoumov/obsidian-lib/codemirror/state-field-spec';
+import * as RenameDeleteHandlerComponent from '@mnaoumov/obsidian-lib/components/rename-delete-handler-component';
+import * as GetDomEventsHandlersConstructor from '@mnaoumov/obsidian-lib/constructors/get-dom-events-handlers-constructor';
+import * as CustomTypeOptionsBase from '@mnaoumov/obsidian-lib/i18n/custom-type-options';
+import * as DefaultTranslationsBase from '@mnaoumov/obsidian-lib/i18n/default-translations';
+import * as Markdown from '@mnaoumov/obsidian-lib/markdown';
+import * as PluginBase from '@mnaoumov/obsidian-lib/plugin/plugin';
+import * as PluginSettingsTabBase from '@mnaoumov/obsidian-lib/plugin/plugin-settings-tab';
+import * as AppContext from '@mnaoumov/obsidian-lib/react/app-context';
+import * as ValueComponentWithChangeTracking from '@mnaoumov/obsidian-lib/setting-components/value-component-with-change-tracking';
+import { changeExtensionPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/change-extension-plugin';
+import { customEsbuildOptionsPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/custom-esbuild-options-plugin';
+import { fixEsmPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/fix-esm-plugin';
+import { svelteWrapperPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/svelte-wrapper-plugin';
+import * as CommitlintConfig from '@mnaoumov/typescript-dev-toolkit/commitlint-config';
+import { obsidianDevUtilsConfig } from '@mnaoumov/typescript-dev-toolkit/linters/markdownlint-cli2-config';
+import * as NanoStagedConfig from '@mnaoumov/typescript-dev-toolkit/nano-staged-config';
+import * as DebugController from '@mnaoumov/typescript-lib/debug-controller';
 /**
  * This test file exists solely to import modules that are excluded from coverage
  * via `v8 ignore` comments. Without importing them, v8 never loads the files and
@@ -8,36 +30,14 @@ import {
   it
 } from 'vitest';
 
-/* eslint-disable import-x/no-namespace -- Namespace import needed to force v8 to load type-only module for coverage. */
-import * as StateFieldSpec from '../codemirror/state-field-spec.ts';
-import * as DebugController from '../debug-controller.ts';
-import * as AttachmentPath from '../obsidian/attachment-path.ts';
-import * as Backlink from '../obsidian/backlink.ts';
-import * as CodeBlockMarkdownInformation from '../obsidian/code-block-markdown-information.ts';
-import * as RenameDeleteHandlerComponent from '../obsidian/components/rename-delete-handler-component.ts';
-import * as GetDomEventsHandlersConstructor from '../obsidian/constructors/get-dom-events-handlers-constructor.ts';
-import * as CustomTypeOptionsBase from '../obsidian/i18n/custom-type-options.ts';
-import * as DefaultTranslationsBase from '../obsidian/i18n/default-translations.ts';
-import * as Markdown from '../obsidian/markdown.ts';
-import * as PluginSettingsTabBase from '../obsidian/plugin/plugin-settings-tab.ts';
-import * as PluginBase from '../obsidian/plugin/plugin.ts';
-import * as AppContext from '../obsidian/react/app-context.ts';
-import * as ValueComponentWithChangeTracking from '../obsidian/setting-components/value-component-with-change-tracking.ts';
-import { changeExtensionPlugin } from './bundlers/esbuild-impl/change-extension-plugin.ts';
 import { copyToObsidianPluginsFolderPlugin } from './bundlers/esbuild-impl/copy-to-obsidian-plugins-folder-plugin.ts';
-import { customEsbuildOptionsPlugin } from './bundlers/esbuild-impl/custom-esbuild-options-plugin.ts';
 import { getDependenciesToBundle } from './bundlers/esbuild-impl/dependency.ts';
-import { fixEsmPlugin } from './bundlers/esbuild-impl/fix-esm-plugin.ts';
 import { fixSourceMapsPlugin } from './bundlers/esbuild-impl/fix-source-maps-plugin.ts';
 import { BuildMode } from './bundlers/esbuild-impl/obsidian-plugin-builder.ts';
 import { preprocessPlugin } from './bundlers/esbuild-impl/preprocess-plugin.ts';
 import { renameCssPlugin } from './bundlers/esbuild-impl/rename-css-plugin.ts';
-import { svelteWrapperPlugin } from './bundlers/esbuild-impl/svelte-wrapper-plugin.ts';
 import * as Esbuild from './bundlers/esbuild.ts';
-import * as CommitlintConfig from './commitlint-config.ts';
 import { defineEslintConfigs } from './linters/eslint-config.ts';
-import { obsidianDevUtilsConfig } from './linters/markdownlint-cli2-config.ts';
-import * as NanoStagedConfig from './nano-staged-config.ts';
 
 /* eslint-enable import-x/no-namespace -- Namespace import needed to force v8 to load type-only module for coverage. */
 

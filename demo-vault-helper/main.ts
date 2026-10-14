@@ -14,7 +14,7 @@ import {
   Plugin
 } from 'obsidian';
 
-import { bootstrapDemoVault } from '../src/obsidian/demo-vault-helper.ts';
+import { bootstrapDemoVault } from '@mnaoumov/obsidian-lib/demo-vault-helper';
 
 /**
  * The `demo-vault-helper` bootstrap plugin.

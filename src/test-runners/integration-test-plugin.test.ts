@@ -1,5 +1,6 @@
 import type { LibResolver } from 'obsidian-integration-testing';
 
+import { EMPTY } from '@mnaoumov/typescript-lib/string';
 import {
   beforeEach,
   describe,
@@ -8,7 +9,6 @@ import {
   vi
 } from 'vitest';
 
-import { EMPTY } from '../../string.ts';
 import {
   getIntegrationTestPluginPopulate,
   OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID,
@@ -37,7 +37,7 @@ vi.mock('obsidian-integration-testing', () => ({
   registerLibResolver: mockRegisterLibResolver
 }));
 
-vi.mock('../root.ts', () => ({
+vi.mock('@mnaoumov/typescript-dev-toolkit/root', () => ({
   getRootFolder: mockGetRootFolder
 }));
 

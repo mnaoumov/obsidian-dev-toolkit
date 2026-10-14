@@ -1,6 +1,15 @@
+import type { ResolvePathFromRootSafeParams } from '@mnaoumov/typescript-dev-toolkit/root';
 import type { Unzipped } from 'fflate';
 import type { Dirent } from 'node:fs';
 
+import {
+  basename,
+  dirname,
+  join,
+  relative
+} from '@mnaoumov/typescript-lib/path';
+import { EMPTY } from '@mnaoumov/typescript-lib/string';
+import { strictProxy } from '@mnaoumov/typescript-test-toolkit/strict-proxy';
 import { unzipSync } from 'fflate';
 import { Buffer } from 'node:buffer';
 import {
@@ -11,16 +20,6 @@ import {
   vi
 } from 'vitest';
 
-import type { ResolvePathFromRootSafeParams } from './root.ts';
-
-import {
-  basename,
-  dirname,
-  join,
-  relative
-} from '../path.ts';
-import { strictProxy } from '../strict-proxy.ts';
-import { EMPTY } from '../string.ts';
 import { archivePluginDemoVault } from './demo-vault.ts';
 
 const {
@@ -63,7 +62,7 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   };
 });
 
-vi.mock('./root.ts', () => ({
+vi.mock('@mnaoumov/typescript-dev-toolkit/root', () => ({
   getRootFolder: mockGetRootFolder,
   resolvePathFromRootSafe: mockResolvePathFromRootSafe
 }));
