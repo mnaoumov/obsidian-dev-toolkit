@@ -729,7 +729,10 @@ export class DemoVaultCoverageChecker {
 
   private collectMarkdownFiles(folder: string): string[] {
     const result: string[] = [];
-    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    // `readdirSync` returns entries in the file system's own order: by name on NTFS, but by hash on ext4, so
+    // sort them so every check reports its notes in the same order on every platform.
+    const entries = readdirSync(folder, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name, 'en'));
+    for (const entry of entries) {
       if (entry.isDirectory()) {
         if (entry.name === ObsidianPluginRepoPaths.NodeModules as string) {
           continue;
