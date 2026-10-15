@@ -14,8 +14,6 @@
  * the emitted bundle does not have.
  */
 
-/* eslint-disable unicorn/prefer-module -- The CommonJS surface is the subject here, not an oversight. These functions bridge the module systems in the emitted bundle, so they have to name `__filename` and `require`. */
-
 import type { Plugin } from 'esbuild';
 import type { pathToFileURL } from 'node:url';
 
@@ -75,7 +73,6 @@ function patchObsidianRequire(): void {
     return;
   }
 
-  // eslint-disable-next-line no-global-assign, no-implicit-globals -- We need to patch the `require()` function.
   require = Object.assign(
     (id: string) => requirePatched(id),
     originalRequire,
@@ -146,5 +143,3 @@ function patchObsidianRequire(): void {
 }
 
 /* v8 ignore stop */
-
-/* eslint-enable unicorn/prefer-module -- Pairs with the file-level disable above. */

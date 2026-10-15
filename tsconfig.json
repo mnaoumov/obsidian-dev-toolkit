@@ -1,6 +1,26 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@tsconfig/strictest/tsconfig.json",
   "compilerOptions": {
+    "allowArbitraryExtensions": true,
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022",
+      "ESNext.Disposable"
+    ],
+    "libReplacement": true,
+    "module": "node16",
+    "moduleResolution": "node16",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "verbatimModuleSyntax": true,
     "types": [
       "@obsidian-typings/obsidian-public-latest",
       "@total-typescript/ts-reset",
@@ -8,13 +28,12 @@
     ]
   },
   "include": [
-    "../typescript-lib/src/**/@types/**/*.d.ts",
-    "../typescript-test-toolkit/src/**/@types/**/*.d.ts",
-    "../typescript-dev-toolkit/src/**/@types/**/*.d.ts",
-    "../obsidian-lib/src/**/@types/**/*.d.ts",
-    "./src/**/*.ts",
+    "./commitlint.config.ts",
     "./demo-vault-helper/**/*.ts",
+    "./eslint.config.mts",
     "./integration-test-plugin/**/*.ts",
+    "./scripts/**/*.ts",
+    "./src/**/*.ts",
     "./vitest.config.ts"
   ]
 }

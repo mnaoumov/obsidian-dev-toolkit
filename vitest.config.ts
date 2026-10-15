@@ -1,7 +1,7 @@
 import {
-  defineWorkspaceVitestConfig,
-  WORKSPACE_TEST_EXCLUDE
-} from '../../scripts/vitest-workspace.ts';
+  DEFAULT_VITEST_TEST_EXCLUDE,
+  defineLibraryVitestConfig
+} from '@mnaoumov/typescript-dev-toolkit/test-runners/vitest-config';
 
 const ESLINT_TYPECHECK_TEST_FILES = 'src/linters/eslint-rules/*.test.ts';
 const INTEGRATION_TEST_FILES = 'src/**/*.integration.test.ts';
@@ -21,17 +21,17 @@ const SHARED_RESOLVE = {
 const SHARED_SERVER = {
   // eslint-disable-next-line unicorn/name-replacements -- `deps` is a Vitest config key.
   deps: {
-    inline: ['@obsidian-typings']
+    inline: ['@obsidian-typings', '@mnaoumov/typescript-dev-toolkit', '@mnaoumov/typescript-lib']
   }
 };
 
-export default defineWorkspaceVitestConfig({
+export default defineLibraryVitestConfig({
   projects: [
     {
       resolve: SHARED_RESOLVE,
       test: {
         environment: 'node',
-        exclude: [...WORKSPACE_TEST_EXCLUDE, INTEGRATION_TEST_FILES, ESLINT_TYPECHECK_TEST_FILES],
+        exclude: [...DEFAULT_VITEST_TEST_EXCLUDE, INTEGRATION_TEST_FILES, ESLINT_TYPECHECK_TEST_FILES],
         include: ['src/**/*.test.ts'],
         name: 'unit-tests',
         server: SHARED_SERVER,
@@ -42,7 +42,7 @@ export default defineWorkspaceVitestConfig({
       resolve: SHARED_RESOLVE,
       test: {
         environment: 'node',
-        exclude: WORKSPACE_TEST_EXCLUDE,
+        exclude: [...DEFAULT_VITEST_TEST_EXCLUDE],
         include: [ESLINT_TYPECHECK_TEST_FILES],
         isolate: false,
         maxWorkers: 1,
@@ -58,12 +58,22 @@ export default defineWorkspaceVitestConfig({
       resolve: SHARED_RESOLVE,
       test: {
         environment: 'node',
-        exclude: WORKSPACE_TEST_EXCLUDE,
+        exclude: [...DEFAULT_VITEST_TEST_EXCLUDE],
         include: [INTEGRATION_TEST_FILES],
         name: 'integration-tests',
         server: SHARED_SERVER,
         setupFiles: [],
         testTimeout: BIG_TIMEOUT_IN_MILLISECONDS
+      }
+    },
+    {
+      test: {
+        environment: 'node',
+        exclude: [...DEFAULT_VITEST_TEST_EXCLUDE],
+        // The build and test scripts' own helpers; outside `src/`, so outside the coverage gate.
+        include: ['scripts/**/*.test.ts'],
+        name: 'unit-tests:scripts',
+        setupFiles: []
       }
     }
   ]

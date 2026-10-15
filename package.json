@@ -7,21 +7,19 @@
     "obsidian-plugin",
     "tooling"
   ],
-  "homepage": "https://github.com/mnaoumov/obsidian-dev-utils/tree/main/packages/obsidian-dev-toolkit#readme",
+  "homepage": "https://github.com/mnaoumov/obsidian-dev-toolkit#readme",
   "bugs": {
-    "url": "https://github.com/mnaoumov/obsidian-dev-utils/issues"
+    "url": "https://github.com/mnaoumov/obsidian-dev-toolkit/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mnaoumov/obsidian-dev-utils.git",
-    "directory": "packages/obsidian-dev-toolkit"
+    "url": "git+https://github.com/mnaoumov/obsidian-dev-toolkit.git"
   },
   "license": "MIT",
   "author": "Michael Naumov",
   "type": "module",
   "exports": {
     ".": {
-      "@mnaoumov/source": "./src/index.ts",
       "import": {
         "types": "./dist/lib/esm/index.d.mts",
         "default": "./dist/lib/esm/index.mjs"
@@ -32,7 +30,6 @@
       }
     },
     "./*": {
-      "@mnaoumov/source": "./src/*.ts",
       "import": {
         "types": "./dist/lib/esm/*.d.mts",
         "default": "./dist/lib/esm/*.mjs"
@@ -43,7 +40,6 @@
       }
     },
     "./bundlers": {
-      "@mnaoumov/source": "./src/bundlers/index.ts",
       "import": {
         "types": "./dist/lib/esm/bundlers/index.d.mts",
         "default": "./dist/lib/esm/bundlers/index.mjs"
@@ -54,7 +50,6 @@
       }
     },
     "./bundlers/*": {
-      "@mnaoumov/source": "./src/bundlers/*.ts",
       "import": {
         "types": "./dist/lib/esm/bundlers/*.d.mts",
         "default": "./dist/lib/esm/bundlers/*.mjs"
@@ -65,7 +60,6 @@
       }
     },
     "./bundlers/esbuild-impl": {
-      "@mnaoumov/source": "./src/bundlers/esbuild-impl/index.ts",
       "import": {
         "types": "./dist/lib/esm/bundlers/esbuild-impl/index.d.mts",
         "default": "./dist/lib/esm/bundlers/esbuild-impl/index.mjs"
@@ -76,7 +70,6 @@
       }
     },
     "./bundlers/esbuild-impl/*": {
-      "@mnaoumov/source": "./src/bundlers/esbuild-impl/*.ts",
       "import": {
         "types": "./dist/lib/esm/bundlers/esbuild-impl/*.d.mts",
         "default": "./dist/lib/esm/bundlers/esbuild-impl/*.mjs"
@@ -87,7 +80,6 @@
       }
     },
     "./formatters": {
-      "@mnaoumov/source": "./src/formatters/index.ts",
       "import": {
         "types": "./dist/lib/esm/formatters/index.d.mts",
         "default": "./dist/lib/esm/formatters/index.mjs"
@@ -98,7 +90,6 @@
       }
     },
     "./formatters/*": {
-      "@mnaoumov/source": "./src/formatters/*.ts",
       "import": {
         "types": "./dist/lib/esm/formatters/*.d.mts",
         "default": "./dist/lib/esm/formatters/*.mjs"
@@ -109,7 +100,6 @@
       }
     },
     "./linters": {
-      "@mnaoumov/source": "./src/linters/index.ts",
       "import": {
         "types": "./dist/lib/esm/linters/index.d.mts",
         "default": "./dist/lib/esm/linters/index.mjs"
@@ -120,7 +110,6 @@
       }
     },
     "./linters/*": {
-      "@mnaoumov/source": "./src/linters/*.ts",
       "import": {
         "types": "./dist/lib/esm/linters/*.d.mts",
         "default": "./dist/lib/esm/linters/*.mjs"
@@ -131,7 +120,6 @@
       }
     },
     "./linters/eslint-rules": {
-      "@mnaoumov/source": "./src/linters/eslint-rules/index.ts",
       "import": {
         "types": "./dist/lib/esm/linters/eslint-rules/index.d.mts",
         "default": "./dist/lib/esm/linters/eslint-rules/index.mjs"
@@ -142,7 +130,6 @@
       }
     },
     "./linters/eslint-rules/*": {
-      "@mnaoumov/source": "./src/linters/eslint-rules/*.ts",
       "import": {
         "types": "./dist/lib/esm/linters/eslint-rules/*.d.mts",
         "default": "./dist/lib/esm/linters/eslint-rules/*.mjs"
@@ -153,7 +140,6 @@
       }
     },
     "./test-runners": {
-      "@mnaoumov/source": "./src/test-runners/index.ts",
       "import": {
         "types": "./dist/lib/esm/test-runners/index.d.mts",
         "default": "./dist/lib/esm/test-runners/index.mjs"
@@ -164,7 +150,6 @@
       }
     },
     "./test-runners/*": {
-      "@mnaoumov/source": "./src/test-runners/*.ts",
       "import": {
         "types": "./dist/lib/esm/test-runners/*.d.mts",
         "default": "./dist/lib/esm/test-runners/*.mjs"
@@ -183,24 +168,36 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node ../../scripts/run.mjs ../../scripts/build.ts",
-    "build:clean": "node ../../scripts/run.mjs ../../scripts/build-clean.ts",
-    "build:compile": "node ../../scripts/run.mjs ../../scripts/build-compile.ts",
-    "build:compile:typescript": "node ../../scripts/run.mjs ../../scripts/build-compile-typescript.ts",
-    "build:demo-vault-helper": "node ../../scripts/run.mjs ../../scripts/build-demo-vault-helper.ts",
-    "build:generate-exports": "node ../../scripts/run.mjs ../../scripts/build-generate-exports.ts",
-    "build:generate-index": "node ../../scripts/run.mjs ../../scripts/build-generate-index.ts",
-    "build:integration-test-plugin": "node ../../scripts/run.mjs ../../scripts/build-integration-test-plugin.ts",
-    "build:lib": "node ../../scripts/run.mjs ../../scripts/build-lib-obsidian.ts",
-    "build:templates": "node ../../scripts/run.mjs ../../scripts/build-templates.ts",
-    "build:types": "node ../../scripts/run.mjs ../../scripts/build-types.ts",
-    "build:validate-declarations": "node ../../scripts/run.mjs ../../scripts/build-validate-declarations.ts",
-    "build:validate-templates": "node ../../scripts/run.mjs ../../scripts/build-validate-templates.ts",
-    "find-overexposed": "node ../../scripts/run.mjs ../../scripts/find-overexposed.ts",
-    "find-overexposed:fix": "node ../../scripts/run.mjs ../../scripts/find-overexposed-fix.ts",
-    "test": "node ../../scripts/run.mjs ../../scripts/package-test.ts",
-    "test:coverage": "node ../../scripts/run.mjs ../../scripts/package-test-coverage.ts",
-    "test:watch": "node ../../scripts/run.mjs ../../scripts/package-test-watch.ts"
+    "build": "jiti scripts/build.ts",
+    "build:clean": "jiti scripts/build-clean.ts",
+    "build:compile": "jiti scripts/build-compile.ts",
+    "build:compile:typescript": "jiti scripts/build-compile-typescript.ts",
+    "build:demo-vault-helper": "jiti scripts/build-demo-vault-helper.ts",
+    "build:generate-exports": "jiti scripts/build-generate-exports.ts",
+    "build:generate-index": "jiti scripts/build-generate-index.ts",
+    "build:integration-test-plugin": "jiti scripts/build-integration-test-plugin.ts",
+    "build:lib": "jiti scripts/build-lib.ts",
+    "build:templates": "jiti scripts/build-templates.ts",
+    "build:types": "jiti scripts/build-types.ts",
+    "build:validate-declarations": "jiti scripts/build-validate-declarations.ts",
+    "build:validate-templates": "jiti scripts/build-validate-templates.ts",
+    "commit": "jiti scripts/commit.ts",
+    "find-overexposed": "jiti scripts/find-overexposed.ts",
+    "find-overexposed:fix": "jiti scripts/find-overexposed-fix.ts",
+    "format": "jiti scripts/format.ts",
+    "format:check": "jiti scripts/format-check.ts",
+    "gate": "jiti scripts/gate.ts",
+    "lint": "jiti scripts/lint.ts",
+    "lint:fix": "jiti scripts/lint-fix.ts",
+    "lint:md": "jiti scripts/lint-md.ts",
+    "lint:md:fix": "jiti scripts/lint-md-fix.ts",
+    "prepare": "jiti scripts/prepare.ts",
+    "publish:npm": "jiti scripts/publish-npm.ts",
+    "spellcheck": "jiti scripts/spellcheck.ts",
+    "test": "jiti scripts/test.ts",
+    "test:coverage": "jiti scripts/test-coverage.ts",
+    "test:watch": "jiti scripts/test-watch.ts",
+    "version": "jiti scripts/version.ts"
   },
   "dependencies": {
     "@eslint/json": "^2.1.0",
@@ -227,8 +224,26 @@
     "typescript": "6.0.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@jest/globals": "^30.5.2",
+    "@obsidian-typings/obsidian-public-latest": "^6.37.0",
+    "@total-typescript/ts-reset": "^0.6.1",
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/node": "^26.6.2",
     "@typescript-eslint/rule-tester": "^8.71.2",
+    "@vitest/coverage-v8": "^5.0.1",
+    "better-typescript-lib": "^2.12.0",
+    "cspell": "^10.3.3",
+    "czg": "^1.14.0",
+    "dprint": "^0.57.4",
+    "husky": "^9.1.7",
+    "jiti": "^2.7.0",
+    "markdownlint-cli2": "^0.23.2",
+    "nano-staged": "^1.0.2",
+    "obsidian-integration-testing": "^17.3.0",
     "obsidian-test-mocks": "^7.0.0",
+    "tslib": "^2.8.1",
     "vitest": "^5.0.1"
   },
   "peerDependencies": {
@@ -252,5 +267,16 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "@puppeteer/browsers": "^3.2.2",
+    "@vitest/coverage-v8": "$@vitest/coverage-v8",
+    "deepmerge-ts": "^8.0.2",
+    "eslint": "$eslint",
+    "eslint-plugin-import": "npm:eslint-plugin-import-x@^4.17.1",
+    "fflate": "$fflate",
+    "js-yaml": "4.3.2",
+    "smol-toml": "^1.8.0",
+    "typescript": "$typescript"
   }
 }
