@@ -11,7 +11,7 @@ import {
 
 import {
   getIntegrationTestPluginPopulate,
-  OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID,
+  OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID,
   registerIntegrationTestLibResolver
 } from './integration-test-plugin.ts';
 
@@ -41,7 +41,7 @@ vi.mock('@mnaoumov/typescript-dev-toolkit/root', () => ({
   getRootFolder: mockGetRootFolder
 }));
 
-const PLUGIN_VAULT_FOLDER = `${EMPTY}.obsidian/plugins/${OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID}`;
+const PLUGIN_VAULT_FOLDER = `${EMPTY}.obsidian/plugins/${OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID}`;
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -63,11 +63,11 @@ describe('getIntegrationTestPluginPopulate', () => {
       .toBe('content of /package/dist/integration-test-plugin/main.js');
   });
 
-  it('should throw when the obsidian-dev-utils package folder cannot be resolved', () => {
+  it('should throw when the package folder cannot be resolved', () => {
     mockGetRootFolder.mockReturnValue(null);
 
     expect(() => getIntegrationTestPluginPopulate())
-      .toThrow('Could not resolve the obsidian-dev-utils package folder to seed the integration-test harness plugin.');
+      .toThrow('Could not resolve the @mnaoumov/obsidian-dev-toolkit package folder to seed the integration-test harness plugin.');
   });
 
   it('should throw a rebuild hint when the plugin was never built into the package', () => {
@@ -76,7 +76,7 @@ describe('getIntegrationTestPluginPopulate', () => {
     });
 
     expect(() => getIntegrationTestPluginPopulate())
-      .toThrow('The integration-test harness plugin is missing from the installed obsidian-dev-utils package');
+      .toThrow('The integration-test harness plugin is missing from the installed @mnaoumov/obsidian-dev-toolkit package');
   });
 });
 
@@ -101,7 +101,7 @@ describe('registerIntegrationTestLibResolver', () => {
     const resolver = mockRegisterLibResolver.mock.calls[0]?.[0];
     vi.stubGlobal('window', {});
     try {
-      expect(() => resolver?.()).toThrow('The obsidian-dev-utils module is not exposed on `window`.');
+      expect(() => resolver?.()).toThrow('The library module is not exposed on `window`.');
     } finally {
       vi.unstubAllGlobals();
     }

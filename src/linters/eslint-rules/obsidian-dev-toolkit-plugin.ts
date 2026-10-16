@@ -1,11 +1,9 @@
 /**
  * @file
  *
- * ESLint plugin for Obsidian development utilities.
+ * ESLint plugin carrying the Obsidian-specific in-house rules.
  */
 import type { ESLint } from 'eslint';
-
-import { genericInHouseEslintRules } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/in-house-plugin';
 
 import { manifestDescription } from './manifest-description.ts';
 import { manifestId } from './manifest-id.ts';
@@ -20,13 +18,16 @@ import { requireComponentSuffix } from './require-component-suffix.ts';
 import { requirePluginApiContractSchemas } from './require-plugin-api-contract-schemas.ts';
 
 /**
- * ESLint plugin bundling every `obsidian-dev-utils` custom rule, registered under the `obsidian-dev-utils` namespace:
- * the generic rules of `@mnaoumov/typescript-dev-toolkit` and the Obsidian ones. It is ONE plugin carrying both,
- * because ESLint refuses two different plugins under one namespace.
+ * The namespace the Obsidian in-house rules are registered under: the name of the package that defines them. The
+ * generic rules live beside them under `typescript-dev-toolkit`, as a plugin of their own.
  */
-export const obsidianDevUtilsPlugin: ESLint.Plugin = {
+export const OBSIDIAN_DEV_TOOLKIT_ESLINT_PLUGIN_NAME = 'obsidian-dev-toolkit';
+
+/**
+ * ESLint plugin carrying the Obsidian in-house rules, registered under {@link OBSIDIAN_DEV_TOOLKIT_ESLINT_PLUGIN_NAME}.
+ */
+export const obsidianDevToolkitPlugin: ESLint.Plugin = {
   rules: {
-    ...genericInHouseEslintRules,
     'manifest-description': manifestDescription,
     'manifest-id': manifestId,
     'manifest-name': manifestName,

@@ -9,8 +9,7 @@
  * near-identical edit per plugin, and any repo that is missed drifts silently. This module owns that
  * configuration once, so a plugin's `scripts/vitest-config.ts` collapses to a single call.
  *
- * The seam mirrors {@link https://www.npmjs.com/package/obsidian-dev-utils | the ESLint one}
- * (`defineEslintConfigs`): the factory builds a context holding the standard projects, the caller edits
+ * The seam mirrors the ESLint one (`defineEslintConfigs`): the factory builds a context holding the standard projects, the caller edits
  * it in place through {@link DefineObsidianPluginVitestConfigOptions.editContext}, and appends any
  * project the base does not know about through
  * {@link DefineObsidianPluginVitestConfigOptions.customProjects}.
@@ -113,7 +112,7 @@ const UNIT_TEST_GLOBAL_STUBS_PROJECT_NAME = 'unit-tests:global-stubs';
  * `test:integration*` scripts call vitest directly and never build, so without it a session that edits
  * `src/` and runs one integration project tests the previous build and reads the result as a defect.
  */
-const STALE_BUILD_GLOBAL_SETUP = 'obsidian-dev-utils/script-utils/test-runners/stale-build-global-setup';
+const STALE_BUILD_GLOBAL_SETUP = '@mnaoumov/obsidian-dev-toolkit/test-runners/stale-build-global-setup';
 
 const OBSIDIAN_VERSION_ENV_VARIABLE_NAME = 'OBSIDIAN_VERSION';
 const SHARED_EXCLUDE = DEFAULT_VITEST_TEST_EXCLUDE;
@@ -349,12 +348,12 @@ export class ObsidianPluginVitestConfigContext {
     server: {
       // eslint-disable-next-line unicorn/name-replacements -- `deps` is declared by `vitest`; renaming it here would not match the API.
       deps: {
-        inline: ['@obsidian-typings', 'obsidian-dev-utils']
+        inline: ['@mnaoumov', '@obsidian-typings']
       }
     },
     setupFiles: [
       'obsidian-test-mocks/vitest-setup',
-      'obsidian-dev-utils/vitest-setup'
+      '@mnaoumov/obsidian-dev-toolkit/vitest-setup'
     ]
   };
 

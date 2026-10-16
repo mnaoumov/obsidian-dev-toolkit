@@ -13,8 +13,8 @@
  *   turned on by `obsidian-integration-testing`'s `createSetup({ enableCommunityPlugins })`.
  * - {@link registerIntegrationTestLibResolver} registers the renderer-side resolver that reads that global.
  *
- * `obsidian-dev-utils/integration-test-vitest-global-setup` and
- * `obsidian-dev-utils/integration-test-setup` are the turnkey endpoints that call these for you.
+ * `@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup` and
+ * `@mnaoumov/obsidian-dev-toolkit/integration-test-setup` are the turnkey endpoints that call these for you.
  */
 
 import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
@@ -31,7 +31,7 @@ import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
  * The id of the integration-test harness plugin — the folder name it is seeded into, and the value to pass
  * to `createSetup({ enableCommunityPlugins })` so the harness enables it after the plugin-under-test.
  */
-export const OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID = 'obsidian-dev-utils-integration-test';
+export const OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID = 'obsidian-dev-toolkit-integration-test';
 
 /**
  * The flat library barrel the harness plugin publishes.
@@ -60,14 +60,14 @@ interface ObsidianDevUtilsModuleWindow {
 export function getIntegrationTestPluginPopulate(): Record<string, Uint8Array> {
   const packageFolder = getRootFolder(getFolderName(import.meta.url));
   if (!packageFolder) {
-    throw new Error('Could not resolve the obsidian-dev-utils package folder to seed the integration-test harness plugin.');
+    throw new Error('Could not resolve the @mnaoumov/obsidian-dev-toolkit package folder to seed the integration-test harness plugin.');
   }
 
   const pluginSourceFolder = join(packageFolder, ObsidianPluginRepoPaths.DistIntegrationTestPlugin);
   const pluginVaultFolder = join(
     ObsidianPluginRepoPaths.DotObsidian,
     ObsidianPluginRepoPaths.Plugins,
-    OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID
+    OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID
   );
 
   const populate: Record<string, Uint8Array> = {};
@@ -80,7 +80,7 @@ export function getIntegrationTestPluginPopulate(): Record<string, Uint8Array> {
     } catch (error: unknown) {
       throw new Error(
         `Could not read ${sourcePath}. The integration-test harness plugin is missing from the installed `
-          + 'obsidian-dev-utils package — run `npm run build` in obsidian-dev-utils, or reinstall it.',
+          + '@mnaoumov/obsidian-dev-toolkit package — reinstall it, or run `npm run build` in its checkout.',
         { cause: error }
       );
     }
@@ -94,7 +94,7 @@ export function getIntegrationTestPluginPopulate(): Record<string, Uint8Array> {
  * Registers the renderer-side resolver that merges the whole library into the `lib` argument of every
  * `evalInObsidian` callback, reading it from the global the harness plugin publishes.
  *
- * Call once per test worker — the published `obsidian-dev-utils/integration-test-setup` endpoint does it
+ * Call once per test worker — the published `@mnaoumov/obsidian-dev-toolkit/integration-test-setup` endpoint does it
  * for you when listed in `setupFiles`. Registration is idempotent (the harness dedupes resolvers by source
  * text), so calling it more than once is safe.
  */
@@ -103,9 +103,9 @@ export function registerIntegrationTestLibResolver(): void {
     const obsidianDevUtilsModule = (window as Partial<ObsidianDevUtilsModuleWindow>).__obsidianDevUtilsModule;
     if (!obsidianDevUtilsModule) {
       throw new Error(
-        'The obsidian-dev-utils module is not exposed on `window`. Is the obsidian-dev-utils integration-test '
+        'The library module is not exposed on `window`. Is the @mnaoumov/obsidian-dev-toolkit integration-test '
           + 'harness plugin installed and enabled in the test vault? See '
-          + '`obsidian-dev-utils/integration-test-vitest-global-setup`.'
+          + '`@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup`.'
       );
     }
     return obsidianDevUtilsModule.__merged;

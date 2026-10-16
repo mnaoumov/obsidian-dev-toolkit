@@ -28,7 +28,7 @@ import { defineConfig } from 'eslint/config';
 
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 import { jsonPlugin } from './eslint-rules/manifest-helpers.ts';
-import { obsidianDevUtilsPlugin } from './eslint-rules/obsidian-dev-utils-plugin.ts';
+import { obsidianDevToolkitPlugin } from './eslint-rules/obsidian-dev-toolkit-plugin.ts';
 import { stripOwnedRuleCustomMessageEntries } from './obsidianmd-rule-custom-message.ts';
 
 // eslint-disable-next-line unicorn/prefer-export-from -- Re-exported so a plugin's `scripts/eslint-config.ts` keeps importing both from here.
@@ -69,7 +69,7 @@ export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): L
     ...getGlobalIgnoreConfigs(),
     // Obsidianmd configs run first so our stricter rules override their relaxed defaults
     ...getObsidianLintConfigs(context),
-    ...getTypeScriptEslintConfigs({ context, inHousePlugin: obsidianDevUtilsPlugin, minimumNodeVersion: MINIMUM_NODE_VERSION }),
+    ...getTypeScriptEslintConfigs({ context, minimumNodeVersion: MINIMUM_NODE_VERSION }),
     ...getObsidianOverrideConfigs(context),
     ...getNodeBuiltinsConfigs(context),
     ...getIntegrationTestConfigs(context),
@@ -95,8 +95,11 @@ function getIntegrationTestConfigs(context: EslintConfigContext): Linter.Config[
        * thing a `*.cross-platform.*` file has always had to do.
        */
       files: context.sourceFolders.map((sourceFolder) => join(sourceFolder, ObsidianPluginRepoPaths.AnyPath, ObsidianPluginRepoPaths.AnyIntegrationTestTs)),
+      plugins: {
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+      },
       rules: {
-        'obsidian-dev-utils/no-untrusted-input-events': 'error'
+        'obsidian-dev-toolkit/no-untrusted-input-events': 'error'
       }
     }
   ]);
@@ -150,13 +153,13 @@ function getManifestConfigs(): Linter.Config[] {
       language: 'json/json',
       plugins: {
         'json': jsonPlugin,
-        'obsidian-dev-utils': obsidianDevUtilsPlugin
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
       },
       rules: {
-        'obsidian-dev-utils/manifest-description': 'error',
-        'obsidian-dev-utils/manifest-id': 'error',
-        'obsidian-dev-utils/manifest-name': 'error',
-        'obsidian-dev-utils/manifest-schema': 'error'
+        'obsidian-dev-toolkit/manifest-description': 'error',
+        'obsidian-dev-toolkit/manifest-id': 'error',
+        'obsidian-dev-toolkit/manifest-name': 'error',
+        'obsidian-dev-toolkit/manifest-schema': 'error'
       }
     }
   ]);
@@ -262,7 +265,7 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
     {
       files: context.allFiles(),
       plugins: {
-        'obsidian-dev-utils': obsidianDevUtilsPlugin
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
       },
       rules: {
         /*
@@ -272,8 +275,8 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
          * a real Obsidian outside a test (`demo-vault-buttons.ts`) is under the same transport cap and would
          * otherwise be enforced nowhere.
          */
-        'obsidian-dev-utils/no-over-cap-wait-in-eval-in-obsidian': 'error',
-        'obsidian-dev-utils/require-component-suffix': 'error',
+        'obsidian-dev-toolkit/no-over-cap-wait-in-eval-in-obsidian': 'error',
+        'obsidian-dev-toolkit/require-component-suffix': 'error',
         /*
          * Obsidian's `Component` has its own `removeChild(component)` for the component lifecycle, unrelated
          * to `Node#removeChild`. The rule matches on the method name alone, so every report here is a
@@ -299,10 +302,10 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       files: context.sourceFiles,
       ignores: context.testFiles,
       plugins: {
-        'obsidian-dev-utils': obsidianDevUtilsPlugin
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
       },
       rules: {
-        'obsidian-dev-utils/no-local-obsidian-internals': 'error'
+        'obsidian-dev-toolkit/no-local-obsidian-internals': 'error'
       }
     },
     {
@@ -317,10 +320,10 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       files: context.sourceFiles,
       ignores: context.testFiles,
       plugins: {
-        'obsidian-dev-utils': obsidianDevUtilsPlugin
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
       },
       rules: {
-        'obsidian-dev-utils/require-plugin-api-contract-schemas': 'off'
+        'obsidian-dev-toolkit/require-plugin-api-contract-schemas': 'off'
       }
     },
     {
@@ -334,11 +337,11 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
        */
       files: context.allFiles(),
       plugins: {
-        'obsidian-dev-utils': obsidianDevUtilsPlugin
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
       },
       rules: {
-        'obsidian-dev-utils/plugin-name-as-code': 'off',
-        'obsidian-dev-utils/plugin-name-as-code-in-ui': 'off'
+        'obsidian-dev-toolkit/plugin-name-as-code': 'off',
+        'obsidian-dev-toolkit/plugin-name-as-code-in-ui': 'off'
       }
     }
   ]);

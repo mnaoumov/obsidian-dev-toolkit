@@ -221,8 +221,8 @@
   },
   "dependencies": {
     "@eslint/json": "^2.1.0",
-    "@mnaoumov/obsidian-lib": "^1.0.0",
-    "@mnaoumov/typescript-dev-toolkit": "^1.0.0",
+    "@mnaoumov/obsidian-lib": "^3.1.0",
+    "@mnaoumov/typescript-dev-toolkit": "^2.0.0",
     "@mnaoumov/typescript-lib": "^1.0.0",
     "@mnaoumov/typescript-test-toolkit": "^1.0.0",
     "@types/babel__core": "^7.20.5",
