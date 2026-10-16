@@ -25,6 +25,7 @@ import { CliTaskResult } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
 import { npmRunOptional } from '@mnaoumov/typescript-dev-toolkit/npm-run';
 import { invokeAsyncSafely } from '@mnaoumov/typescript-lib/async';
 import {
+  extname,
   join,
   relative,
   toPosixPath
@@ -37,6 +38,7 @@ import {
 } from 'node:fs/promises';
 
 import type { ObsidianPluginBuildContext } from './obsidian-plugin-build.ts';
+import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts';
 
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 import {
@@ -48,6 +50,11 @@ import {
   resolveFromRoot,
   resolveObsidianPluginBuildContext
 } from './obsidian-plugin-build.ts';
+import {
+  getFrameworkDefines,
+  getJsxImportSource,
+  isPostcssNeeded
+} from './obsidian-plugin-features.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
 
 /**
@@ -63,7 +70,7 @@ export interface BuildObsidianPluginWithParcelParams extends BuildOptions {
 /**
  * Options for {@link build} and {@link dev}.
  */
-export interface BuildOptions {
+export interface BuildOptions extends ObsidianPluginFeatureOptions {
   /**
    * Customizes the options handed to parcel's `Parcel` class.
    */
@@ -73,6 +80,22 @@ export interface BuildOptions {
    * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable.
    */
   readonly obsidianConfigFolder?: string;
+}
+
+/**
+ * Parameters for {@link getParcelConfigFiles}.
+ */
+export interface GetParcelConfigFilesParams {
+  /**
+   * The consumer's own `.parcelrc`, relative to the generated configuration's folder, or `undefined` when the project
+   * has none.
+   */
+  readonly consumerParcelrcPath: string | undefined;
+
+  /**
+   * The build features.
+   */
+  readonly features?: ObsidianPluginFeatureOptions;
 }
 
 /**
@@ -125,6 +148,7 @@ const RESOLVER_FILE_NAME = 'obsidian-plugin-resolver.cjs';
 const NAMER_FILE_NAME = 'obsidian-plugin-namer.cjs';
 const INLINE_IMPORTS_FILE_NAME = 'obsidian-plugin-inline-imports.cjs';
 const OPTIMIZER_FILE_NAME = 'obsidian-plugin-optimizer.cjs';
+const FEATURES_FILE_NAME = 'obsidian-plugin-features.cjs';
 const JSON_INDENT = 2;
 
 /* v8 ignore start -- Runs a real parcel build; exercised by the bundler integration test. */
@@ -157,7 +181,10 @@ export async function buildObsidianPluginWithParcel(params: BuildObsidianPluginW
   const configFolder = resolveFromRoot(GENERATED_PARCEL_CONFIG_FOLDER);
   const consumerParcelrcPath = resolveFromRoot(PARCELRC);
   await mkdir(configFolder, { recursive: true });
-  const configFiles = getParcelConfigFiles(existsSync(consumerParcelrcPath) ? toPosixPath(relative(configFolder, consumerParcelrcPath)) : undefined);
+  const configFiles = getParcelConfigFiles({
+    consumerParcelrcPath: existsSync(consumerParcelrcPath) ? toPosixPath(relative(configFolder, consumerParcelrcPath)) : undefined,
+    features: params
+  });
   for (const [fileName, contents] of Object.entries(configFiles)) {
     const filePath = join(configFolder, fileName);
     // Rewritten only when it changed: parcel invalidates its cache on a config file's modification time.
@@ -207,11 +234,40 @@ export async function dev(options?: BuildOptions): Promise<CliTaskResult> {
 /**
  * Generates the files of the parcel configuration the build runs with.
  *
- * @param consumerParcelrcPath - The consumer's own `.parcelrc`, relative to the generated configuration's
- * folder, or `undefined` when the project has none.
+ * The build features add pipelines that run the toolkit's shared transforms, through one generated transformer that
+ * loads them from the toolkit: Solid's `.jsx` / `.tsx`, Svelte's `.svelte` / `.svelte.ts` / `.svelte.js`, `.wasm`,
+ * and with `styles.postcss` or `styles.tailwind` every stylesheet, in place of parcel's own PostCSS step. React and
+ * Preact JSX is compiled here too, since parcel reads the JSX runtime from a tsconfig without following its `extends`,
+ * and with any framework every script has the framework's compile-time constants replaced. Parcel compiles Vue with
+ * `@parcel/transformer-vue` and scopes `*.module.css` itself, so those need no pipeline here.
+ *
+ * @param params - The {@link GetParcelConfigFilesParams}.
  * @returns The files, by file name.
  */
-export function getParcelConfigFiles(consumerParcelrcPath: string | undefined): ParcelConfigFiles {
+export function getParcelConfigFiles(params: GetParcelConfigFilesParams): ParcelConfigFiles {
+  const { consumerParcelrcPath, features = {} } = params;
+  const featureTransformer = `./${FEATURES_FILE_NAME}`;
+  const transformers: Record<string, string[]> = {};
+  if (features.framework === 'svelte') {
+    transformers['*.svelte'] = [featureTransformer];
+    transformers['*.svelte.{js,ts}'] = [featureTransformer, `./${INLINE_IMPORTS_FILE_NAME}`, '...'];
+  }
+  if (features.framework === 'solid' || getJsxImportSource(features.framework) !== undefined) {
+    transformers['*.{jsx,tsx}'] = [featureTransformer];
+  }
+  if (features.wasm) {
+    transformers['*.wasm'] = [featureTransformer];
+  }
+  if (isPostcssNeeded(features.styles)) {
+    transformers['*.{css,pcss}'] = [featureTransformer, '@parcel/transformer-css'];
+  }
+  const defines = getFrameworkDefines({ framework: features.framework, isProductionBuild: true });
+  transformers['*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}'] = [
+    ...Object.keys(defines).length > 0 ? [featureTransformer] : [],
+    `./${INLINE_IMPORTS_FILE_NAME}`,
+    '...'
+  ];
+
   const parcelrc = {
     extends: consumerParcelrcPath ?? '@parcel/config-default',
     namers: [`./${NAMER_FILE_NAME}`, '...'],
@@ -219,12 +275,71 @@ export function getParcelConfigFiles(consumerParcelrcPath: string | undefined): 
       '*.js': ['...', `./${OPTIMIZER_FILE_NAME}`]
     },
     resolvers: [`./${RESOLVER_FILE_NAME}`, '...'],
-    transformers: {
-      '*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}': [`./${INLINE_IMPORTS_FILE_NAME}`, '...']
-    }
+    transformers
   };
 
   return {
+    [FEATURES_FILE_NAME]: `/*
+ * Generated by @mnaoumov/obsidian-dev-toolkit. Runs the toolkit's shared transforms for the build features, loaded
+ * from the toolkit itself, so parcel compiles each feature the way every other bundler adapter does.
+ */
+const { Transformer } = require('@parcel/plugin');
+
+const FEATURES_MODULE_URL = ${JSON.stringify(getSiblingModuleUrl('obsidian-plugin-features'))};
+const TRANSFORMS_MODULE_URL = ${JSON.stringify(getSiblingModuleUrl('obsidian-plugin-transforms'))};
+const FRAMEWORK = ${JSON.stringify(features.framework ?? null)};
+const STYLES = ${JSON.stringify(features.styles ?? {})};
+
+module.exports = new Transformer({
+  async transform({ asset, options }) {
+    const { getFeatureFileKind, getFrameworkDefines, getJsxImportSource, replaceDefines } = await import(FEATURES_MODULE_URL);
+    const transforms = await import(TRANSFORMS_MODULE_URL);
+    const filePath = asset.filePath;
+    const isProductionBuild = options.mode === 'production';
+    const defines = getFrameworkDefines({ framework: FRAMEWORK ?? undefined, isProductionBuild });
+    switch (getFeatureFileKind(filePath)) {
+      case 'jsx': {
+        const code = await asset.getCode();
+        const jsxImportSource = getJsxImportSource(FRAMEWORK ?? undefined);
+        const result = FRAMEWORK === 'solid'
+          ? await transforms.transformSolid({ code, filePath, isProductionBuild })
+          : await transforms.transformJsx({ code, filePath, isProductionBuild, jsxImportSource });
+        asset.setCode(replaceDefines(result.code, defines));
+        asset.type = 'js';
+        break;
+      }
+      case 'stylesheet': {
+        const result = await transforms.transformCss({ filePath, isCssModuleScoped: false, isProductionBuild, source: await asset.getCode(), styles: STYLES });
+        asset.setCode(result.css);
+        for (const dependency of result.dependencies) {
+          asset.invalidateOnFileChange(dependency);
+        }
+        break;
+      }
+      case 'svelte': {
+        const result = await transforms.transformSvelte({ code: await asset.getCode(), filePath, isProductionBuild });
+        asset.setCode(replaceDefines(result.code, defines));
+        asset.type = 'js';
+        break;
+      }
+      case 'wasm':
+        asset.setCode(transforms.getWasmModuleCode(await asset.getBuffer()));
+        asset.type = 'js';
+        break;
+      default: {
+        // A framework's runtime reads process.env.NODE_ENV, which parcel leaves alone in an electron-renderer library.
+        const code = await asset.getCode();
+        const replaced = replaceDefines(code, defines);
+        if (replaced !== code) {
+          asset.setCode(replaced);
+        }
+        break;
+      }
+    }
+    return [asset];
+  }
+});
+`,
     // `String.raw`, so the regular expression below reaches the file with its backslashes intact.
     [INLINE_IMPORTS_FILE_NAME]: String.raw`/*
  * Generated by @mnaoumov/obsidian-dev-toolkit. Keeps every dynamic import() inside main.js.
@@ -363,6 +478,17 @@ function formatParcelError(error: unknown): string {
     return diagnostics.map((diagnostic) => diagnostic.message).join('\n');
   }
   return error instanceof Error ? error.stack ?? error.message : String(error);
+}
+
+/**
+ * Builds the URL of a module of this folder, in the same form as this one (`.ts` from source, `.mjs` or `.cjs` once
+ * built), which the generated transformer imports.
+ *
+ * @param baseName - The module's file name without its extension.
+ * @returns The module's `file:` URL.
+ */
+function getSiblingModuleUrl(baseName: string): string {
+  return new URL(`${baseName}${extname(new URL(import.meta.url).pathname)}`, import.meta.url).href;
 }
 
 function handleWatchEvent(event: BuildEvent | undefined, buildContext: ObsidianPluginBuildContext): void {

@@ -12,6 +12,7 @@ import { BuildMode } from './obsidian-plugin-build.ts';
 import {
   getViteBuildMode,
   getViteConfigDefaults,
+  getViteFeatureConfig,
   obsidianPluginVite
 } from './vite.ts';
 
@@ -32,9 +33,42 @@ const DEVELOPMENT_CONTEXT: ObsidianPluginBuildContext = {
   isProductionBuild: false,
   mainJsPath: '/project/dist/dev/main.js'
 };
+const POSTCSS_PLUGIN = { postcssPlugin: 'marker' };
+
 describe('vite', () => {
-  it('creates a plugin', () => {
-    expect(obsidianPluginVite().name).toBe('obsidian-plugin');
+  it('contributes nothing without features', () => {
+    expect(getViteFeatureConfig({ features: {}, isProductionBuild: true, postcssConfig: undefined, userConfig: {} })).toEqual({});
+  });
+
+  it('defines the framework\'s constants and sets the automatic JSX runtime for React', () => {
+    expect(getViteFeatureConfig({ features: { framework: 'react' }, isProductionBuild: true, postcssConfig: undefined, userConfig: {} })).toEqual({
+      define: { 'process.env.NODE_ENV': '"production"' },
+      oxc: { jsx: { development: false, importSource: 'react', runtime: 'automatic' } }
+    });
+  });
+
+  it('keeps the consumer\'s own defines and JSX settings', () => {
+    const userConfig: UserConfig = { define: { 'process.env.NODE_ENV': '"test"' }, oxc: { jsx: 'preserve' } };
+    expect(getViteFeatureConfig({ features: { framework: 'preact' }, isProductionBuild: false, postcssConfig: undefined, userConfig })).toEqual({});
+    expect(getViteFeatureConfig({ features: { framework: 'preact' }, isProductionBuild: false, postcssConfig: undefined, userConfig: { oxc: false } }))
+      .toEqual({ define: { 'process.env.NODE_ENV': '"development"' } });
+  });
+
+  it('sets the PostCSS plugins unless the consumer set css.postcss', () => {
+    const postcssConfig = { dependencies: [], options: {}, plugins: [POSTCSS_PLUGIN] };
+    expect(getViteFeatureConfig({ features: { styles: { postcss: true } }, isProductionBuild: true, postcssConfig, userConfig: {} })).toEqual({
+      css: { postcss: { plugins: [POSTCSS_PLUGIN] } }
+    });
+    expect(getViteFeatureConfig({ features: { styles: { postcss: true } }, isProductionBuild: true, postcssConfig, userConfig: { css: { postcss: {} } } }))
+      .toEqual({});
+    expect(getViteFeatureConfig({ features: {}, isProductionBuild: true, postcssConfig: { ...postcssConfig, plugins: [] }, userConfig: {} })).toEqual({});
+  });
+
+  it('creates the plugin, the feature plugin and a placeholder for the Vue plugin', async () => {
+    const [plugin, featurePlugin, vuePlugin] = obsidianPluginVite();
+    expect(plugin).toMatchObject({ name: 'obsidian-plugin' });
+    expect(featurePlugin).toMatchObject({ apply: 'build', name: 'obsidian-plugin-features' });
+    expect(await vuePlugin).toBeNull();
   });
 
   it.each([

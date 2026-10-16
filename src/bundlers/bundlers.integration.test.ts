@@ -1,12 +1,17 @@
+import type { Context } from 'node:vm';
+
+import { JSDOM } from 'jsdom';
 import { execFileSync } from 'node:child_process';
 import {
   cpSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
-  symlinkSync
+  symlinkSync,
+  writeFileSync
 } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -32,10 +37,20 @@ interface BundlerCase {
   readonly isDevelopment: boolean;
 }
 
+interface FeatureCase {
+  readonly bundler: string;
+  readonly feature: string;
+  readonly isDevelopment: boolean;
+}
+
 interface FixtureCommand {
   readonly callback: () => unknown;
   readonly id: string;
   readonly name: string;
+}
+
+interface FixtureFeatures {
+  readonly framework?: string;
 }
 
 interface FixturePlugin {
@@ -60,6 +75,8 @@ type PluginLoadFunction = (require: (moduleId: string) => unknown, module: Loade
 
 const REPO_ROOT = join(import.meta.dirname, '../..');
 const FIXTURE_SOURCE_FOLDER = join(REPO_ROOT, 'test-fixtures/obsidian-plugin');
+const FEATURE_FIXTURES_FOLDER = join(REPO_ROOT, 'test-fixtures/features');
+const TSCONFIG_PRESETS_FOLDER = join(REPO_ROOT, 'tsconfig');
 const BUILD_SCRIPT = join(REPO_ROOT, 'scripts/helpers/build-bundler-fixture.ts');
 const JITI_CLI = join(REPO_ROOT, 'node_modules/jiti/lib/jiti-cli.mjs');
 
@@ -77,6 +94,28 @@ const BUNDLER_CASES: readonly BundlerCase[] = [
   { bundler: 'webpack', isDevelopment: true }
 ];
 
+const BUNDLERS = ['esbuild', 'parcel', 'rollup', 'vite', 'webpack'];
+const BUNDLERS_WITH_MODE = ['rollup', 'vite', 'webpack'];
+
+/**
+ * What each feature fixture's `render` command returns once built and loaded, or a check of it.
+ */
+const FEATURE_RESULTS: Readonly<Record<string, unknown>> = {
+  preact: 'Hello from preact',
+  react: 'Hello from react',
+  solid: 'Hello from solid',
+  svelte: 'Hello from svelte 1',
+  vue: 'Hello from vue',
+  wasm: 42
+};
+
+// Every bundler in production, and the adapters with a `mode` option in development too, which compiles each
+// Framework's development build and carries the transforms' source maps.
+const FEATURE_CASES: readonly FeatureCase[] = ['preact', 'react', 'solid', 'styles', 'svelte', 'vue', 'wasm'].flatMap((feature) => [
+  ...BUNDLERS.map((bundler) => ({ bundler, feature, isDevelopment: false })),
+  ...BUNDLERS_WITH_MODE.map((bundler) => ({ bundler, feature, isDevelopment: true }))
+]);
+
 // Each case writes the same fixture's `dist` folder; the cases of one file run one after another.
 describe('every bundler adapter builds a loadable Obsidian plugin', () => {
   let fixtureFolder = '';
@@ -85,10 +124,7 @@ describe('every bundler adapter builds a loadable Obsidian plugin', () => {
   // for the project root, and the library build deletes every nested `package.json` in the repository, so
   // the fixture keeps its own under another name. Its `node_modules` links to this repository's.
   beforeAll(() => {
-    fixtureFolder = mkdtempSync(join(tmpdir(), 'obsidian-dev-toolkit-bundler-fixture-'));
-    cpSync(FIXTURE_SOURCE_FOLDER, fixtureFolder, { recursive: true });
-    renameSync(join(fixtureFolder, 'fixture-package.json'), join(fixtureFolder, 'package.json'));
-    symlinkSync(join(REPO_ROOT, 'node_modules'), join(fixtureFolder, 'node_modules'), 'junction');
+    fixtureFolder = createFixtureFolder();
   });
 
   afterAll(() => {
@@ -98,14 +134,7 @@ describe('every bundler adapter builds a loadable Obsidian plugin', () => {
   });
 
   it.each(BUNDLER_CASES)('$bundler (development: $isDevelopment)', async ({ bundler, isDevelopment }) => {
-    const env = { ...process.env };
-    // A development build deploys into this vault when it is set, and a test must not touch a real vault.
-    delete env['OBSIDIAN_CONFIG_FOLDER'];
-    execFileSync(process.execPath, [JITI_CLI, BUILD_SCRIPT, bundler, ...isDevelopment ? ['development'] : []], {
-      cwd: fixtureFolder,
-      env,
-      stdio: 'pipe'
-    });
+    buildFixture(fixtureFolder, bundler, isDevelopment);
 
     const distFolder = join(fixtureFolder, isDevelopment ? 'dist/dev' : 'dist/build');
 
@@ -128,15 +157,102 @@ describe('every bundler adapter builds a loadable Obsidian plugin', () => {
   }, BUILD_TIMEOUT_IN_MILLISECONDS);
 });
 
+// One fixture per build feature, each built with every bundler and run in a DOM, so a framework's component renders.
+describe('every bundler adapter builds each build feature', () => {
+  const fixtureFolders: string[] = [];
+
+  afterAll(() => {
+    for (const fixtureFolder of fixtureFolders) {
+      rmSync(fixtureFolder, { force: true, recursive: true });
+    }
+  });
+
+  it.each(FEATURE_CASES)('$feature with $bundler (development: $isDevelopment)', async ({ bundler, feature, isDevelopment }) => {
+    const fixtureFolder = createFixtureFolder(feature);
+    fixtureFolders.push(fixtureFolder);
+    buildFixture(fixtureFolder, bundler, isDevelopment);
+
+    const distFolder = join(fixtureFolder, isDevelopment ? 'dist/dev' : 'dist/build');
+    const hasStyles = feature === 'styles';
+    expect(readdirSync(distFolder).sort()).toEqual([...isDevelopment ? ['.hotreload'] : [], 'main.js', 'manifest.json', ...hasStyles ? ['styles.css'] : []]);
+
+    const dom = new JSDOM('', { runScripts: 'outside-only' });
+    const { plugin } = loadPlugin(readFileSync(join(distFolder, 'main.js'), 'utf-8'), dom.getInternalVMContext());
+    await plugin.onload();
+    const result = await plugin.commands[0]?.callback();
+    dom.window.close();
+
+    if (!hasStyles) {
+      expect(result).toBe(FEATURE_RESULTS[feature]);
+      return;
+    }
+
+    // The CSS module's class name comes back scoped, and the stylesheet holds it beside Tailwind's utility and the
+    // Rule the project's own PostCSS configuration added.
+    expect(typeof result).toBe('string');
+    expect(result).not.toBe('card');
+    const stylesCss = readFileSync(join(distFolder, 'styles.css'), 'utf-8');
+    expect(stylesCss).toContain(String(result));
+    expect(stylesCss).toContain('.text-red-500');
+    expect(stylesCss).toContain('.postcss-fixture-marker');
+  }, BUILD_TIMEOUT_IN_MILLISECONDS);
+});
+
+function buildFixture(fixtureFolder: string, bundler: string, isDevelopment: boolean): void {
+  const env = { ...process.env };
+  // A development build deploys into this vault when it is set, and a test must not touch a real vault.
+  delete env['OBSIDIAN_CONFIG_FOLDER'];
+  // Vitest sets it to `test`, which a bundler takes for its own mode; a project's build runs without it.
+  delete env['NODE_ENV'];
+  execFileSync(process.execPath, [JITI_CLI, BUILD_SCRIPT, bundler, ...isDevelopment ? ['development'] : []], {
+    cwd: fixtureFolder,
+    env,
+    stdio: 'pipe'
+  });
+}
+
+/**
+ * Copies a fixture into a folder of its own outside the repository, with its `package.json` under its real name
+ * and its `node_modules` linked to this repository's. A feature fixture is laid over the plain one, with the toolkit's
+ * tsconfig preset for its framework copied in and extended, as a project's own tsconfig would extend it.
+ *
+ * The folder is its real path, since webpack's virtual modules (which `unplugin-vue` uses) miss a module whose path
+ * goes through a link.
+ *
+ * @param feature - The feature fixture to lay over the plain one, if any.
+ * @returns The fixture's folder.
+ */
+function createFixtureFolder(feature?: string): string {
+  const fixtureFolder = realpathSync.native(mkdtempSync(join(tmpdir(), `obsidian-dev-toolkit-bundler-fixture-${feature ?? 'plain'}-`)));
+  cpSync(FIXTURE_SOURCE_FOLDER, fixtureFolder, { recursive: true });
+  renameSync(join(fixtureFolder, 'fixture-package.json'), join(fixtureFolder, 'package.json'));
+  symlinkSync(join(REPO_ROOT, 'node_modules'), join(fixtureFolder, 'node_modules'), 'junction');
+  if (feature === undefined) {
+    return fixtureFolder;
+  }
+
+  rmSync(join(fixtureFolder, 'src'), { recursive: true });
+  cpSync(join(FEATURE_FIXTURES_FOLDER, feature), fixtureFolder, { recursive: true });
+  const { framework } = JSON.parse(readFileSync(join(fixtureFolder, 'features.json'), 'utf-8')) as FixtureFeatures;
+  cpSync(TSCONFIG_PRESETS_FOLDER, join(fixtureFolder, 'toolkit-tsconfig'), { recursive: true });
+  const tsconfig = {
+    compilerOptions: { allowImportingTsExtensions: true, module: 'esnext', moduleResolution: 'bundler', noEmit: true, target: 'es2022' },
+    ...framework !== undefined && { extends: `./toolkit-tsconfig/${framework}.json` }
+  };
+  writeFileSync(join(fixtureFolder, 'tsconfig.json'), JSON.stringify(tsconfig));
+  return fixtureFolder;
+}
+
 /**
  * Loads a built `main.js` the way Obsidian's own plugin loader does: as the body of
  * `function (require, module, exports)`, with a `module` that is nothing but `{ exports }`, taking the
  * plugin class from `module.exports.default` or `module.exports`, then constructing it.
  *
  * @param mainJs - The bundle's source.
+ * @param context - The global context to run it in. Defaults to an empty one.
  * @returns The constructed plugin and the `Plugin` class it must extend.
  */
-function loadPlugin(mainJs: string): LoadedPlugin {
+function loadPlugin(mainJs: string, context: Context = createContext()): LoadedPlugin {
   class Plugin {
     public readonly commands: FixtureCommand[] = [];
 
@@ -157,8 +273,8 @@ function loadPlugin(mainJs: string): LoadedPlugin {
   }
 
   const loadedModule: LoadedModule = { exports: {} };
-  // The esbuild banner reads `app.isMobile` to tell desktop from mobile.
-  const context = createContext({ app: { isMobile: false } });
+  // The esbuild banner reads `app.isMobile` to tell desktop from mobile, and Obsidian defines `activeWindow`.
+  runInContext('globalThis.app = { isMobile: false }; globalThis.activeWindow = globalThis;', context);
   const loadFunction = runInContext(`(function anonymous(require,module,exports){${mainJs}\n})`, context) as PluginLoadFunction;
   loadFunction(requireLikeObsidian, loadedModule, loadedModule.exports);
 

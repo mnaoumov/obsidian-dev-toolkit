@@ -27,6 +27,9 @@
       "node"
     ]
   },
+  "exclude": [
+    "./test-fixtures/**"
+  ],
   "include": [
     "./astro.config.ts",
     "./commitlint.config.ts",

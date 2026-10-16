@@ -13,10 +13,13 @@
 import type {
   ConfigEnv,
   Plugin,
+  PluginOption,
   UserConfig
 } from 'vite';
 
 import type { ObsidianPluginBuildContext } from './obsidian-plugin-build.ts';
+import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts';
+import type { PostcssConfig } from './obsidian-plugin-transforms.ts';
 import type {
   AssetEmitter,
   BundleOutputLike
@@ -29,16 +32,51 @@ import {
   getObsidianPluginBanner,
   resolveObsidianPluginBuildContext
 } from './obsidian-plugin-build.ts';
+import {
+  getFrameworkDefines,
+  getJsxImportSource,
+  isPostcssNeeded
+} from './obsidian-plugin-features.ts';
+import { loadPostcssConfig } from './obsidian-plugin-transforms.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
+import {
+  createRollupCompatibleFeaturePlugin,
+  createUnpluginVuePlugin
+} from './rollup-compatible-features.ts';
 import {
   combineExternal,
   renameCssAssets
 } from './rollup-compatible.ts';
 
 /**
+ * Parameters for {@link getViteFeatureConfig}.
+ */
+export interface GetViteFeatureConfigParams {
+  /**
+   * The build features.
+   */
+  readonly features: ObsidianPluginFeatureOptions;
+
+  /**
+   * Whether this is a production build.
+   */
+  readonly isProductionBuild: boolean;
+
+  /**
+   * The PostCSS plugins of the `styles` option, or `undefined` when it needs none.
+   */
+  readonly postcssConfig: PostcssConfig | undefined;
+
+  /**
+   * The consumer's vite config.
+   */
+  readonly userConfig: UserConfig;
+}
+
+/**
  * Options for {@link obsidianPluginVite}.
  */
-export interface ObsidianPluginViteOptions {
+export interface ObsidianPluginViteOptions extends ObsidianPluginFeatureOptions {
   /**
    * The build mode. Defaults to {@link BuildMode.Development} for `vite build --watch` (or
    * `--mode development`) and {@link BuildMode.Production} otherwise.
@@ -119,6 +157,37 @@ export function getViteConfigDefaults(userConfig: UserConfig, buildContext: Obsi
 }
 
 /**
+ * Builds the part of the vite config the build features contribute, each only where the consumer's config left it
+ * unset: the framework's compile-time constants (`define`), the automatic JSX runtime for React and Preact
+ * (`oxc.jsx`), and the PostCSS plugins of the `styles` option (`css.postcss`).
+ *
+ * @param params - The {@link GetViteFeatureConfigParams}.
+ * @returns The config vite merges into the consumer's.
+ */
+export function getViteFeatureConfig(params: GetViteFeatureConfigParams): UserConfig {
+  const { features, isProductionBuild, postcssConfig, userConfig } = params;
+  const config: UserConfig = {};
+
+  const userDefine = userConfig.define ?? {};
+  const define = Object.fromEntries(
+    Object.entries(getFrameworkDefines({ framework: features.framework, isProductionBuild })).filter(([expression]) => !Object.hasOwn(userDefine, expression))
+  );
+  if (Object.keys(define).length > 0) {
+    config.define = define;
+  }
+
+  const jsxImportSource = getJsxImportSource(features.framework);
+  if (jsxImportSource !== undefined && userConfig.oxc !== false && userConfig.oxc?.jsx === undefined) {
+    config.oxc = { jsx: { development: !isProductionBuild, importSource: jsxImportSource, runtime: 'automatic' } };
+  }
+
+  if (postcssConfig && postcssConfig.plugins.length > 0 && userConfig.css?.postcss === undefined) {
+    config.css = { postcss: { plugins: [...postcssConfig.plugins] } };
+  }
+  return config;
+}
+
+/**
  * Creates a vite plugin that builds an Obsidian plugin.
  *
  * What it does, each only when the consumer's config has not said otherwise:
@@ -135,10 +204,20 @@ export function getViteConfigDefaults(userConfig: UserConfig, buildContext: Obsi
  * `styles.css`, `manifest.json` (and in development `.hotreload`) is copied beside it, and a development
  * build is deployed into the vault named by `OBSIDIAN_CONFIG_FOLDER`.
  *
+ * The build features ({@link ObsidianPluginFeatureOptions}):
+ *
+ * - `framework: 'react' | 'preact'` sets `oxc.jsx` to the automatic runtime (unless set).
+ * - `framework: 'solid' | 'svelte'` compiles the components with the toolkit's shared transforms, and `'vue'` adds
+ *   `unplugin-vue`.
+ * - Any framework defines `process.env.NODE_ENV` (and Vue's feature flags), which a library build leaves alone.
+ * - `styles.postcss` and `styles.tailwind` set `css.postcss` (unless set); vite scopes `*.module.css` itself, so
+ *   `styles.cssModules` changes nothing here.
+ * - `wasm` imports a `.wasm` module as its bytes.
+ *
  * @param options - The {@link ObsidianPluginViteOptions}.
- * @returns The vite plugin.
+ * @returns The vite plugins, which vite takes as one entry of its `plugins`.
  */
-export function obsidianPluginVite(options: ObsidianPluginViteOptions = {}): Plugin {
+export function obsidianPluginVite(options: ObsidianPluginViteOptions = {}): PluginOption[] {
   const state: ObsidianPluginViteState = {
     buildContext: undefined,
     isDistFolderCleaned: false
@@ -152,7 +231,14 @@ export function obsidianPluginVite(options: ObsidianPluginViteOptions = {}): Plu
     return state.buildContext;
   }
 
-  return {
+  const featurePlugin = createRollupCompatibleFeaturePlugin({
+    features: options,
+    isProductionBuild: () => getBuildContext().isProductionBuild,
+    shouldCompileStylesheets: false,
+    shouldReplaceDefines: false
+  });
+
+  const plugin = {
     apply: 'build',
     async config(userConfig: UserConfig, env: ConfigEnv): Promise<UserConfig> {
       state.buildContext = await resolveObsidianPluginBuildContext({
@@ -160,7 +246,13 @@ export function obsidianPluginVite(options: ObsidianPluginViteOptions = {}): Plu
         ...(userConfig.build?.outDir !== undefined && { distFolder: userConfig.build.outDir }),
         mode: options.mode ?? getViteBuildMode(userConfig, env)
       });
-      return getViteConfigDefaults(userConfig, state.buildContext);
+      const { isProductionBuild } = state.buildContext;
+      const postcssConfig = isPostcssNeeded(options.styles)
+        ? await loadPostcssConfig({ isProductionBuild, styles: options.styles ?? {} })
+        : undefined;
+      const featureConfig = getViteFeatureConfig({ features: options, isProductionBuild, postcssConfig, userConfig });
+      const config = getViteConfigDefaults(userConfig, state.buildContext);
+      return { ...featureConfig, ...config };
     },
     generateBundle: {
       handler(this: AssetEmitter, _outputOptions: unknown, bundle: Record<string, BundleOutputLike>): void {
@@ -181,5 +273,6 @@ export function obsidianPluginVite(options: ObsidianPluginViteOptions = {}): Plu
       await deployToObsidianPluginsFolder(getBuildContext());
     }
   } as Plugin;
+  return [plugin, { ...featurePlugin, apply: 'build' } as Plugin, createUnpluginVuePlugin({ bundler: 'vite', features: options }) as Promise<null | Plugin>];
   /* v8 ignore stop */
 }

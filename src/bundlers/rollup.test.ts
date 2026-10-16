@@ -32,8 +32,19 @@ const DEVELOPMENT_CONTEXT: ObsidianPluginBuildContext = {
   mainJsPath: '/project/dist/dev/main.js'
 };
 describe('rollup', () => {
-  it('creates a plugin', () => {
-    expect(obsidianPluginRollup().name).toBe('obsidian-plugin');
+  it('creates the plugin, the feature plugin and a placeholder for the Vue plugin', async () => {
+    const [plugin, featurePlugin, vuePlugin] = obsidianPluginRollup();
+    expect(plugin).toMatchObject({ name: 'obsidian-plugin' });
+    expect(featurePlugin).toMatchObject({ name: 'obsidian-plugin-features' });
+    expect(await vuePlugin).toBeNull();
+  });
+
+  it('sets the automatic JSX runtime for React and Preact unless the consumer set `jsx`', () => {
+    expect(applyRollupInputDefaults({ buildContext: PRODUCTION_CONTEXT, features: { framework: 'preact' }, inputOptions: {} }).jsx)
+      .toEqual({ jsxImportSource: 'preact', mode: 'automatic' });
+    expect(applyRollupInputDefaults({ buildContext: PRODUCTION_CONTEXT, features: { framework: 'react' }, inputOptions: { jsx: 'preserve' } }).jsx)
+      .toBe('preserve');
+    expect(applyRollupInputDefaults({ buildContext: PRODUCTION_CONTEXT, features: { framework: 'solid' }, inputOptions: {} }).jsx).toBeUndefined();
   });
 
   it('fills in the input and keeps Obsidian\'s modules external', () => {

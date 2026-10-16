@@ -1,0 +1,32 @@
+/**
+ * @file
+ *
+ * The types of stylesheet imports, for a project built with the `styles` build option. A plain stylesheet is imported
+ * for its side effect; a CSS module (`styles.cssModules`) gives its scoped class names, by their original ones. Add
+ * `@mnaoumov/obsidian-dev-toolkit/types/styles` to `compilerOptions.types`.
+ */
+
+declare module '*.css';
+declare module '*.pcss';
+declare module '*.sass';
+declare module '*.scss';
+
+declare module '*.module.css' {
+  const classNames: Readonly<Record<string, string>>;
+  export default classNames;
+}
+
+declare module '*.module.pcss' {
+  const classNames: Readonly<Record<string, string>>;
+  export default classNames;
+}
+
+declare module '*.module.sass' {
+  const classNames: Readonly<Record<string, string>>;
+  export default classNames;
+}
+
+declare module '*.module.scss' {
+  const classNames: Readonly<Record<string, string>>;
+  export default classNames;
+}
