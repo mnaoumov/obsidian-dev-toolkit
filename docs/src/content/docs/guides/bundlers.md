@@ -12,7 +12,7 @@ Every adapter does the same things:
 - puts every CSS file the bundler emits into one `styles.css`;
 - empties the output folder before the first write and copies `manifest.json` beside the bundle;
 - heads `main.js` with the generated-file banner, after minification so the minifier does not strip it;
-- in a development build, adds the `.hotreload` marker, writes an inline source map, and deploys every rebuild into the vault named by `OBSIDIAN_CONFIG_FOLDER`, enabling [Hot Reload] and the plugin there, as the [development build](/obsidian-dev-toolkit/guides/cli-commands/#build-development-version) does.
+- in a development build, writes an inline source map, deploys every rebuild into the vault named by `OBSIDIAN_CONFIG_FOLDER`, and [reloads it there](#reloading-a-development-build): by default by adding the `.hotreload` marker and enabling [Hot Reload] and the plugin, as the [development build](/obsidian-dev-toolkit/guides/cli-commands/#build-development-version) does.
 
 Each adapter fills in only what your own configuration leaves unset, so anything you configure wins. TypeScript stays your choice of the bundler's own plugin or loader. A UI framework, the stylesheet pipeline and WebAssembly are [build features](#build-features), one set of options every adapter takes the same way.
 
@@ -235,6 +235,28 @@ export default {
 - **rollup** sets its `jsx` option for React and Preact (the TypeScript plugin reads the preset), adds `unplugin-vue/rollup` for Vue, and compiles Solid and Svelte in a plugin of its own. With `styles` set, the adapter compiles every stylesheet itself and emits it into `styles.css`, so leave rollup's CSS plugin out; `styles: {}` compiles plain CSS. It also replaces `process.env.NODE_ENV` in the bundled code, since rollup has no `define`.
 - **webpack** adds rules that run the toolkit's own loader for Solid, Svelte and `.wasm`, and applies `unplugin-vue/webpack` for Vue, with a rule that strips the types of a `<script lang="ts">` block. With `styles` set, it adds the one stylesheet rule (the toolkit's loader for PostCSS and Tailwind, then `css-loader`, scoping `*.module.css` only with `cssModules`, then `mini-css-extract-plugin`) and applies `mini-css-extract-plugin` unless your config does, so leave your own `.css` rule out and install `css-loader` and `mini-css-extract-plugin`. Webpack's `mode` defines `process.env.NODE_ENV`.
 - **parcel** gets pipelines in the generated `.parcelrc`: one transformer of the toolkit's compiles JSX for React, Preact and Solid (parcel reads the JSX runtime from `tsconfig.json` without following its `extends`), Svelte, `.wasm`, and with `postcss` or `tailwind` every stylesheet, in place of parcel's own PostCSS step. Parcel compiles Vue with `@parcel/transformer-vue` and scopes `*.module.css` itself. Svelte and the frameworks' runtimes are reached through `exports`, so switch `packageExports` on as shown in the [parcel section](#parcel).
+
+## Reloading a development build
+
+Every adapter takes `reload` beside its other options, and it decides what happens after each development rebuild has been copied into the vault named by `OBSIDIAN_CONFIG_FOLDER`:
+
+| `reload` | What happens after each rebuild |
+| --- | --- |
+| `'hot-reload-plugin'` (the default) | The build writes the `.hotreload` marker, and `npm run dev` opens the vault in an Obsidian instance it owns and closes with it, with [Hot Reload] and the plugin installed and enabled there. Hot Reload then reloads the plugin whenever its files change. |
+| `'obsidian-cli'` | `obsidian plugin:reload` reloads the plugin in the Obsidian you already have open, through the [Obsidian CLI](https://help.obsidian.md/cli). No Hot Reload, no second instance. A plugin the vault has not seen yet is enabled on its first build. |
+| `false` | The build is copied into the vault, and nothing reloads it. |
+
+```typescript
+// scripts/dev.ts
+import { dev } from '@mnaoumov/obsidian-dev-toolkit/bundlers/esbuild';
+import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
+
+await wrapCliTask(() => dev({ reload: 'obsidian-cli' }));
+```
+
+The same option is `obsidianPluginVite({ reload: 'obsidian-cli' })`, `obsidianPluginRollup({ reload: 'obsidian-cli' })` and `new ObsidianPluginWebpackPlugin({ reload: 'obsidian-cli' })`, and parcel's `dev({ reload: 'obsidian-cli' })`.
+
+`'obsidian-cli'` needs Obsidian 1.12 or later, running, with **Settings → General → Command line interface** turned on so that `obsidian` is on `PATH`. The CLI names the vault by its folder name, which is the folder that holds `OBSIDIAN_CONFIG_FOLDER`. The CLI reports a failure in its output while exiting with code 0, so the adapter reads the output: an unknown vault, a CLI that is not installed, or any `Error:` it prints fails that rebuild with the message and how to turn the CLI on.
 
 ## How the adapters are tested
 

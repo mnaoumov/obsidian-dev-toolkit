@@ -2,9 +2,10 @@
  * @file
  *
  * Deploys a development build into the vault: copies the output folder into `<vault>/.obsidian/plugins`,
- * then installs and enables HotReload and the plugin in an Obsidian instance `npm run dev` owns. Every
- * bundler adapter calls it once each rebuild has written its output, so the latest build is always the
- * one running.
+ * then reloads it the way the build's `reload` option says. By default that installs and enables HotReload
+ * and the plugin in an Obsidian instance `npm run dev` owns; `'obsidian-cli'` reloads it in the Obsidian the
+ * developer has open instead (`obsidian-cli-reload.ts`). Every bundler adapter calls it once each rebuild has
+ * written its output, so the latest build is always the one running.
  */
 
 /* v8 ignore start -- Copies build output into a vault and drives a live Obsidian over CDP. */
@@ -18,13 +19,15 @@ import {
 } from '@mnaoumov/typescript-lib/async';
 import { getLibDebugger } from '@mnaoumov/typescript-lib/debug';
 import {
+  basename,
   dirname,
   join,
   toPosixPath
 } from '@mnaoumov/typescript-lib/path';
 import {
   cp,
-  mkdir
+  mkdir,
+  readFile
 } from 'node:fs/promises';
 import process from 'node:process';
 import {
@@ -32,6 +35,10 @@ import {
   DesktopCdpTransport,
   evalInObsidian
 } from 'obsidian-integration-testing';
+
+import type { ObsidianPluginReload } from './obsidian-plugin-build.ts';
+
+import { reloadPluginWithObsidianCli } from './obsidian-cli-reload.ts';
 
 /**
  * Parameters for {@link deployToObsidianPluginsFolder}.
@@ -56,6 +63,11 @@ export interface DeployToObsidianPluginsFolderParams {
    * The name of the Obsidian plugin.
    */
   readonly pluginName: string;
+
+  /**
+   * How the deployed build is reloaded in Obsidian. Defaults to `'hot-reload-plugin'`.
+   */
+  readonly reload?: ObsidianPluginReload;
 }
 
 /**
@@ -139,8 +151,8 @@ const DEV_INSTANCE_PROBE_INTERVAL_IN_MILLISECONDS = 2000;
  */
 const DEV_INSTANCE_CLOSED_PROBE_COUNT = 3;
 /**
- * Copies a development build into the vault's plugins folder and makes sure HotReload and the plugin are
- * enabled there. Does nothing for a production build, or when no Obsidian config folder is configured.
+ * Copies a development build into the vault's plugins folder and reloads it there, as the `reload` option
+ * says. Does nothing for a production build, or when no Obsidian config folder is configured.
  *
  * @param params - The {@link DeployToObsidianPluginsFolderParams}.
  * @returns A {@link Promise} that resolves once the plugin is deployed.
@@ -169,10 +181,28 @@ export async function deployToObsidianPluginsFolder(params: DeployToObsidianPlug
   await mkdir(pluginFolder, { recursive: true });
   await cp(distFolder, pluginFolder, { recursive: true });
 
-  await installAndEnableHotReload({
-    obsidianConfigFolder,
-    pluginName
-  });
+  switch (params.reload ?? 'hot-reload-plugin') {
+    case false: {
+      break;
+    }
+    case 'hot-reload-plugin': {
+      await installAndEnableHotReload({
+        obsidianConfigFolder,
+        pluginName
+      });
+      break;
+    }
+    case 'obsidian-cli': {
+      await reloadPluginWithObsidianCli({
+        pluginId: await readPluginId(pluginFolder, pluginName),
+        vaultName: basename(dirname(obsidianConfigFolder))
+      });
+      break;
+    }
+    default: {
+      throw new Error(`Unknown reload option: ${String(params.reload)}`);
+    }
+  }
 }
 
 /**
@@ -318,6 +348,22 @@ async function launchDevInstance(vaultPath: string): Promise<ObsidianTransport> 
   registerDevInstanceCleanup(transport);
   watchDevInstanceAndStopOnClose(transport);
   return transport;
+}
+
+/**
+ * Reads the plugin id from the deployed `manifest.json`, which is what Obsidian and its CLI know the plugin by.
+ *
+ * @param pluginFolder - The deployed plugin folder.
+ * @param fallbackId - The id to use when the folder has no readable manifest.
+ * @returns A {@link Promise} resolving to the plugin id.
+ */
+async function readPluginId(pluginFolder: string, fallbackId: string): Promise<string> {
+  try {
+    const manifest = JSON.parse(await readFile(join(pluginFolder, 'manifest.json'), 'utf-8')) as Partial<PluginManifest>;
+    return manifest.id ?? fallbackId;
+  } catch {
+    return fallbackId;
+  }
 }
 
 /**

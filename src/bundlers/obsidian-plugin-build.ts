@@ -146,12 +146,45 @@ export interface ObsidianPluginBuildContext {
    * The plugin's folder name inside `<vault>/.obsidian/plugins`, which is the package name.
    */
   readonly pluginName: string;
+
+  /**
+   * How a development build is reloaded in Obsidian once it is deployed.
+   */
+  readonly reload: ObsidianPluginReload;
 }
+
+/**
+ * Where a development build is deployed and how Obsidian picks it up. Every bundler adapter takes these.
+ */
+export interface ObsidianPluginDeploymentOptions {
+  /**
+   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable,
+   * read from the process or from a `.env` file in the project root.
+   */
+  readonly obsidianConfigFolder?: string;
+
+  /**
+   * How a development build is reloaded in Obsidian once it is copied into the vault. Defaults to
+   * `'hot-reload-plugin'`.
+   */
+  readonly reload?: ObsidianPluginReload;
+}
+
+/**
+ * How a development build is reloaded in Obsidian once it is copied into the vault.
+ *
+ * - `'hot-reload-plugin'`: the build writes the `.hotreload` marker, and `npm run dev` opens the vault in an
+ *   Obsidian instance it owns, with the HotReload plugin installed and enabled there.
+ * - `'obsidian-cli'`: every rebuild runs `obsidian plugin:reload` against the Obsidian you already have open,
+ *   through the Obsidian CLI (Settings → General → Command line interface). No HotReload, no second instance.
+ * - `false`: the build is copied into the vault and nothing reloads it.
+ */
+export type ObsidianPluginReload = 'hot-reload-plugin' | 'obsidian-cli' | false;
 
 /**
  * Options for {@link resolveObsidianPluginBuildContext}.
  */
-export interface ResolveObsidianPluginBuildContextParams {
+export interface ResolveObsidianPluginBuildContextParams extends ObsidianPluginDeploymentOptions {
   /**
    * The output folder. Defaults to `dist/build` for a production build and `dist/dev` for a development
    * one.
@@ -162,12 +195,6 @@ export interface ResolveObsidianPluginBuildContextParams {
    * The build mode.
    */
   readonly mode: BuildMode;
-
-  /**
-   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable,
-   * read from the process or from a `.env` file in the project root.
-   */
-  readonly obsidianConfigFolder?: string;
 }
 
 interface ObsidianPluginBuilderEnv {
@@ -189,14 +216,14 @@ export async function cleanObsidianPluginDistFolder(distFolder: string): Promise
 
 /**
  * Puts the files a plugin folder needs besides the bundle into the output folder: `manifest.json`, and for
- * a development build the empty `.hotreload` marker the HotReload plugin watches for.
+ * a development build reloaded by the HotReload plugin the empty `.hotreload` marker it watches for.
  *
  * @param context - The build context.
  * @returns A {@link Promise} that resolves once the files are written.
  */
 export async function completeObsidianPluginDistFolder(context: ObsidianPluginBuildContext): Promise<void> {
   await mkdir(context.distFolder, { recursive: true });
-  if (!context.isProductionBuild) {
+  if (!context.isProductionBuild && context.reload === 'hot-reload-plugin') {
     await writeFile(join(context.distFolder, ObsidianPluginRepoPaths.HotReload), '', 'utf-8');
   }
 
@@ -326,6 +353,7 @@ export async function resolveObsidianPluginBuildContext(params: ResolveObsidianP
     isProductionBuild,
     mainJsPath: join(distFolder, ObsidianPluginRepoPaths.MainJs),
     obsidianConfigFolder: params.obsidianConfigFolder ?? obsidianPluginBuilderEnv.OBSIDIAN_CONFIG_FOLDER ?? '',
-    pluginName: packageJson.name ?? '(unknown)'
+    pluginName: packageJson.name ?? '(unknown)',
+    reload: params.reload ?? 'hot-reload-plugin'
   };
 }

@@ -21,7 +21,8 @@ const PRODUCTION_CONTEXT: ObsidianPluginBuildContext = {
   isProductionBuild: true,
   mainJsPath: '/project/dist/build/main.js',
   obsidianConfigFolder: '',
-  pluginName: 'my-plugin'
+  pluginName: 'my-plugin',
+  reload: 'hot-reload-plugin'
 };
 
 const DEVELOPMENT_CONTEXT: ObsidianPluginBuildContext = {
