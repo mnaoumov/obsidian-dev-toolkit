@@ -7,7 +7,7 @@
     "obsidian-plugin",
     "tooling"
   ],
-  "homepage": "https://github.com/mnaoumov/obsidian-dev-toolkit#readme",
+  "homepage": "https://mnaoumov.dev/obsidian-dev-toolkit/",
   "bugs": {
     "url": "https://github.com/mnaoumov/obsidian-dev-toolkit/issues"
   },
@@ -77,6 +77,26 @@
       "require": {
         "types": "./dist/lib/cjs/bundlers/esbuild-impl/*.d.cts",
         "default": "./dist/lib/cjs/bundlers/esbuild-impl/*.cjs"
+      }
+    },
+    "./docs-site": {
+      "import": {
+        "types": "./dist/lib/esm/docs-site/index.d.mts",
+        "default": "./dist/lib/esm/docs-site/index.mjs"
+      },
+      "require": {
+        "types": "./dist/lib/cjs/docs-site/index.d.cts",
+        "default": "./dist/lib/cjs/docs-site/index.cjs"
+      }
+    },
+    "./docs-site/*": {
+      "import": {
+        "types": "./dist/lib/esm/docs-site/*.d.mts",
+        "default": "./dist/lib/esm/docs-site/*.mjs"
+      },
+      "require": {
+        "types": "./dist/lib/cjs/docs-site/*.d.cts",
+        "default": "./dist/lib/cjs/docs-site/*.cjs"
       }
     },
     "./formatters": {
@@ -202,6 +222,9 @@
     "build:validate-declarations": "jiti scripts/build-validate-declarations.ts",
     "build:validate-templates": "jiti scripts/build-validate-templates.ts",
     "commit": "jiti scripts/commit.ts",
+    "docs:build": "jiti scripts/docs-build.ts",
+    "docs:dev": "jiti scripts/docs-dev.ts",
+    "docs:preview": "jiti scripts/docs-preview.ts",
     "find-overexposed": "jiti scripts/find-overexposed.ts",
     "find-overexposed:fix": "jiti scripts/find-overexposed-fix.ts",
     "format": "jiti scripts/format.ts",
@@ -245,14 +268,18 @@
     "typescript": "6.0.3"
   },
   "devDependencies": {
+    "@astrojs/markdown-satteri": "^0.4.4",
+    "@astrojs/starlight": "^0.42.6",
     "@commitlint/cli": "^21.2.2",
     "@jest/globals": "^30.5.2",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@total-typescript/ts-reset": "^0.6.1",
     "@tsconfig/strictest": "^2.0.8",
     "@types/node": "^26.6.2",
     "@typescript-eslint/rule-tester": "^8.71.2",
     "@vitest/coverage-v8": "^5.0.1",
+    "astro": "^7.4.0",
     "better-typescript-lib": "^2.12.0",
     "cspell": "^10.3.3",
     "czg": "^1.14.0",
@@ -263,8 +290,13 @@
     "nano-staged": "^1.0.2",
     "obsidian-integration-testing": "^17.3.0",
     "obsidian-test-mocks": "^7.0.0",
+    "satori": "^0.33.5",
+    "satteri": "^0.10.5",
+    "ts-morph": "^28.0.0",
     "tslib": "^2.8.1",
-    "vitest": "^5.0.1"
+    "typedoc-plugin-mdn-links": "^5.1.1",
+    "vitest": "^5.0.1",
+    "yaml": "^2.9.1"
   },
   "peerDependencies": {
     "@jest/globals": "^30.5.2",

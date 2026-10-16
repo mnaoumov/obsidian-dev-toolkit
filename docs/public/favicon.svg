@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Obsidian Dev Toolkit">
+  <rect x="2" y="2" width="28" height="28" rx="5" fill="#0f766e" />
+  <path d="M16 6l7 6-3 14h-8l-3-14z" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" fill="none" />
+  <path d="M12.5 15l-2 2 2 2M19.5 15l2 2-2 2" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>
