@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2.0.0
+
+- build: drop the workspace-era sibling includes from tsconfig.types.json
+- feat(eslint)!: register the Obsidian rules under the obsidian-dev-toolkit namespace
+
 ## 1.1.0
 
 - feat(linters): report locally declared Obsidian internals as an error
