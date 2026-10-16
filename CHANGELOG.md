@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 3.0.0
+
+- docs(ci): pin the reusable workflows to 3.0.0, the release that first ships them
+- fix(deps): install typescript-dev-toolkit for consumers, and check every published import is installed
+- feat(ci): ship reusable plugin CI, release and attestation workflows, and a coverage badge
+- feat: support wdio-obsidian and obsidian-test e2e, and Obsidian CLI reload
+- feat(bundlers): build frameworks, PostCSS, Tailwind, CSS modules and wasm with every bundler
+- feat(bundlers): build Obsidian plugins with vite, rollup, webpack and parcel
+- build(deps)!: take typescript-dev-toolkit 3.0.0, which keeps only nine @stylistic rules
+- docs(site): show the package logo as the home page hero image
+- docs(readme): link the documentation site
+- build(deps): take @mnaoumov/typescript-dev-toolkit 2.2.0 so the docs site passes its link check
+
 ## 2.1.0
 
 - build(dprint): stop dprint and @stylistic/jsx-quotes fighting over JSX attribute quotes
