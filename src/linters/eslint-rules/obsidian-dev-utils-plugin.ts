@@ -11,6 +11,7 @@ import { manifestDescription } from './manifest-description.ts';
 import { manifestId } from './manifest-id.ts';
 import { manifestName } from './manifest-name.ts';
 import { manifestSchema } from './manifest-schema.ts';
+import { noLocalObsidianInternals } from './no-local-obsidian-internals.ts';
 import { noOverCapWaitInEvalInObsidian } from './no-over-cap-wait-in-eval-in-obsidian.ts';
 import { noUntrustedInputEvents } from './no-untrusted-input-events.ts';
 import { requireComponentSuffix } from './require-component-suffix.ts';
@@ -27,6 +28,7 @@ export const obsidianDevUtilsPlugin: ESLint.Plugin = {
     'manifest-id': manifestId,
     'manifest-name': manifestName,
     'manifest-schema': manifestSchema,
+    'no-local-obsidian-internals': noLocalObsidianInternals,
     'no-over-cap-wait-in-eval-in-obsidian': noOverCapWaitInEvalInObsidian,
     'no-untrusted-input-events': noUntrustedInputEvents,
     'require-component-suffix': requireComponentSuffix

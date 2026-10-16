@@ -22,6 +22,7 @@ describe('obsidianDevUtilsPlugin', () => {
       'manifest-id',
       'manifest-name',
       'manifest-schema',
+      'no-local-obsidian-internals',
       'no-over-cap-wait-in-eval-in-obsidian',
       'no-untrusted-input-events',
       'require-component-suffix'
