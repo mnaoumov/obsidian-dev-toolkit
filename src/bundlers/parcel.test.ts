@@ -37,7 +37,7 @@ describe('parcel', () => {
     expect(JSON.parse(files['.parcelrc'] ?? '')).toEqual({
       extends: '@parcel/config-default',
       namers: ['./obsidian-plugin-namer.cjs', '...'],
-      optimizers: { '*.js': ['...', './obsidian-plugin-optimizer.cjs'] },
+      optimizers: { '*.js': ['./obsidian-plugin-pre-minify.cjs', '...', './obsidian-plugin-optimizer.cjs'] },
       resolvers: ['./obsidian-plugin-resolver.cjs', '...'],
       transformers: { '*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}': ['./obsidian-plugin-inline-imports.cjs', '...'] }
     });
@@ -51,6 +51,9 @@ describe('parcel', () => {
   it('generates the plugins it names', () => {
     const files = getParcelConfigFiles({ consumerParcelrcPath: undefined });
     expect(files['obsidian-plugin-resolver.cjs']).toContain('"obsidian"');
+    expect(files['obsidian-plugin-resolver.cjs']).toContain('isNode: () => false');
+    expect(files['obsidian-plugin-pre-minify.cjs']).toContain(String.raw`'(() => {\n'`);
+    expect(files['obsidian-plugin-pre-minify.cjs']).toContain(String.raw`"require(\"./styles.css\");\n"`);
     expect(files['obsidian-plugin-namer.cjs']).toContain('styles.css');
     expect(files['obsidian-plugin-optimizer.cjs']).toContain('module.require = require');
     expect(files['obsidian-plugin-inline-imports.cjs']).toContain(String.raw`/\bimport\(`);
@@ -97,7 +100,7 @@ describe('parcel', () => {
       cacheDir: '/project/.parcel-cache',
       config: '/config/.parcelrc',
       // eslint-disable-next-line unicorn/name-replacements -- distDir is the name parcel's API reads.
-      defaultTargetOptions: { distDir: '/project/dist/build', shouldOptimize: true, sourceMaps: false },
+      defaultTargetOptions: { distDir: '/project/dist/build', shouldOptimize: true, shouldScopeHoist: true, sourceMaps: false },
       entries: '/project/src/main.ts',
       mode: 'production',
       targets: {
