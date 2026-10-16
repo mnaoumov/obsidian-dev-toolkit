@@ -3,6 +3,7 @@ import type {
   PluginBuild
 } from 'esbuild';
 
+import { runInNewContext } from 'node:vm';
 import {
   describe,
   expect,
@@ -35,6 +36,19 @@ describe('preprocessPlugin', () => {
     expect(banner).toContain('function patchObsidianRequire(');
     expect(banner).toContain('function ensureDisposeSymbols(');
     expect(banner.indexOf('function patchObsidianRequire(')).toBeGreaterThan(banner.indexOf('function ensureDisposeSymbols('));
+  });
+
+  it('lets the patched require load a module in a host without app', () => {
+    const loaded = { loaded: true };
+    function originalRequire(id: string): unknown {
+      return id === 'some-package' ? loaded : undefined;
+    }
+    const context: Record<string, unknown> = { require: originalRequire };
+
+    runInNewContext(`${getBanner()}\nresult = require('some-package');`, context);
+
+    expect(context['app']).toBeUndefined();
+    expect(context['result']).toBe(loaded);
   });
 
   it('leaves the require patch out of the esm banner', () => {
