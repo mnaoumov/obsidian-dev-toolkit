@@ -231,6 +231,7 @@
     "build:templates": "jiti scripts/build-templates.ts",
     "build:types": "jiti scripts/build-types.ts",
     "build:validate-declarations": "jiti scripts/build-validate-declarations.ts",
+    "build:validate-dependencies": "jiti scripts/build-validate-dependencies.ts",
     "build:validate-templates": "jiti scripts/build-validate-templates.ts",
     "commit": "jiti scripts/commit.ts",
     "docs:build": "jiti scripts/docs-build.ts",
@@ -257,6 +258,7 @@
   "dependencies": {
     "@eslint/json": "^2.1.0",
     "@mnaoumov/obsidian-lib": "^3.1.0",
+    "@mnaoumov/typescript-dev-toolkit": "^3.0.0",
     "@mnaoumov/typescript-lib": "^1.0.0",
     "@mnaoumov/typescript-test-toolkit": "^1.0.0",
     "@types/babel__core": "^7.20.5",
@@ -285,7 +287,6 @@
     "@babel/core": "^7.29.7",
     "@commitlint/cli": "^21.2.2",
     "@jest/globals": "^30.5.2",
-    "@mnaoumov/typescript-dev-toolkit": "^3.0.0",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
     "@parcel/config-default": "^2.16.4",
     "@parcel/core": "^2.16.4",
@@ -345,6 +346,7 @@
     "@parcel/config-default": "^2.16.4",
     "@parcel/core": "^2.16.4",
     "@parcel/plugin": "^2.16.4",
+    "@parcel/types": "^2.16.4",
     "@tailwindcss/postcss": "^4.3.3",
     "babel-preset-solid": "^1.9.16",
     "css-loader": "^7.1.5",
@@ -371,6 +373,9 @@
       "optional": true
     },
     "@parcel/plugin": {
+      "optional": true
+    },
+    "@parcel/types": {
       "optional": true
     },
     "@tailwindcss/postcss": {
