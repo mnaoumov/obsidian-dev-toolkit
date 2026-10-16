@@ -246,6 +246,8 @@ Every adapter takes `reload` beside its other options, and it decides what happe
 | `'obsidian-cli'` | `obsidian plugin:reload` reloads the plugin in the Obsidian you already have open, through the [Obsidian CLI](https://help.obsidian.md/cli). No Hot Reload, no second instance. A plugin the vault has not seen yet is enabled on its first build. |
 | `false` | The build is copied into the vault, and nothing reloads it. |
 
+`'hot-reload-plugin'` drives the Obsidian instance it owns through [obsidian-integration-testing], an optional peer dependency the toolkit loads only when that reload runs. So a project that keeps the default and sets `OBSIDIAN_CONFIG_FOLDER` installs it beside its bundler (`npm install --save-dev obsidian-integration-testing`), and a development build without it fails with that command in its message. A production build, a project with no `OBSIDIAN_CONFIG_FOLDER`, and the other two `reload` values do not need it.
+
 ```typescript
 // scripts/dev.ts
 import { dev } from '@mnaoumov/obsidian-dev-toolkit/bundlers/esbuild';
