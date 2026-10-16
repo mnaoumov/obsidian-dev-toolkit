@@ -27,7 +27,8 @@ describe('obsidianDevUtilsPlugin', () => {
       'no-untrusted-input-events',
       'plugin-name-as-code',
       'plugin-name-as-code-in-ui',
-      'require-component-suffix'
+      'require-component-suffix',
+      'require-plugin-api-contract-schemas'
     ]);
   });
 });
