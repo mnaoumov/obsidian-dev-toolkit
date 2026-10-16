@@ -1,3 +1,3 @@
-import { obsidianDevUtilsConfig } from '@mnaoumov/typescript-dev-toolkit/commitlint-config';
+import { commitlintConfig } from '@mnaoumov/typescript-dev-toolkit/commitlint-config';
 
-export const config = obsidianDevUtilsConfig;
+export const config = commitlintConfig;
