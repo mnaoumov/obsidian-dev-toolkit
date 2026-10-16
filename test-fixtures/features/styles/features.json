@@ -1,0 +1,1 @@
+{ "styles": { "cssModules": true, "postcss": true, "tailwind": true } }

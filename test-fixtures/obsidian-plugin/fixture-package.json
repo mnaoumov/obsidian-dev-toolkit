@@ -5,5 +5,8 @@
   "type": "module",
   "scripts": {
     "build:compile": "node --eval \"\""
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
   }
 }

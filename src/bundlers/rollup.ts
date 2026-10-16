@@ -11,6 +11,7 @@
 
 import type {
   InputOptions,
+  InputPluginOption,
   NormalizedOutputOptions,
   OutputOptions,
   Plugin
@@ -19,6 +20,7 @@ import type {
 import { dirname } from '@mnaoumov/typescript-lib/path';
 
 import type { ObsidianPluginBuildContext } from './obsidian-plugin-build.ts';
+import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts';
 
 import {
   BuildMode,
@@ -27,7 +29,12 @@ import {
   getObsidianPluginBanner,
   resolveObsidianPluginBuildContext
 } from './obsidian-plugin-build.ts';
+import { getJsxImportSource } from './obsidian-plugin-features.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
+import {
+  createRollupCompatibleFeaturePlugin,
+  createUnpluginVuePlugin
+} from './rollup-compatible-features.ts';
 import {
   combineExternal,
   renameCssAssets
@@ -41,6 +48,11 @@ export interface ApplyRollupInputDefaultsParams {
    * The build context.
    */
   readonly buildContext: ObsidianPluginBuildContext;
+
+  /**
+   * The build features.
+   */
+  readonly features?: ObsidianPluginFeatureOptions;
 
   /**
    * The consumer's input options.
@@ -66,7 +78,7 @@ export interface ApplyRollupOutputDefaultsParams {
 /**
  * Options for {@link obsidianPluginRollup}.
  */
-export interface ObsidianPluginRollupOptions {
+export interface ObsidianPluginRollupOptions extends ObsidianPluginFeatureOptions {
   /**
    * The build mode. Defaults to {@link BuildMode.Development} in watch mode (`rollup --watch`) and
    * {@link BuildMode.Production} otherwise.
@@ -96,10 +108,12 @@ interface ObsidianPluginRollupState {
  */
 export function applyRollupInputDefaults(params: ApplyRollupInputDefaultsParams): InputOptions {
   const { buildContext, inputOptions } = params;
+  const jsxImportSource = getJsxImportSource(params.features?.framework);
   return {
     ...inputOptions,
     external: combineExternal(inputOptions.external),
-    input: inputOptions.input ?? buildContext.entryPoint
+    input: inputOptions.input ?? buildContext.entryPoint,
+    ...(jsxImportSource !== undefined && inputOptions.jsx === undefined && { jsx: { jsxImportSource, mode: 'automatic' } })
   };
 }
 
@@ -137,13 +151,22 @@ export function applyRollupOutputDefaults(params: ApplyRollupOutputDefaultsParam
  * every emitted CSS file ends up in `styles.css`, `manifest.json` (and in development `.hotreload`) is
  * copied beside it, and a development build is deployed into the vault named by `OBSIDIAN_CONFIG_FOLDER`.
  *
- * TypeScript, CSS and minification stay the consumer's choice of rollup plugins, as they would be without
- * this one.
+ * TypeScript, dependency resolution and minification stay the consumer's choice of rollup plugins, as they would be
+ * without this one. The build features ({@link ObsidianPluginFeatureOptions}) are the plugin's:
+ *
+ * - `framework: 'react' | 'preact'` sets rollup's `jsx` option to the automatic runtime (unless set), and the
+ *   TypeScript plugin reads the same from the toolkit's tsconfig preset.
+ * - `framework: 'solid' | 'svelte'` compiles the components with the toolkit's shared transforms, and `'vue'` adds
+ *   `unplugin-vue`.
+ * - Any framework replaces `process.env.NODE_ENV` (and Vue's feature flags) in the bundled code.
+ * - `styles` compiles every stylesheet itself (PostCSS, Tailwind, CSS modules), so rollup needs no CSS plugin; leave
+ *   it out. `styles: {}` compiles plain CSS.
+ * - `wasm` imports a `.wasm` module as its bytes.
  *
  * @param options - The {@link ObsidianPluginRollupOptions}.
- * @returns The rollup plugin.
+ * @returns The rollup plugins, which rollup takes as one entry of its `plugins`.
  */
-export function obsidianPluginRollup(options: ObsidianPluginRollupOptions = {}): Plugin {
+export function obsidianPluginRollup(options: ObsidianPluginRollupOptions = {}): InputPluginOption[] {
   const state: ObsidianPluginRollupState = {
     buildContext: undefined,
     isDistFolderCleaned: false
@@ -157,7 +180,14 @@ export function obsidianPluginRollup(options: ObsidianPluginRollupOptions = {}):
     return state.buildContext;
   }
 
-  return {
+  const featurePlugin = createRollupCompatibleFeaturePlugin({
+    features: options,
+    isProductionBuild: () => getBuildContext().isProductionBuild,
+    shouldCompileStylesheets: true,
+    shouldReplaceDefines: true
+  });
+
+  const plugin: Plugin = {
     generateBundle: {
       handler(_outputOptions, bundle): void {
         renameCssAssets(this, bundle);
@@ -168,7 +198,7 @@ export function obsidianPluginRollup(options: ObsidianPluginRollupOptions = {}):
     async options(inputOptions): Promise<InputOptions> {
       const mode = options.mode ?? (this.meta.watchMode ? BuildMode.Development : BuildMode.Production);
       state.buildContext = await resolveObsidianPluginBuildContext({ ...options, mode });
-      return applyRollupInputDefaults({ buildContext: state.buildContext, inputOptions });
+      return applyRollupInputDefaults({ buildContext: state.buildContext, features: options, inputOptions });
     },
     outputOptions(outputOptions): OutputOptions {
       return applyRollupOutputDefaults({ buildContext: getBuildContext(), outputOptions });
@@ -186,6 +216,7 @@ export function obsidianPluginRollup(options: ObsidianPluginRollupOptions = {}):
       await deployToObsidianPluginsFolder(buildContext);
     }
   };
+  return [plugin, featurePlugin as Plugin, createUnpluginVuePlugin({ bundler: 'rollup', features: options }) as Promise<null | Plugin>];
   /* v8 ignore stop */
 }
 

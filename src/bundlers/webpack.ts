@@ -12,9 +12,21 @@
 import type {
   Compilation,
   Compiler,
+  RuleSetRule,
+  RuleSetUseItem,
   WebpackOptionsNormalized,
   WebpackPluginInstance
 } from 'webpack';
+
+import { extractDefaultExportInterop } from '@mnaoumov/typescript-lib/object-utils';
+import { extname } from '@mnaoumov/typescript-lib/path';
+import { fileURLToPath } from 'node:url';
+
+import type {
+  ObsidianPluginFeatureOptions,
+  ObsidianPluginStylesOptions
+} from './obsidian-plugin-features.ts';
+import type { ObsidianPluginWebpackLoaderOptions } from './obsidian-plugin-webpack-loader.ts';
 
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 import {
@@ -29,12 +41,48 @@ import {
   mergeCssAssets,
   resolveObsidianPluginBuildContext
 } from './obsidian-plugin-build.ts';
+import {
+  getFrameworkDefines,
+  isPostcssNeeded,
+  requireOptionalPeer,
+  resolveOptionalPeer
+} from './obsidian-plugin-features.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
+
+/**
+ * Parameters for {@link getWebpackFeatureRules}.
+ */
+export interface GetWebpackFeatureRulesParams {
+  /**
+   * The path of `css-loader`, for the stylesheet rule.
+   */
+  readonly cssLoaderPath: string;
+
+  /**
+   * The build features.
+   */
+  readonly features: ObsidianPluginFeatureOptions;
+
+  /**
+   * Whether this is a production build.
+   */
+  readonly isProductionBuild: boolean;
+
+  /**
+   * The path of the toolkit's own loader.
+   */
+  readonly loaderPath: string;
+
+  /**
+   * The path of `mini-css-extract-plugin`'s loader, for the stylesheet rule.
+   */
+  readonly miniCssExtractLoaderPath: string;
+}
 
 /**
  * Options for {@link ObsidianPluginWebpackPlugin}.
  */
-export interface ObsidianPluginWebpackPluginOptions {
+export interface ObsidianPluginWebpackPluginOptions extends ObsidianPluginFeatureOptions {
   /**
    * The build mode. Defaults to {@link BuildMode.Development} when webpack watches (`webpack --watch`) or
    * its `mode` is `development`, and {@link BuildMode.Production} otherwise.
@@ -59,7 +107,30 @@ interface ExternalsData {
   readonly request?: string;
 }
 
+/**
+ * The `mini-css-extract-plugin` class.
+ */
+interface MiniCssExtractPluginClass {
+  readonly loader: string;
+  new (): WebpackPluginInstance;
+}
+
+/**
+ * The part of `mini-css-extract-plugin` the adapter uses.
+ */
+interface MiniCssExtractPluginModule {
+  readonly default: MiniCssExtractPluginClass;
+}
+
+/**
+ * The part of `unplugin-vue/webpack` the adapter uses.
+ */
+interface UnpluginVueWebpackModule {
+  readonly default: () => WebpackPluginInstance;
+}
+
 const PLUGIN_NAME = 'ObsidianPluginWebpackPlugin';
+const MINI_CSS_EXTRACT_PLUGIN = 'mini-css-extract-plugin';
 
 /**
  * A webpack plugin that builds an Obsidian plugin.
@@ -81,7 +152,17 @@ const PLUGIN_NAME = 'ObsidianPluginWebpackPlugin';
  * `styles.css`, `manifest.json` (and in development `.hotreload`) is copied beside it, and a development
  * build is deployed into the vault named by `OBSIDIAN_CONFIG_FOLDER`.
  *
- * TypeScript and CSS stay the consumer's choice of loaders, as they would be without this plugin.
+ * TypeScript stays the consumer's choice of loader, as it would be without this plugin. The build features
+ * ({@link ObsidianPluginFeatureOptions}) are the plugin's:
+ *
+ * - `framework: 'react' | 'preact'` needs nothing here: the TypeScript loader reads the automatic JSX runtime from the
+ *   toolkit's tsconfig preset, and webpack's `mode` defines `process.env.NODE_ENV`.
+ * - `framework: 'solid' | 'svelte'` adds rules that compile the components with the toolkit's shared transforms, and
+ *   `'vue'` applies `unplugin-vue` and defines Vue's feature flags.
+ * - `styles` adds the one rule every stylesheet goes through (PostCSS and Tailwind, then `css-loader`, scoping
+ *   `*.module.css` only with `cssModules`, then `mini-css-extract-plugin`), and applies `mini-css-extract-plugin`
+ *   unless the config already does; leave your own `.css` rule out. `styles: {}` compiles plain CSS.
+ * - `wasm` imports a `.wasm` module as its bytes.
  */
 export class ObsidianPluginWebpackPlugin implements WebpackPluginInstance {
   /**
@@ -100,6 +181,7 @@ export class ObsidianPluginWebpackPlugin implements WebpackPluginInstance {
   public apply(compiler: Compiler): void {
     const mode = this.options.mode ?? getWebpackBuildMode(compiler.options);
     applyWebpackOptionDefaults(compiler.options, mode);
+    applyWebpackFeatures(compiler, this.options, mode === BuildMode.Production);
     // Added at the report stage, after minification, which would otherwise strip it as an ordinary comment.
     new compiler.webpack.BannerPlugin({
       banner: getObsidianPluginBanner('webpack'),
@@ -160,6 +242,67 @@ export function getWebpackBuildMode(options: Pick<WebpackOptionsNormalized, 'mod
 }
 
 /**
+ * Builds the module rules the build features add, each running the toolkit's own loader: Solid's JSX before the
+ * project's TypeScript loader, Svelte components and modules, `.wasm` modules as JavaScript, and with `styles` the
+ * stylesheet rule.
+ *
+ * @param params - The {@link GetWebpackFeatureRulesParams}.
+ * @returns The rules, empty when no feature needs one.
+ */
+export function getWebpackFeatureRules(params: GetWebpackFeatureRulesParams): RuleSetRule[] {
+  const { cssLoaderPath, features, isProductionBuild, loaderPath, miniCssExtractLoaderPath } = params;
+  const rules: RuleSetRule[] = [];
+
+  function featureLoader(kind: ObsidianPluginWebpackLoaderOptions['kind'], styles?: ObsidianPluginStylesOptions): RuleSetUseItem[] {
+    const options: ObsidianPluginWebpackLoaderOptions = { isProductionBuild, kind, ...(styles && { styles }) };
+    return [{ loader: loaderPath, options }];
+  }
+
+  switch (features.framework) {
+    case 'solid': {
+      rules.push({ enforce: 'pre', test: /\.[jt]sx$/iu, use: featureLoader('jsx') });
+      break;
+    }
+    case 'svelte': {
+      rules.push(
+        { test: /\.svelte$/iu, use: featureLoader('svelte') },
+        { enforce: 'pre', test: /\.svelte\.[cm]?[jt]s$/iu, use: featureLoader('svelte') }
+      );
+      break;
+    }
+    case 'vue': {
+      // `unplugin-vue` hands a `<script lang="ts">` block on as a module of its own after the project's TypeScript
+      // Loader ran, so a post loader strips its types. Its id names the component and the block's language.
+      rules.push({ enforce: 'post', test: /\.vue(?:\?|%3F).*lang\.ts$/iu, use: featureLoader('typescript') });
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+  if (features.wasm) {
+    rules.push({ test: /\.wasm$/iu, type: 'javascript/auto', use: featureLoader('wasm') });
+  }
+  if (features.styles) {
+    rules.push({
+      test: /\.p?css$/iu,
+      use: [
+        miniCssExtractLoaderPath,
+        {
+          loader: cssLoaderPath,
+          options: {
+            importLoaders: 1,
+            modules: features.styles.cssModules ? { auto: true, namedExport: false } : false
+          }
+        },
+        ...isPostcssNeeded(features.styles) ? featureLoader('stylesheet', features.styles) : []
+      ]
+    });
+  }
+  return rules;
+}
+
+/**
  * Tells webpack's function form of `externals` to leave Obsidian's modules and the Node builtins to
  * `require()`.
  *
@@ -175,6 +318,45 @@ export function obsidianPluginWebpackExternals(data: ExternalsData, callback: Ex
 }
 
 /* v8 ignore start -- Part of the webpack hooks above. */
+/**
+ * Applies the build features to a compiler: the rules of {@link getWebpackFeatureRules}, `mini-css-extract-plugin`
+ * for `styles` unless the config already applies it, and `unplugin-vue` with Vue's feature flags for Vue.
+ *
+ * @param compiler - The webpack compiler.
+ * @param features - The build features.
+ * @param isProductionBuild - Whether this is a production build.
+ */
+function applyWebpackFeatures(compiler: Compiler, features: ObsidianPluginFeatureOptions, isProductionBuild: boolean): void {
+  let miniCssExtractLoaderPath = '';
+  let cssLoaderPath = '';
+  if (features.styles) {
+    const stylesFeature = 'styles';
+    cssLoaderPath = resolveOptionalPeer({ feature: stylesFeature, packageName: 'css-loader' });
+    const MiniCssExtractPlugin = extractDefaultExportInterop(
+      requireOptionalPeer({ feature: stylesFeature, packageName: MINI_CSS_EXTRACT_PLUGIN }) as MiniCssExtractPluginModule
+    );
+    miniCssExtractLoaderPath = MiniCssExtractPlugin.loader;
+    const hasMiniCssExtractPlugin = compiler.options.plugins.some((plugin) => plugin.constructor.name === 'MiniCssExtractPlugin');
+    if (!hasMiniCssExtractPlugin) {
+      new MiniCssExtractPlugin().apply(compiler);
+    }
+  }
+
+  const loaderPath = fileURLToPath(new URL(`obsidian-plugin-webpack-loader${extname(fileURLToPath(import.meta.url))}`, import.meta.url));
+  compiler.options.module.rules.push(...getWebpackFeatureRules({ cssLoaderPath, features, isProductionBuild, loaderPath, miniCssExtractLoaderPath }));
+
+  if (features.framework !== 'vue') {
+    return;
+  }
+  const unpluginVue = extractDefaultExportInterop(
+    requireOptionalPeer({ feature: 'framework: \'vue\'', packageName: 'unplugin-vue', specifier: 'unplugin-vue/webpack' }) as UnpluginVueWebpackModule
+  );
+  unpluginVue().apply(compiler);
+  // `process.env.NODE_ENV` is left out: webpack's `mode` defines it, and a second definition conflicts.
+  const { 'process.env.NODE_ENV': _nodeEnv, ...vueFlags } = getFrameworkDefines({ framework: features.framework, isProductionBuild });
+  new compiler.webpack.DefinePlugin(vueFlags).apply(compiler);
+}
+
 /**
  * Fills in the normalized webpack options the consumer left unset.
  *

@@ -31,6 +31,8 @@ import {
   watch
 } from 'node:fs';
 
+import type { ObsidianPluginFeatureOptions } from '../obsidian-plugin-features.ts';
+
 import { ObsidianPluginRepoPaths } from '../../obsidian-plugin-repo-paths.ts';
 import {
   BuildMode,
@@ -41,6 +43,11 @@ import {
   resolveObsidianPluginBuildContext
 } from '../obsidian-plugin-build.ts';
 import { copyToObsidianPluginsFolderPlugin } from './copy-to-obsidian-plugins-folder-plugin.ts';
+import {
+  getEsbuildFeatureBuildOptions,
+  getEsbuildFeaturePlugins,
+  getSassPluginOptionsList
+} from './feature-options.ts';
 import { fixSourceMapsPlugin } from './fix-source-maps-plugin.ts';
 import { preprocessPlugin } from './preprocess-plugin.ts';
 import { renameCssPlugin } from './rename-css-plugin.ts';
@@ -64,7 +71,7 @@ export const banner = getObsidianPluginBanner('esbuild');
 /**
  * Options for {@link buildObsidianPlugin}.
  */
-export interface BuildObsidianPluginParams {
+export interface BuildObsidianPluginParams extends ObsidianPluginFeatureOptions {
   /**
    * Custom esbuild plugins to be used during the build process.
    */
@@ -89,7 +96,7 @@ export interface BuildObsidianPluginParams {
 /**
  * Build parameters without the mode field, for use with {@link build} and {@link dev}.
  */
-export interface BuildOptions {
+export interface BuildOptions extends ObsidianPluginFeatureOptions {
   /**
    * Custom esbuild plugins to be used during the build process.
    */
@@ -139,7 +146,9 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
   await completeObsidianPluginDistFolder(buildContext);
 
   const cssPath = join(distFolder, ObsidianPluginRepoPaths.StylesCss);
+  const featureParams = { features: params, isProductionBuild };
   const buildOptions: EsbuildOptions = {
+    ...getEsbuildFeatureBuildOptions(featureParams),
     banner: {
       js: banner
     },
@@ -179,9 +188,8 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
     plugins: [
       customEsbuildOptionsPlugin(params.customizeEsbuildOptions?.bind(params)),
       svelteWrapperPlugin(isProductionBuild),
-      sassPlugin({
-        sourceMap: !isProductionBuild
-      }),
+      ...await getEsbuildFeaturePlugins(featureParams),
+      ...getSassPluginOptionsList(featureParams).map((sassPluginOptions) => sassPlugin(sassPluginOptions)),
       renameCssPlugin(distFolder),
       preprocessPlugin(),
       fixEsmPlugin(),

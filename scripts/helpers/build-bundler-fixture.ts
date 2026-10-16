@@ -8,13 +8,28 @@
  * Usage: `jiti scripts/helpers/build-bundler-fixture.ts <esbuild|parcel|rollup|vite|webpack> [development]`,
  * run from the fixture's folder. `development` builds once in development mode without watching, which
  * only the adapters with a `mode` option can do; esbuild's and parcel's `dev()` always watch.
+ *
+ * A `features.json` in the fixture's folder holds the build feature options every adapter is given. With it, rollup
+ * and webpack get what a project would add for TypeScript and dependencies: `rollup-plugin-esbuild`, node-resolve
+ * and CommonJS for rollup, `esbuild-loader` for webpack.
  */
 
-import type { Plugin as RollupPlugin } from 'rollup';
+import type {
+  InputPluginOption,
+  Plugin as RollupPlugin
+} from 'rollup';
+import type { RuleSetRule } from 'webpack';
 
 import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
+import { extractDefaultExportInterop } from '@mnaoumov/typescript-lib/object-utils';
 import { join } from '@mnaoumov/typescript-lib/path';
+import {
+  existsSync,
+  readFileSync
+} from 'node:fs';
 import process from 'node:process';
+
+import type { ObsidianPluginFeatureOptions } from '../../src/bundlers/obsidian-plugin-features.ts';
 
 import { build as buildWithEsbuild } from '../../src/bundlers/esbuild.ts';
 import { BuildMode } from '../../src/bundlers/obsidian-plugin-build.ts';
@@ -25,31 +40,34 @@ import { ObsidianPluginWebpackPlugin } from '../../src/bundlers/webpack.ts';
 
 const BUNDLER_ARGUMENT_INDEX = 2;
 const MODE_ARGUMENT_INDEX = 3;
+const FEATURES_FILE_NAME = 'features.json';
+const REPO_NODE_MODULES = join(import.meta.dirname, '../../node_modules');
 
 await wrapCliTask(async () => {
   const bundler = process.argv[BUNDLER_ARGUMENT_INDEX];
   const mode = process.argv[MODE_ARGUMENT_INDEX] === 'development' ? BuildMode.Development : BuildMode.Production;
+  const features = readFeatures();
   switch (bundler) {
     case 'esbuild': {
       assertProduction(mode, bundler);
-      await buildWithEsbuild();
+      await buildWithEsbuild(features);
       break;
     }
     case 'parcel': {
       assertProduction(mode, bundler);
-      await buildWithParcel();
+      await buildWithParcel(features);
       break;
     }
     case 'rollup': {
-      await buildWithRollup(mode);
+      await buildWithRollup(mode, features);
       break;
     }
     case 'vite': {
-      await buildWithVite(mode);
+      await buildWithVite(mode, features);
       break;
     }
     case 'webpack': {
-      await buildWithWebpack(mode);
+      await buildWithWebpack(mode, features);
       break;
     }
     default: {
@@ -64,41 +82,66 @@ function assertProduction(mode: BuildMode, bundler: string): void {
   }
 }
 
-async function buildWithRollup(mode: BuildMode): Promise<void> {
+async function buildWithRollup(mode: BuildMode, features: ObsidianPluginFeatureOptions | undefined): Promise<void> {
   const { rollup } = await import('rollup');
-  const bundle = await rollup({ plugins: [cssAsAssetRollupPlugin(), obsidianPluginRollup({ mode })] });
+  const plugins: InputPluginOption[] = [obsidianPluginRollup({ mode, ...features })];
+  if (features) {
+    const { default: esbuild } = await import('rollup-plugin-esbuild');
+    const commonjsModule = await import('@rollup/plugin-commonjs');
+    const commonjs = extractDefaultExportInterop(commonjsModule.default);
+    const { nodeResolve } = await import('@rollup/plugin-node-resolve');
+    plugins.push(
+      esbuild({ tsconfig: 'tsconfig.json' }),
+      nodeResolve({ browser: true, exportConditions: ['svelte'], extensions: ['.mjs', '.js', '.json', '.ts', '.tsx'] }),
+      commonjs()
+    );
+  }
+  if (!features?.styles) {
+    plugins.push(cssAsAssetRollupPlugin());
+  }
+  const bundle = await rollup({ plugins });
   // No output options of our own: the plugin's `outputOptions` hook fills in `main.js` and the rest.
   await bundle.write({});
   await bundle.close();
 }
 
-async function buildWithVite(mode: BuildMode): Promise<void> {
+async function buildWithVite(mode: BuildMode, features: ObsidianPluginFeatureOptions | undefined): Promise<void> {
   const { build } = await import('vite');
   await build({
     configFile: false,
     logLevel: 'warn',
-    plugins: [obsidianPluginVite({ mode })],
+    plugins: [obsidianPluginVite({ mode, ...features })],
     root: process.cwd()
   });
 }
 
-async function buildWithWebpack(mode: BuildMode): Promise<void> {
+async function buildWithWebpack(mode: BuildMode, features: ObsidianPluginFeatureOptions | undefined): Promise<void> {
   const { default: webpack } = await import('webpack');
   const { default: MiniCssExtractPlugin } = await import('mini-css-extract-plugin');
+  const rules: RuleSetRule[] = [];
+  if (!features?.styles) {
+    rules.push({
+      test: /\.css$/u,
+      use: [MiniCssExtractPlugin.loader, 'css-loader']
+    });
+  }
+  if (features) {
+    rules.push({
+      loader: 'esbuild-loader',
+      options: { tsconfig: 'tsconfig.json' },
+      test: /\.[jt]sx?$/u
+    });
+  }
   const compiler = webpack({
     context: process.cwd(),
-    module: {
-      rules: [
-        {
-          test: /\.css$/u,
-          use: [MiniCssExtractPlugin.loader, 'css-loader']
-        }
-      ]
+    module: { rules },
+    plugins: [new ObsidianPluginWebpackPlugin({ mode, ...features }), new MiniCssExtractPlugin()],
+    resolve: {
+      extensions: ['.ts', '.tsx', '.js', '...']
     },
-    plugins: [new ObsidianPluginWebpackPlugin({ mode }), new MiniCssExtractPlugin()],
     // The fixture has no `node_modules` of its own, so the loaders resolve from this repository's.
     resolveLoader: {
-      modules: [join(import.meta.dirname, '../../node_modules')]
+      modules: [REPO_NODE_MODULES]
     }
   });
   await new Promise<void>((resolve, reject) => {
@@ -135,4 +178,8 @@ function cssAsAssetRollupPlugin(): RollupPlugin {
       return 'export default undefined;';
     }
   };
+}
+
+function readFeatures(): ObsidianPluginFeatureOptions | undefined {
+  return existsSync(FEATURES_FILE_NAME) ? (JSON.parse(readFileSync(FEATURES_FILE_NAME, 'utf-8')) as ObsidianPluginFeatureOptions) : undefined;
 }
