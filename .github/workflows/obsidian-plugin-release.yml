@@ -1,0 +1,196 @@
+name: Obsidian Plugin Release
+
+# A reusable workflow that releases an Obsidian plugin from a pushed tag: it checks the tag is the version in
+# `manifest.json` (or in `manifest-beta.json` for a pre-release tag), builds the plugin, archives `demo-vault/` when
+# there is one, publishes a GitHub release carrying every file in `dist/build` (`main.js`, `manifest.json`,
+# `styles.css` and the demo vault archive), and attests those files' build provenance.
+#
+# Bump the version first (`npm version`, or the toolkit's `npm run version`, which releases by itself and needs only
+# `obsidian-plugin-attest-release-assets.yml`), then push the tag. A tag with a `-` in it makes a pre-release. When the
+# release already exists, its assets are replaced.
+#
+# The caller owns the trigger and the permissions, and pins the workflow to a release tag of the toolkit:
+#
+#   on:
+#     push:
+#       tags: ['*']
+#   permissions:
+#     contents: write
+#     id-token: write
+#     attestations: write
+#   jobs:
+#     release:
+#       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-release.yml@2.2.0
+#
+# Every input is documented at https://mnaoumov.dev/obsidian-dev-toolkit/guides/ci-and-release/.
+#
+# The `Resolve settings` and the setup steps are the same in `obsidian-plugin-ci.yml`; the workflows' unit test keeps
+# them so.
+
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        description: The package manager the plugin uses (npm, pnpm, yarn or bun)
+        type: string
+        default: npm
+      node-version:
+        description: The Node.js version (read from node-version-file when empty)
+        type: string
+        default: ''
+      node-version-file:
+        description: The file naming the Node.js version, used when node-version is empty (the latest LTS when it does not exist)
+        type: string
+        default: .nvmrc
+      install-command:
+        description: The command that installs the dependencies (the package manager's frozen install when empty)
+        type: string
+        default: ''
+      build-command:
+        description: The command that builds the plugin into dist/build (`<package manager> run build` when empty)
+        type: string
+        default: ''
+      tag:
+        description: The tag to release (the pushed tag when empty)
+        type: string
+        default: ''
+      demo-vault:
+        description: Archive demo-vault/ into the release when the plugin has one (needs the toolkit installed)
+        type: boolean
+        default: true
+      attest:
+        description: Attest the build provenance of the release assets
+        type: boolean
+        default: true
+      draft:
+        description: Create the release as a draft
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # The install runs the `prepare` script, which installs husky -- pointless in CI.
+      HUSKY: 0
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Resolve settings
+        id: settings
+        env:
+          INSTALL_COMMAND: ${{ inputs.install-command }}
+          NODE_VERSION: ${{ inputs.node-version }}
+          NODE_VERSION_FILE: ${{ inputs.node-version-file }}
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          case "$PACKAGE_MANAGER" in
+            npm) install='npm ci'; run='npm run'; exec='npx --no-install'; cache='npm' ;;
+            pnpm) install='pnpm install --frozen-lockfile'; run='pnpm run'; exec='pnpm exec'; cache='pnpm' ;;
+            yarn)
+              if [ -f .yarnrc.yml ]; then install='yarn install --immutable'; else install='yarn install --frozen-lockfile'; fi
+              run='yarn run'; exec='yarn run'; cache='yarn' ;;
+            bun) install='bun install --frozen-lockfile'; run='bun run'; exec='bun x'; cache='' ;;
+            *) echo "::error::Unknown package-manager '$PACKAGE_MANAGER'. Use npm, pnpm, yarn or bun."; exit 1 ;;
+          esac
+          if [ -n "$NODE_VERSION" ]; then
+            node_version="$NODE_VERSION"; node_version_file=''
+          elif [ -f "$NODE_VERSION_FILE" ]; then
+            node_version=''; node_version_file="$NODE_VERSION_FILE"
+          else
+            node_version='lts/*'; node_version_file=''
+          fi
+          {
+            echo "cache=$cache"
+            echo "exec=$exec"
+            echo "install=${INSTALL_COMMAND:-$install}"
+            echo "node-version=$node_version"
+            echo "node-version-file=$node_version_file"
+            echo "run=$run"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Bun
+        if: inputs.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Enable Corepack
+        if: inputs.package-manager == 'yarn'
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.settings.outputs.node-version }}
+          node-version-file: ${{ steps.settings.outputs.node-version-file }}
+          cache: ${{ steps.settings.outputs.cache }}
+
+      - name: Check the tag
+        # Obsidian finds a release by the version in the manifest, so a tag that differs is a release nobody receives.
+        run: |
+          manifest=manifest.json
+          case "$TAG" in *-*) if [ -f manifest-beta.json ]; then manifest=manifest-beta.json; fi ;; esac
+          version="$(node -p "require('./$manifest').version")"
+          if [ "$TAG" != "$version" ]; then
+            echo "::error::The tag '$TAG' is not the version in $manifest ('$version'). Obsidian finds a release by that version, so they must match."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: ${{ steps.settings.outputs.install }}
+
+      - name: Build
+        env:
+          BUILD_COMMAND: ${{ inputs.build-command }}
+          RUN: ${{ steps.settings.outputs.run }}
+        # The command is the caller's own input, so it is split into words on purpose.
+        run: ${BUILD_COMMAND:-$RUN build}
+
+      - name: Archive the demo vault
+        if: inputs.demo-vault && hashFiles('demo-vault/**') != ''
+        env:
+          EXEC: ${{ steps.settings.outputs.exec }}
+        run: $EXEC archive-demo-vault
+
+      - name: Publish the release
+        id: publish
+        env:
+          DRAFT: ${{ inputs.draft }}
+        run: |
+          assets=()
+          for file in dist/build/*; do
+            if [ ! -f "$file" ]; then continue; fi
+            # GitHub refuses a 0-byte asset and rolls the whole release back, so an empty placeholder is left out.
+            if [ -s "$file" ]; then assets+=("$file"); else echo "::warning::Leaving out $file: GitHub refuses an empty asset."; fi
+          done
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo '::error::dist/build has no file to release. Does the build write the plugin there?'
+            exit 1
+          fi
+          flags=()
+          case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+          if [ "$DRAFT" = 'true' ]; then flags+=(--draft); fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$TAG" "${assets[@]}" --title "$TAG" --generate-notes --verify-tag "${flags[@]}"
+          fi
+          {
+            echo 'assets<<EOF'
+            printf '%s\n' "${assets[@]}"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Attest the release assets
+        if: inputs.attest
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.publish.outputs.assets }}
