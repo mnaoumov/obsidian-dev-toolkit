@@ -15,18 +15,7 @@ An Obsidian plugin's tests take the setup endpoints of this package rather than 
 
 Each does everything the generic endpoint does, and before each test it also resets the state `@mnaoumov/obsidian-lib` keeps between calls: the `globalThis.__obsidianDevUtils` bag (queues, registered handlers, the plugin-API registry) and the library context `ObsidianLibrary` holds. The Obsidian reset runs first, then the generic one. The endpoints live here rather than in the test toolkit because the test toolkit must not depend on `@mnaoumov/obsidian-lib`.
 
-The plugin Vitest configuration below already lists `@mnaoumov/obsidian-dev-toolkit/vitest-setup` in its `unit-tests` project, after `obsidian-test-mocks/vitest-setup`, so a plugin built on it wires nothing by hand. A Jest suite lists its endpoint in `setupFilesAfterEnv`:
-
-```typescript
-// jest.config.ts
-import type { Config } from 'jest';
-
-const config: Config = {
-  setupFilesAfterEnv: ['@mnaoumov/obsidian-dev-toolkit/jest-setup']
-};
-
-export default config;
-```
+The plugin Vitest configuration below already lists `@mnaoumov/obsidian-dev-toolkit/vitest-setup` in its `unit-tests` project, after `obsidian-test-mocks/vitest-setup`, and the [plugin Jest configuration](#plugin-jest-configuration) lists `@mnaoumov/obsidian-dev-toolkit/jest-setup` in `setupFilesAfterEnv` the same way, so a plugin built on either wires nothing by hand.
 
 ## Plugin vitest configuration
 
@@ -99,6 +88,42 @@ export const config = defineObsidianPluginVitestConfig({
 The sibling is emitted only when the list is not empty. The `test` and `test:coverage` scripts select `unit-tests` together with every `unit-tests:*` project, so the sibling runs and counts toward coverage with no script change. Check a suite by running it with `--pool=vmThreads` rather than by searching it for `stubGlobal`, since the `location` form is the one a search misses. To keep a whole suite on the default pool instead, set `context.unitTests.pool = 'forks'` and leave a comment saying why.
 
 A VM context also starts without some of Node's Web API globals. The setup endpoint restores them, as the [TypeScript Test Toolkit guide](https://mnaoumov.dev/typescript-test-toolkit/guides/testing/) describes.
+
+## Plugin jest configuration
+
+A plugin that tests with Jest instead takes `defineObsidianPluginJestConfig`, the Jest counterpart of the `unit-tests` project above. It is `defineJestConfig` from `@mnaoumov/typescript-dev-toolkit/test-runners/jest-config` (ts-jest, ESM when `package.json` says `"type": "module"`, v8 coverage over `src/`) with the Obsidian layer on top:
+
+- `testEnvironment: 'jsdom'`, because the mocks' setup writes to `Document.prototype`, `Element.prototype` and `window`;
+- `obsidian` mapped onto `obsidian-test-mocks/obsidian`, since the `obsidian` npm package carries types only;
+- `obsidian-test-mocks/jest-setup` and `@mnaoumov/obsidian-dev-toolkit/jest-setup` in `setupFilesAfterEnv`, in that order;
+- every `*.integration.test.ts` left out, because those run in a real Obsidian through `obsidian-integration-testing`.
+
+It takes the same options as `defineJestConfig`. An option replaces its default, except that `moduleNameMapper` entries are added to the `obsidian` one, and `setupFilesAfterEnv` and `testPathIgnorePatterns` entries are appended. A plugin that imports stylesheets, `.wasm` or framework components maps them onto stubs:
+
+```typescript
+// jest.config.ts
+import { defineObsidianPluginJestConfig } from '@mnaoumov/obsidian-dev-toolkit/test-runners/jest-config';
+
+export default defineObsidianPluginJestConfig({
+  moduleNameMapper: {
+    '\\.(css|scss)$': '<rootDir>/src/__mocks__/style-stub.ts'
+  }
+});
+```
+
+Install the runner beside it: `npm install --save-dev jest ts-jest jest-environment-jsdom @jest/globals`. All four are optional peer dependencies of this package, so a Vitest plugin installs none of them. Jest 30 loads a `jest.config.ts` through Node's own type stripping, which is on by default from Node 22.18, and falls back to `ts-node` only when that fails.
+
+The scripts call the runner from `@mnaoumov/typescript-dev-toolkit/test-runners/auto`, which picks Jest whenever a Jest configuration file exists and adds `--experimental-vm-modules` for an ESM package:
+
+```typescript
+// scripts/test.ts
+import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
+import { test } from '@mnaoumov/typescript-dev-toolkit/test-runners/auto';
+
+await wrapCliTask(() => test());
+```
+
+`testCoverage` and `testWatch` come from the same module, for `scripts/test-coverage.ts` and `scripts/test-watch.ts`.
 
 ## Integration tests: reaching library helpers inside `evalInObsidian`
 
