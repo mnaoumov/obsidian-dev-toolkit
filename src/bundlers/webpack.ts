@@ -69,8 +69,9 @@ const PLUGIN_NAME = 'ObsidianPluginWebpackPlugin';
  * - `entry` is `src/main.ts`, and `mode` follows the build mode.
  * - The output is one CommonJS (`commonjs2`) `main.js` in `dist/build` (`dist/dev` in development), with no
  *   async chunks, so a dynamic import cannot become a sibling file.
- * - `target` is `node` with the `browser` export condition first, which is what Obsidian's renderer runs:
- *   Node builtins resolve, and packages hand over their browser builds.
+ * - `target` is `node`, which is what Obsidian's renderer runs, so Node builtins resolve, while the export
+ *   conditions are the browser's (`browser`, `webpack`, the mode, `module`, `import`, `require`, and never `node`),
+ *   so packages hand over their browser builds, as on mobile they must.
  * - `devtool` is an inline source map in development only.
  *
  * And always: Obsidian's own modules (`obsidian`, `electron`, CodeMirror, Lezer) and the Node builtins are
@@ -198,7 +199,10 @@ function applyWebpackOptionDefaults(options: WebpackOptionsNormalized, mode: Bui
   options.output.library ??= { type: 'commonjs2' };
   options.output.asyncChunks ??= false;
 
-  options.resolve.conditionNames ??= ['browser', '...'];
+  // Listed in full rather than with `'...'`, which would bring in the `node` condition of `target: 'node'`: export
+  // Maps are matched in the package's key order, not this one's, so a package listing `node` before `browser` (Vue,
+  // `fflate`) would hand over its Node build, which does not load on mobile.
+  options.resolve.conditionNames ??= ['browser', 'webpack', isProductionBuild ? 'production' : 'development', 'module', 'import', 'require'];
 
   const userExternals = options.externals;
   options.externals = [obsidianPluginWebpackExternals, ...(Array.isArray(userExternals) ? userExternals : [userExternals])];
