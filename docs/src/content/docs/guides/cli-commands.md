@@ -21,6 +21,8 @@ import { build } from '@mnaoumov/obsidian-dev-toolkit/bundlers/esbuild';
 
 Runs `build:compile`, then bundles the plugin with esbuild into the `dist/build` folder: `main.js`, `styles.css` when the plugin has styles, and a copy of `manifest.json`. The bundle is one CommonJS `main.js`, loaded both by Electron on desktop and by a bare WebView on a phone, so its banner shims the few globals the second one lacks.
 
+To build with vite, rollup, webpack or parcel instead, see [Bundlers](/obsidian-dev-toolkit/guides/bundlers/): each has an adapter producing the same output.
+
 `build` takes `customEsbuildPlugins` to add esbuild plugins and `customizeEsbuildOptions` to edit the esbuild options before the build runs. `buildObsidianPlugin` is the same build with the mode as a parameter (`BuildMode.Production` or `BuildMode.Development`), returning a `CliTaskResult` instead of throwing.
 
 ## Build Development Version

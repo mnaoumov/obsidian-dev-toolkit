@@ -1,7 +1,7 @@
 {
   "name": "@mnaoumov/obsidian-dev-toolkit",
   "version": "2.1.0",
-  "description": "Tooling for Obsidian plugin development: esbuild plugin builder, shared ESLint/Vitest configs, demo vaults and the release script.",
+  "description": "Tooling for Obsidian plugin development: the plugin builder for esbuild, vite, rollup, webpack and parcel, shared ESLint/Vitest configs, demo vaults and the release script.",
   "keywords": [
     "obsidian",
     "obsidian-plugin",
@@ -239,6 +239,7 @@
     "spellcheck": "jiti scripts/spellcheck.ts",
     "test": "jiti scripts/test.ts",
     "test:coverage": "jiti scripts/test-coverage.ts",
+    "test:integration": "jiti scripts/test-integration.ts",
     "test:watch": "jiti scripts/test-watch.ts",
     "version": "jiti scripts/version.ts"
   },
@@ -273,6 +274,10 @@
     "@jest/globals": "^30.5.2",
     "@mnaoumov/typescript-dev-toolkit": "^3.0.0",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
+    "@parcel/config-default": "^2.16.4",
+    "@parcel/core": "^2.16.4",
+    "@parcel/plugin": "^2.16.4",
+    "@parcel/types": "^2.16.4",
     "@resvg/resvg-js": "^2.6.2",
     "@total-typescript/ts-reset": "^0.6.1",
     "@tsconfig/strictest": "^2.0.8",
@@ -282,35 +287,64 @@
     "astro": "^7.4.0",
     "better-typescript-lib": "^2.12.0",
     "cspell": "^10.3.3",
+    "css-loader": "^7.1.5",
     "czg": "^1.14.0",
     "dprint": "^0.57.4",
     "husky": "^9.1.7",
     "jiti": "^2.7.0",
     "markdownlint-cli2": "^0.23.2",
+    "mini-css-extract-plugin": "^2.10.2",
     "nano-staged": "^1.0.2",
     "obsidian-integration-testing": "^17.3.0",
     "obsidian-test-mocks": "^7.0.0",
+    "rollup": "^4.64.7",
     "satori": "^0.33.5",
     "satteri": "^0.10.5",
     "ts-morph": "^28.0.0",
     "tslib": "^2.8.1",
     "typedoc-plugin-mdn-links": "^5.1.1",
+    "vite": "^8.3.4",
     "vitest": "^5.0.1",
+    "webpack": "^5.112.0",
     "yaml": "^2.9.1"
   },
   "peerDependencies": {
     "@jest/globals": "^30.5.2",
+    "@parcel/config-default": "^2.16.4",
+    "@parcel/core": "^2.16.4",
+    "@parcel/plugin": "^2.16.4",
     "obsidian-integration-testing": "^17.3.0",
-    "vitest": "^5.0.1"
+    "rollup": "^4.64.7",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.1",
+    "webpack": "^5.112.0"
   },
   "peerDependenciesMeta": {
     "@jest/globals": {
       "optional": true
     },
+    "@parcel/config-default": {
+      "optional": true
+    },
+    "@parcel/core": {
+      "optional": true
+    },
+    "@parcel/plugin": {
+      "optional": true
+    },
     "obsidian-integration-testing": {
       "optional": true
     },
+    "rollup": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    },
     "vitest": {
+      "optional": true
+    },
+    "webpack": {
       "optional": true
     }
   },

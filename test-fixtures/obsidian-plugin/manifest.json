@@ -1,0 +1,9 @@
+{
+  "id": "bundler-fixture-plugin",
+  "name": "Bundler fixture plugin",
+  "version": "1.0.0",
+  "minAppVersion": "1.12.7",
+  "description": "Built by every bundler the toolkit supports, then loaded, to prove each produces a loadable plugin.",
+  "author": "Michael Naumov",
+  "isDesktopOnly": false
+}

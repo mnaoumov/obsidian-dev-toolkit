@@ -1,6 +1,6 @@
 # @mnaoumov/obsidian-dev-toolkit
 
-Tooling for Obsidian plugins: the esbuild plugin builder, the shared ESLint and Vitest configurations, demo vaults, the plugin release script, the per-test setup for plugin tests, and the consumer templates. It continues the tooling half of `obsidian-dev-utils`. Install it as a dev dependency.
+Tooling for Obsidian plugins: the plugin builder for esbuild, with adapters for vite, rollup, webpack and parcel, the shared ESLint and Vitest configurations, demo vaults, the plugin release script, the per-test setup for plugin tests, and the consumer templates. It continues the tooling half of `obsidian-dev-utils`. Install it as a dev dependency.
 
 ## Installation
 
