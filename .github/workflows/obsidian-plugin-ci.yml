@@ -1,0 +1,169 @@
+name: Obsidian Plugin CI
+
+# A reusable workflow for an Obsidian plugin's CI: it installs the dependencies with the plugin's package manager and
+# runs the plugin's gate. With `coverage-badge` on, it also renders the coverage badge from `coverage/lcov.info` (the
+# report `testCoverage` writes) and, on a push to the default branch, publishes it to a branch of its own, so the README
+# can show the measured coverage with no external service:
+#
+#   [![Coverage](https://raw.githubusercontent.com/<owner>/<repo>/badges/coverage.svg)](https://github.com/<owner>/<repo>/actions/workflows/ci.yml)
+#
+# The caller owns the triggers and the permissions, and pins the workflow to a release tag of the toolkit:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     pull_request:
+#   permissions:
+#     contents: write # Only for coverage-badge; `read` is enough without it.
+#   jobs:
+#     ci:
+#       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-ci.yml@2.2.0
+#       with:
+#         coverage-badge: true
+#
+# Every input is documented at https://mnaoumov.dev/obsidian-dev-toolkit/guides/ci-and-release/.
+#
+# The `Resolve settings` and the setup steps are the same in `obsidian-plugin-release.yml`; the workflows' unit test
+# keeps them so.
+
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        description: The package manager the plugin uses (npm, pnpm, yarn or bun)
+        type: string
+        default: npm
+      node-version:
+        description: The Node.js version (read from node-version-file when empty)
+        type: string
+        default: ''
+      node-version-file:
+        description: The file naming the Node.js version, used when node-version is empty (the latest LTS when it does not exist)
+        type: string
+        default: .nvmrc
+      install-command:
+        description: The command that installs the dependencies (the package manager's frozen install when empty)
+        type: string
+        default: ''
+      gate-command:
+        description: The command that checks the plugin (`<package manager> run gate` when empty)
+        type: string
+        default: ''
+      coverage-badge:
+        description: Render the coverage badge after the gate, and publish it on a push to the default branch
+        type: boolean
+        default: false
+      coverage-badge-metric:
+        description: The coverage the badge shows (lines, functions, branches or lowest)
+        type: string
+        default: lines
+      coverage-badge-branch:
+        description: The branch the badge is published to, as coverage.svg
+        type: string
+        default: badges
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      # The install runs the `prepare` script, which installs husky -- pointless in CI.
+      HUSKY: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve settings
+        id: settings
+        env:
+          INSTALL_COMMAND: ${{ inputs.install-command }}
+          NODE_VERSION: ${{ inputs.node-version }}
+          NODE_VERSION_FILE: ${{ inputs.node-version-file }}
+          PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        run: |
+          case "$PACKAGE_MANAGER" in
+            npm) install='npm ci'; run='npm run'; exec='npx --no-install'; cache='npm' ;;
+            pnpm) install='pnpm install --frozen-lockfile'; run='pnpm run'; exec='pnpm exec'; cache='pnpm' ;;
+            yarn)
+              if [ -f .yarnrc.yml ]; then install='yarn install --immutable'; else install='yarn install --frozen-lockfile'; fi
+              run='yarn run'; exec='yarn run'; cache='yarn' ;;
+            bun) install='bun install --frozen-lockfile'; run='bun run'; exec='bun x'; cache='' ;;
+            *) echo "::error::Unknown package-manager '$PACKAGE_MANAGER'. Use npm, pnpm, yarn or bun."; exit 1 ;;
+          esac
+          if [ -n "$NODE_VERSION" ]; then
+            node_version="$NODE_VERSION"; node_version_file=''
+          elif [ -f "$NODE_VERSION_FILE" ]; then
+            node_version=''; node_version_file="$NODE_VERSION_FILE"
+          else
+            node_version='lts/*'; node_version_file=''
+          fi
+          {
+            echo "cache=$cache"
+            echo "exec=$exec"
+            echo "install=${INSTALL_COMMAND:-$install}"
+            echo "node-version=$node_version"
+            echo "node-version-file=$node_version_file"
+            echo "run=$run"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Bun
+        if: inputs.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Enable Corepack
+        if: inputs.package-manager == 'yarn'
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.settings.outputs.node-version }}
+          node-version-file: ${{ steps.settings.outputs.node-version-file }}
+          cache: ${{ steps.settings.outputs.cache }}
+
+      - name: Install dependencies
+        run: ${{ steps.settings.outputs.install }}
+
+      - name: Gate
+        env:
+          GATE_COMMAND: ${{ inputs.gate-command }}
+          RUN: ${{ steps.settings.outputs.run }}
+        # The command is the caller's own input, so it is split into words on purpose.
+        run: ${GATE_COMMAND:-$RUN gate}
+
+      - name: Generate the coverage badge
+        if: inputs.coverage-badge
+        env:
+          EXEC: ${{ steps.settings.outputs.exec }}
+          METRIC: ${{ inputs.coverage-badge-metric }}
+        run: $EXEC generate-coverage-badge "--metric=$METRIC" --output=coverage/coverage-badge.svg
+
+      - name: Publish the coverage badge
+        if: inputs.coverage-badge && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          BRANCH: ${{ inputs.coverage-badge-branch }}
+          GH_TOKEN: ${{ github.token }}
+        # The badge branch holds nothing else, so it is built in a repository of its own rather than switched to here.
+        run: |
+          badge="$GITHUB_WORKSPACE/coverage/coverage-badge.svg"
+          folder="$RUNNER_TEMP/coverage-badge"
+          rm -rf "$folder"
+          git init -q "$folder"
+          cd "$folder"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git symbolic-ref HEAD "refs/heads/$BRANCH"
+          git remote add origin "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git"
+          if git fetch -q --depth=1 origin "$BRANCH"; then git reset -q FETCH_HEAD; fi
+          cp "$badge" coverage.svg
+          git add coverage.svg
+          if git diff --cached --quiet; then
+            echo 'The coverage badge is unchanged.'
+            exit 0
+          fi
+          git commit -q -m 'chore: update the coverage badge [skip ci]'
+          git push -q origin "HEAD:refs/heads/$BRANCH"
+          echo "Published the coverage badge to the $BRANCH branch."

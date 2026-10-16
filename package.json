@@ -18,6 +18,10 @@
   "license": "MIT",
   "author": "Michael Naumov",
   "type": "module",
+  "bin": {
+    "archive-demo-vault": "bin/archive-demo-vault.mjs",
+    "generate-coverage-badge": "bin/generate-coverage-badge.mjs"
+  },
   "exports": {
     ".": {
       "import": {
@@ -206,6 +210,7 @@
   },
   "files": [
     "**/package.json",
+    "bin/",
     "dist/",
     "!dist/*.tgz",
     "tsconfig/",

@@ -1,0 +1,43 @@
+name: Obsidian Plugin Attest Release Assets
+
+# A reusable workflow that attests the build provenance of a published release's assets, for a plugin that releases
+# from the developer's machine with the toolkit's `npm run version`, which uploads the assets itself. A plugin that
+# releases with `obsidian-plugin-release.yml` needs none of this: that workflow attests its own assets.
+#
+# The caller owns the trigger and the permissions, and pins the workflow to a release tag of the toolkit:
+#
+#   on:
+#     release:
+#       types: [published]
+#   permissions:
+#     contents: read
+#     id-token: write
+#     attestations: write
+#   jobs:
+#     attest:
+#       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-attest-release-assets.yml@2.2.0
+#
+# Every input is documented at https://mnaoumov.dev/obsidian-dev-toolkit/guides/ci-and-release/.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag of the release whose assets to attest (the published release's when empty)
+        type: string
+        default: ''
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir assets
+
+      - name: Attest the release assets
+        uses: actions/attest@v4
+        with:
+          subject-path: assets/*
