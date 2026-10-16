@@ -10,7 +10,7 @@
  * ```ts
  * setupFiles: [
  *   'obsidian-integration-testing/vitest-setup',
- *   'obsidian-dev-utils/integration-test-setup'
+ *   '@mnaoumov/obsidian-dev-toolkit/integration-test-setup'
  * ]
  * ```
  *
@@ -19,11 +19,11 @@
  *
  * - The **harness plugin** must be loaded in the test vault, because it is what publishes the library on
  *   `window.__obsidianDevUtilsModule`. Seed and enable it via
- *   `obsidian-dev-utils/integration-test-vitest-global-setup` (or, when composing with your own vault
+ *   `@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup` (or, when composing with your own vault
  *   fixtures, {@link getIntegrationTestPluginPopulate} +
- *   `createSetup({ enableCommunityPlugins: [OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID] })`).
+ *   `createSetup({ enableCommunityPlugins: [OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID] })`).
  * - The **types** must be activated, or `lib.<helper>` will not compile. Put
- *   `/// <reference types="obsidian-dev-utils/@types/obsidian-integration-testing" />` in a `.d.ts` your
+ *   `/// <reference types="@mnaoumov/obsidian-lib/@types/obsidian-integration-testing" />` in a `.d.ts` your
  *   `tsconfig.json` already includes. A `compilerOptions.types` entry does NOT work for this.
  *
  * Registration is idempotent (the harness dedupes resolvers by source text), so importing this module from

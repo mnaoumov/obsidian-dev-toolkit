@@ -3,14 +3,14 @@
  *
  * Turnkey Vitest `globalSetup` for a plugin's integration tests: does everything
  * `obsidian-integration-testing`'s own global setup does (temp vault, install and enable the
- * plugin-under-test), and additionally seeds and enables the `obsidian-dev-utils` integration-test harness
+ * plugin-under-test), and additionally seeds and enables the `@mnaoumov/obsidian-dev-toolkit` integration-test harness
  * plugin, so `lib.<helper>` works inside `evalInObsidian` closures.
  *
  * ```ts
- * globalSetup: ['obsidian-dev-utils/integration-test-vitest-global-setup'],
+ * globalSetup: ['@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup'],
  * setupFiles: [
  *   'obsidian-integration-testing/vitest-setup',
- *   'obsidian-dev-utils/integration-test-setup'
+ *   '@mnaoumov/obsidian-dev-toolkit/integration-test-setup'
  * ]
  * ```
  *
@@ -18,11 +18,11 @@
  *
  * If the project already needs its own `populate` (demo-vault fixtures, a large performance vault), skip
  * this module and compose instead — merge {@link getIntegrationTestPluginPopulate} into that map and pass
- * {@link OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID} to `enableCommunityPlugins`:
+ * {@link OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID} to `enableCommunityPlugins`:
  *
  * ```ts
  * export const { setup, teardown } = createSetup({
- *   enableCommunityPlugins: [OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID],
+ *   enableCommunityPlugins: [OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID],
  *   populate: () => ({ ...myFixtures(), ...getIntegrationTestPluginPopulate() })
  * });
  * ```
@@ -33,17 +33,17 @@ import { createSetup } from 'obsidian-integration-testing/vitest-global-setup-pl
 
 import {
   getIntegrationTestPluginPopulate,
-  OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID
+  OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID
 } from './test-runners/integration-test-plugin.ts';
 
 const globalSetup = createSetup({
-  enableCommunityPlugins: [OBSIDIAN_DEV_UTILS_INTEGRATION_TEST_PLUGIN_ID],
+  enableCommunityPlugins: [OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID],
   populate: getIntegrationTestPluginPopulate
 });
 
 /**
  * Vitest global setup: creates the temp vault, installs and enables the plugin-under-test, then seeds and
- * enables the `obsidian-dev-utils` integration-test harness plugin alongside it.
+ * enables the `@mnaoumov/obsidian-dev-toolkit` integration-test harness plugin alongside it.
  */
 export const setup = globalSetup.setup;
 

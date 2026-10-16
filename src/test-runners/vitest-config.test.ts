@@ -106,7 +106,7 @@ describe('ObsidianPluginVitestConfigContext', () => {
   it('should refuse a stale build before the harness loads it, in every project that loads the plugin', () => {
     const context = new ObsidianPluginVitestConfigContext();
     const expected = [
-      'obsidian-dev-utils/script-utils/test-runners/stale-build-global-setup',
+      '@mnaoumov/obsidian-dev-toolkit/test-runners/stale-build-global-setup',
       'obsidian-integration-testing/vitest-global-setup-plugin'
     ];
     expect(context.desktop.globalSetup).toEqual(expected);
@@ -299,12 +299,12 @@ describe('defineObsidianPluginVitestConfig', () => {
         server: {
           // eslint-disable-next-line unicorn/name-replacements -- `deps` is declared by `vitest`; renaming it here would not match the API.
           deps: {
-            inline: ['@obsidian-typings', 'obsidian-dev-utils']
+            inline: ['@mnaoumov', '@obsidian-typings']
           }
         },
         setupFiles: [
           'obsidian-test-mocks/vitest-setup',
-          'obsidian-dev-utils/vitest-setup'
+          '@mnaoumov/obsidian-dev-toolkit/vitest-setup'
         ]
       }
     });
@@ -457,7 +457,7 @@ describe('defineObsidianPluginVitestConfig project isolation', () => {
   let fixtureRoot = '';
 
   beforeAll(() => {
-    fixtureRoot = mkdtempSync(join(tmpdir(), 'obsidian-dev-utils-vitest-config-'));
+    fixtureRoot = mkdtempSync(join(tmpdir(), 'obsidian-dev-toolkit-vitest-config-'));
     mkdirSync(join(fixtureRoot, 'src'));
 
     for (const fileName of FIXTURE_TEST_FILE_NAMES) {

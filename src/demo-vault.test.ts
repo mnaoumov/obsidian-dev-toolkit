@@ -310,9 +310,9 @@ describe('archivePluginDemoVault', () => {
     await expect(archivePluginDemoVault()).rejects.toThrow(`Could not parse ${APP_JSON_PATH}.`);
   });
 
-  it('should throw when the obsidian-dev-utils package folder cannot be resolved', async () => {
+  it('should throw when the package folder cannot be resolved', async () => {
     mockGetRootFolder.mockReturnValue(null);
     await expect(archivePluginDemoVault())
-      .rejects.toThrow('Could not resolve the obsidian-dev-utils package folder to inject the demo-vault-helper plugin.');
+      .rejects.toThrow('Could not resolve the @mnaoumov/obsidian-dev-toolkit package folder to inject the demo-vault-helper plugin.');
   });
 });

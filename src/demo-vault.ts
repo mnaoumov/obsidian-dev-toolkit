@@ -227,7 +227,7 @@ function injectAppJson(params: InjectAppJsonParams): void {
 async function injectDemoVaultHelper(demoedPluginId: string): Promise<void> {
   const packageFolder = getRootFolder(getFolderName(import.meta.url));
   if (!packageFolder) {
-    throw new Error('Could not resolve the obsidian-dev-utils package folder to inject the demo-vault-helper plugin.');
+    throw new Error('Could not resolve the @mnaoumov/obsidian-dev-toolkit package folder to inject the demo-vault-helper plugin.');
   }
 
   const helperSourcePath = join(packageFolder, ObsidianPluginRepoPaths.DistDemoVaultHelper);
