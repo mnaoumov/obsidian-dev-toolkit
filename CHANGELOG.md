@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2.1.0
+
+- build(dprint): stop dprint and @stylistic/jsx-quotes fighting over JSX attribute quotes
+- docs: add this package's documentation site
+- build: take commitlintConfig from typescript-dev-toolkit 2.1.0
+
 ## 2.0.0
 
 - build: drop the workspace-era sibling includes from tsconfig.types.json
