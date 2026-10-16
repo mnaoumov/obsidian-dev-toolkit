@@ -25,6 +25,8 @@ describe('obsidianDevUtilsPlugin', () => {
       'no-local-obsidian-internals',
       'no-over-cap-wait-in-eval-in-obsidian',
       'no-untrusted-input-events',
+      'plugin-name-as-code',
+      'plugin-name-as-code-in-ui',
       'require-component-suffix'
     ]);
   });

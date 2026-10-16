@@ -308,6 +308,24 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       rules: {
         'obsidian-dev-utils/no-local-obsidian-internals': 'off'
       }
+    },
+    {
+      /*
+       * A plugin's display name is marked as code: backticks in a comment (`plugin-name-as-code`, autofixed), a
+       * `<code>` element in UI (`plugin-name-as-code-in-ui`, reported only).
+       *
+       * Registered but OFF: repositories still carry plain plugin names from before the rules existed, and turning
+       * them on first would make their lint red. Switch them to `'error'` once those are fixed. Both take
+       * `{ additionalPluginNames: [...] }` for names the shared list lacks.
+       */
+      files: context.allFiles(),
+      plugins: {
+        'obsidian-dev-utils': obsidianDevUtilsPlugin
+      },
+      rules: {
+        'obsidian-dev-utils/plugin-name-as-code': 'off',
+        'obsidian-dev-utils/plugin-name-as-code-in-ui': 'off'
+      }
     }
   ]);
 }

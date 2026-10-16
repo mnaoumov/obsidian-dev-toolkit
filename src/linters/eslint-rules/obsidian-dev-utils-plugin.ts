@@ -14,6 +14,8 @@ import { manifestSchema } from './manifest-schema.ts';
 import { noLocalObsidianInternals } from './no-local-obsidian-internals.ts';
 import { noOverCapWaitInEvalInObsidian } from './no-over-cap-wait-in-eval-in-obsidian.ts';
 import { noUntrustedInputEvents } from './no-untrusted-input-events.ts';
+import { pluginNameAsCodeInUi } from './plugin-name-as-code-in-ui.ts';
+import { pluginNameAsCode } from './plugin-name-as-code.ts';
 import { requireComponentSuffix } from './require-component-suffix.ts';
 
 /**
@@ -31,6 +33,8 @@ export const obsidianDevUtilsPlugin: ESLint.Plugin = {
     'no-local-obsidian-internals': noLocalObsidianInternals,
     'no-over-cap-wait-in-eval-in-obsidian': noOverCapWaitInEvalInObsidian,
     'no-untrusted-input-events': noUntrustedInputEvents,
+    'plugin-name-as-code': pluginNameAsCode,
+    'plugin-name-as-code-in-ui': pluginNameAsCodeInUi,
     'require-component-suffix': requireComponentSuffix
   }
 };

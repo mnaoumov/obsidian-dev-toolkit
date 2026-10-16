@@ -139,6 +139,26 @@
         "default": "./dist/lib/cjs/linters/eslint-rules/*.cjs"
       }
     },
+    "./linters/markdownlint-rules": {
+      "import": {
+        "types": "./dist/lib/esm/linters/markdownlint-rules/index.d.mts",
+        "default": "./dist/lib/esm/linters/markdownlint-rules/index.mjs"
+      },
+      "require": {
+        "types": "./dist/lib/cjs/linters/markdownlint-rules/index.d.cts",
+        "default": "./dist/lib/cjs/linters/markdownlint-rules/index.cjs"
+      }
+    },
+    "./linters/markdownlint-rules/*": {
+      "import": {
+        "types": "./dist/lib/esm/linters/markdownlint-rules/*.d.mts",
+        "default": "./dist/lib/esm/linters/markdownlint-rules/*.mjs"
+      },
+      "require": {
+        "types": "./dist/lib/cjs/linters/markdownlint-rules/*.d.cts",
+        "default": "./dist/lib/cjs/linters/markdownlint-rules/*.cjs"
+      }
+    },
     "./test-runners": {
       "import": {
         "types": "./dist/lib/esm/test-runners/index.d.mts",
@@ -216,6 +236,7 @@
     "eslint-plugin-obsidianmd": "^0.4.2",
     "eslint-plugin-tsdoc": "^0.5.3",
     "fflate": "^0.8.3",
+    "markdownlint": "^0.41.1",
     "obsidian": "^1.14.4",
     "postcss": "^8.5.28",
     "postcss-modules": "^9.0.1",
