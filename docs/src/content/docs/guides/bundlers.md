@@ -262,6 +262,9 @@ The same option is `obsidianPluginVite({ reload: 'obsidian-cli' })`, `obsidianPl
 
 One fixture plugin, `test-fixtures/obsidian-plugin` in this repository, is built with every bundler by `npm run test:integration`, in production and, for the adapters that take a `mode`, in development. Each `main.js` is then loaded the way Obsidian's own plugin loader does, as the body of `function (require, module, exports)` with a bare `module`, and the plugin class is constructed and its `onload` run. CI runs it on every push.
 
+`npm run test:integration:obsidian` then loads the same builds in a real Obsidian, through [obsidian-integration-testing]: each one is installed into an empty vault and enabled, its command must be registered and run, a Node builtin must come through Electron's `require`, and its `styles.css` must apply while the plugin is enabled and go away once it is disabled. It needs a desktop Obsidian installed, which CI does not have, so it runs locally.
+
 Each build feature has a fixture of its own in `test-fixtures/features/`: one per framework, one with PostCSS, Tailwind and a CSS module together, and one with a WebAssembly module. Every bundler builds each of them, in production and, where it can, in development, and each `main.js` runs in a DOM: the framework's component renders its text, the CSS module's scoped class name is in `styles.css` beside Tailwind's utility, and the WebAssembly module answers.
 
 [Hot Reload]: https://github.com/pjeby/hot-reload
+[obsidian-integration-testing]: https://mnaoumov.dev/obsidian-integration-testing/
