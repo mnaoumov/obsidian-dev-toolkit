@@ -1,0 +1,38 @@
+---
+title: Obsidian Dev Toolkit
+description: Build, lint, test and release tooling for Obsidian plugins.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+    title: Obsidian Dev Toolkit
+    tagline: The esbuild plugin builder, the Obsidian layers of the shared ESLint, markdownlint and Vitest configs, the plugin release, demo vaults and the integration-test harness for Obsidian plugins.
+    actions:
+        - text: Getting started
+          link: /obsidian-dev-toolkit/guides/getting-started/
+          icon: rocket
+        - text: API reference
+          link: /obsidian-dev-toolkit/api/
+          icon: open-book
+          variant: secondary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+
+<CardGrid stagger>
+    <Card title="Build and release" icon="rocket">
+        [Bundle the plugin with esbuild, hot-reload it while you work, and release it](./guides/cli-commands/) with `manifest.json`, `versions.json` and the release assets kept in step.
+    </Card>
+
+    <Card title="Demo vaults" icon="document">
+        [Ship a curated vault with every release](./guides/demo-vault/), open it with one command, and test that every note follows the conventions and every button runs.
+    </Card>
+
+    <Card title="Testing" icon="approve-check">
+        [One call configures the unit and integration-test projects](./guides/testing/), and every library helper is reachable inside a real Obsidian.
+    </Card>
+
+    <Card title="Shared configs" icon="setting">
+        The Obsidian layers of the ESLint, markdownlint and Vitest configs, plus ready-made script templates.
+    </Card>
+</CardGrid>

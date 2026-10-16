@@ -28,6 +28,7 @@
     ]
   },
   "include": [
+    "./astro.config.ts",
     "./commitlint.config.ts",
     "./demo-vault-helper/**/*.ts",
     "./eslint.config.mts",
