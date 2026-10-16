@@ -10,9 +10,9 @@
  * is wrong, or that calls an API that has since changed shape, fails at click time and nowhere else.
  *
  * The companion half — seeding the temp vault with the demo-vault tree, its `.obsidian` config, and the
- * CodeScript Toolkit binary that turns ```` ```code-button ```` fences into buttons — is
+ * `CodeScript Toolkit` binary that turns ```` ```code-button ```` fences into buttons — is
  * `buildDemoVaultPopulate` in `obsidian-integration-testing`; hand its result to the project's
- * `globalSetup` and name CodeScript Toolkit in `enableCommunityPlugins`.
+ * `globalSetup` and name `CodeScript Toolkit` in `enableCommunityPlugins`.
  */
 
 import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
@@ -35,7 +35,7 @@ import {
 } from 'vitest';
 
 /**
- * CodeScript Toolkit's manifest id. It is still the plugin's original `fix-require-modules` id, which
+ * `CodeScript Toolkit`'s manifest id. It is still the plugin's original `fix-require-modules` id, which
  * no longer matches its name — the id is published, so it cannot be changed.
  */
 export const CODE_SCRIPT_TOOLKIT_PLUGIN_ID = 'fix-require-modules';
@@ -68,7 +68,7 @@ export interface DemoVaultButtonResult {
   readonly caption: string;
 
   /**
-   * The result line CodeScript Toolkit printed under the button, truncated.
+   * The result line `CodeScript Toolkit` printed under the button, truncated.
    */
   readonly output: string;
 
@@ -240,7 +240,7 @@ const CAPTION_CONFIG_REG_EXP = /^caption:(?<value>.*)$/m;
 const PLAIN_SCALAR_COMMENT_REG_EXP = /\s+#.*$/;
 const SINGLE_QUOTED_SCALAR_REG_EXP = /^'(?<content>.*)'$/;
 const DOUBLE_QUOTED_SCALAR_REG_EXP = /^"(?<content>.*)"$/;
-// CodeScript Toolkit's own default, which a fence naming no caption renders.
+// `CodeScript Toolkit`'s own default, which a fence naming no caption renders.
 const DEFAULT_CODE_BUTTON_CAPTION = '(no caption)';
 
 // The rendered-button selector is `:scope .block-language-code-button button.mod-cta`. It is written
@@ -334,8 +334,8 @@ export function findDuplicateCaptions(captions: readonly string[]): string[] {
 /**
  * Builds the assertion message for a note's failing buttons.
  *
- * The captured output is included because a button's failure is a runtime one — the stack CodeScript
- * Toolkit prints under it is the only diagnosis there is.
+ * The captured output is included because a button's failure is a runtime one — the stack
+ * `CodeScript Toolkit` prints under it is the only diagnosis there is.
  *
  * @param noteName - The note the buttons belong to.
  * @param failures - The failing buttons.
@@ -356,7 +356,7 @@ export function formatFailures(noteName: string, failures: readonly DemoVaultBut
  * Lists the captions of the buttons a note's source will actually render, in source order.
  *
  * Which fences render a button is decided exactly as {@link countRenderedButtons} describes. A caption is
- * read from the fence's own config block; a fence naming none takes CodeScript Toolkit's default,
+ * read from the fence's own config block; a fence naming none takes `CodeScript Toolkit`'s default,
  * `(no caption)`, which is what its button then shows.
  *
  * @param source - The note's markdown.
@@ -642,10 +642,10 @@ export function registerDemoVaultButtonSuite(options: RegisterDemoVaultButtonSui
 
 /* v8 ignore start -- Drives a real Obsidian over CDP: the closure is serialized here and executed in another process, so it cannot be exercised by a unit test. */
 /**
- * Turns restricted mode off and enables CodeScript Toolkit, whose binary the global setup seeded.
+ * Turns restricted mode off and enables `CodeScript Toolkit`, whose binary the global setup seeded.
  *
  * @param timeoutInMilliseconds - How long to wait for it to load.
- * @returns Whether CodeScript Toolkit is loaded.
+ * @returns Whether `CodeScript Toolkit` is loaded.
  */
 async function checkCodeScriptToolkitLoaded(timeoutInMilliseconds: number): Promise<boolean> {
   return evalInObsidian({
@@ -681,10 +681,10 @@ async function checkCodeScriptToolkitLoaded(timeoutInMilliseconds: number): Prom
 
 /* v8 ignore start -- Drives a real Obsidian over CDP: the closure is serialized here and executed in another process, so it cannot be exercised by a unit test. */
 /**
- * Clicks one button and reads the result line CodeScript Toolkit writes under it.
+ * Clicks one button and reads the result line `CodeScript Toolkit` writes under it.
  *
  * A button that re-renders its own note (a settings change, a reload) detaches the block it lives in,
- * so the block element is captured BEFORE the click and read afterwards — CodeScript Toolkit writes the
+ * so the block element is captured BEFORE the click and read afterwards — `CodeScript Toolkit` writes the
  * result into that same element even once it is detached.
  *
  * @param params - The {@link ClickButtonParams}.
