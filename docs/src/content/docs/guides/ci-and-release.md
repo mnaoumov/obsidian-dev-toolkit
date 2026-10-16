@@ -11,7 +11,7 @@ The toolkit ships three reusable GitHub workflows, so a plugin repository carrie
 | `obsidian-plugin-release.yml` | Checks the tag, builds the plugin, archives the demo vault, publishes the GitHub release and attests its assets. | `push` of a tag |
 | `obsidian-plugin-attest-release-assets.yml` | Attests the assets of a release made elsewhere, such as by `npm run version`. | `release: published` |
 
-Each call pins the workflow to a release tag of the toolkit, which is the version number with no `v`. The workflows ship from 2.2.0 on. Pin the same version as the toolkit in your `package.json`, so the commands the workflows run (`generate-coverage-badge`, `archive-demo-vault`) are the ones installed. [Dependabot's `github-actions` ecosystem](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) updates the pin along with your other actions.
+Each call pins the workflow to a release tag of the toolkit, which is the version number with no `v`. The workflows ship from 3.0.0 on. Pin the same version as the toolkit in your `package.json`, so the commands the workflows run (`generate-coverage-badge`, `archive-demo-vault`) are the ones installed. [Dependabot's `github-actions` ecosystem](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) updates the pin along with your other actions.
 
 ## Shared inputs
 
@@ -42,7 +42,7 @@ permissions:
 
 jobs:
   ci:
-    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-ci.yml@2.2.0
+    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-ci.yml@3.0.0
 ```
 
 The job checks out the repository, installs the dependencies and runs the gate.
@@ -71,7 +71,7 @@ permissions:
 
 jobs:
   release:
-    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-release.yml@2.2.0
+    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-release.yml@3.0.0
 ```
 
 To release, bump the version in `manifest.json`, `package.json` and `versions.json`, commit, then push a tag that is that version:
@@ -116,7 +116,7 @@ permissions:
 
 jobs:
   attest:
-    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-attest-release-assets.yml@2.2.0
+    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-attest-release-assets.yml@3.0.0
 ```
 
 It downloads the assets of the published release and attests their build provenance. Its one input, `tag`, names another release to attest; by default it is the release that triggered the run.
@@ -133,7 +133,7 @@ permissions:
 
 jobs:
   ci:
-    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-ci.yml@2.2.0
+    uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-ci.yml@3.0.0
     with:
       coverage-badge: true
 ```

@@ -20,7 +20,7 @@ name: Obsidian Plugin Release
 #     attestations: write
 #   jobs:
 #     release:
-#       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-release.yml@2.2.0
+#       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-release.yml@3.0.0
 #
 # Every input is documented at https://mnaoumov.dev/obsidian-dev-toolkit/guides/ci-and-release/.
 #

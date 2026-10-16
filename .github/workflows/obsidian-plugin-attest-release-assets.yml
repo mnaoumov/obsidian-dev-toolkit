@@ -15,7 +15,7 @@ name: Obsidian Plugin Attest Release Assets
 #     attestations: write
 #   jobs:
 #     attest:
-#       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-attest-release-assets.yml@2.2.0
+#       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-attest-release-assets.yml@3.0.0
 #
 # Every input is documented at https://mnaoumov.dev/obsidian-dev-toolkit/guides/ci-and-release/.
 
