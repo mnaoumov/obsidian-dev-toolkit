@@ -11,7 +11,12 @@
 /* v8 ignore start -- Copies build output into a vault and drives a live Obsidian over CDP. */
 
 import type { PluginManifest } from 'obsidian';
-import type { ObsidianTransport } from 'obsidian-integration-testing';
+import type {
+  createTransportFromOptions,
+  DesktopCdpTransport,
+  evalInObsidian,
+  ObsidianTransport
+} from 'obsidian-integration-testing';
 
 import {
   invokeAsyncSafely,
@@ -30,11 +35,6 @@ import {
   readFile
 } from 'node:fs/promises';
 import process from 'node:process';
-import {
-  createTransportFromOptions,
-  DesktopCdpTransport,
-  evalInObsidian
-} from 'obsidian-integration-testing';
 
 import type { ObsidianPluginReload } from './obsidian-plugin-build.ts';
 
@@ -133,11 +133,38 @@ interface ModuleState {
   isDevInstanceDisposed: boolean;
 }
 
+/**
+ * The members of `obsidian-integration-testing` the `'hot-reload-plugin'` reload uses, loaded on demand.
+ */
+interface ObsidianIntegrationTesting {
+  /**
+   * Launches or attaches to an Obsidian instance.
+   */
+  readonly createTransportFromOptions: typeof createTransportFromOptions;
+
+  /**
+   * The desktop transport, which knows the endpoint of the instance it owns.
+   */
+  readonly DesktopCdpTransport: typeof DesktopCdpTransport;
+
+  /**
+   * Runs a callback inside Obsidian.
+   */
+  readonly evalInObsidian: typeof evalInObsidian;
+}
+
 const moduleState: ModuleState = {
   devInstanceTransportPromise: undefined,
   isDevInstanceCleanupRegistered: false,
   isDevInstanceDisposed: false
 };
+
+/**
+ * The package the `'hot-reload-plugin'` reload drives the owned Obsidian instance with. It is an optional peer
+ * dependency, so it is loaded only when that reload runs: every bundler adapter imports this module, and a project
+ * that reloads another way, or builds for production only, does not need it.
+ */
+const OBSIDIAN_INTEGRATION_TESTING_PACKAGE_NAME = 'obsidian-integration-testing';
 
 /**
  * How often the owned Obsidian instance is probed to detect that it was closed.
@@ -209,17 +236,39 @@ export async function deployToObsidianPluginsFolder(params: DeployToObsidianPlug
  * Returns the `npm run dev`-owned Obsidian instance for the given vault, launching it on first use and
  * reusing it on subsequent rebuilds.
  *
+ * @param obsidianIntegrationTesting - The loaded `obsidian-integration-testing` module.
  * @param vaultPath - The absolute path to the vault folder to open.
  * @returns A {@link Promise} resolving to the owned {@link ObsidianTransport}.
  */
-async function getOrLaunchDevInstance(vaultPath: string): Promise<ObsidianTransport> {
-  moduleState.devInstanceTransportPromise ??= launchDevInstance(vaultPath);
+async function getOrLaunchDevInstance(obsidianIntegrationTesting: ObsidianIntegrationTesting, vaultPath: string): Promise<ObsidianTransport> {
+  moduleState.devInstanceTransportPromise ??= launchDevInstance(obsidianIntegrationTesting, vaultPath);
   try {
     return await moduleState.devInstanceTransportPromise;
   } catch (error) {
     // Clear the cache so a later rebuild retries the launch.
     moduleState.devInstanceTransportPromise = undefined;
     throw error;
+  }
+}
+
+/**
+ * Loads `obsidian-integration-testing`, which only the `'hot-reload-plugin'` reload needs.
+ *
+ * @returns A {@link Promise} resolving to the module.
+ * @throws If the project does not have the package, naming the command that installs it and the `reload` values
+ * that do without it.
+ */
+async function importObsidianIntegrationTesting(): Promise<ObsidianIntegrationTesting> {
+  try {
+    return await import('obsidian-integration-testing');
+  } catch (error) {
+    if (!isMissingPackageError(error)) {
+      throw error;
+    }
+    throw new Error(
+      `The development build's \`reload: 'hot-reload-plugin'\` (the default) needs \`${OBSIDIAN_INTEGRATION_TESTING_PACKAGE_NAME}\`, which this project does not have. Install it with: npm install --save-dev ${OBSIDIAN_INTEGRATION_TESTING_PACKAGE_NAME}, or set \`reload\` to \`'obsidian-cli'\` or \`false\`.`,
+      { cause: error }
+    );
   }
 }
 
@@ -252,8 +301,9 @@ async function installAndEnableHotReload(params: InstallAndEnableHotReloadParams
     pluginName
   } = params;
   const vaultPath = dirname(obsidianConfigFolder);
-  const transport = await getOrLaunchDevInstance(vaultPath);
-  await evalInObsidian({
+  const obsidianIntegrationTesting = await importObsidianIntegrationTesting();
+  const transport = await getOrLaunchDevInstance(obsidianIntegrationTesting, vaultPath);
+  await obsidianIntegrationTesting.evalInObsidian({
     // eslint-disable-next-line no-shadow -- No actual shadowing as the function is executed externally.
     async callback({ app, obsidianModule, pluginName }) {
       const HOT_RELOAD_PLUGIN_ID = 'hot-reload';
@@ -332,13 +382,29 @@ async function isDevInstanceRunning(cdpUrl: string): Promise<boolean> {
 }
 
 /**
+ * Tells whether an import failed because `obsidian-integration-testing` itself is not installed, as opposed to
+ * failing while loading it.
+ *
+ * @param error - The error the import threw.
+ * @returns `true` when the package could not be found.
+ */
+function isMissingPackageError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const { code } = error as NodeJS.ErrnoException;
+  return (code === 'ERR_MODULE_NOT_FOUND' || code === 'MODULE_NOT_FOUND') && error.message.includes(`'${OBSIDIAN_INTEGRATION_TESTING_PACKAGE_NAME}'`);
+}
+
+/**
  * Launches a fresh owned Obsidian instance (isolated user-data dir) and opens the given vault.
  *
+ * @param obsidianIntegrationTesting - The loaded `obsidian-integration-testing` module.
  * @param vaultPath - The absolute path to the vault folder to open.
  * @returns A {@link Promise} resolving to the launched {@link ObsidianTransport}.
  */
-async function launchDevInstance(vaultPath: string): Promise<ObsidianTransport> {
-  const transport = await createTransportFromOptions();
+async function launchDevInstance(obsidianIntegrationTesting: ObsidianIntegrationTesting, vaultPath: string): Promise<ObsidianTransport> {
+  const transport = await obsidianIntegrationTesting.createTransportFromOptions();
   try {
     await transport.registerVault(vaultPath);
   } catch (error) {
@@ -346,7 +412,7 @@ async function launchDevInstance(vaultPath: string): Promise<ObsidianTransport> 
     throw error;
   }
   registerDevInstanceCleanup(transport);
-  watchDevInstanceAndStopOnClose(transport);
+  watchDevInstanceAndStopOnClose(obsidianIntegrationTesting, transport);
   return transport;
 }
 
@@ -414,10 +480,11 @@ function registerDevInstanceCleanup(transport: ObsidianTransport): void {
  * Only a harness-owned instance is watched. When the transport attaches to an already-running Obsidian
  * (the user's own), that instance is not ours to be tied to and closing it leaves the build running.
  *
+ * @param obsidianIntegrationTesting - The loaded `obsidian-integration-testing` module.
  * @param transport - The owned transport whose instance to watch.
  */
-function watchDevInstanceAndStopOnClose(transport: ObsidianTransport): void {
-  if (!(transport instanceof DesktopCdpTransport)) {
+function watchDevInstanceAndStopOnClose(obsidianIntegrationTesting: ObsidianIntegrationTesting, transport: ObsidianTransport): void {
+  if (!(transport instanceof obsidianIntegrationTesting.DesktopCdpTransport)) {
     return;
   }
 
