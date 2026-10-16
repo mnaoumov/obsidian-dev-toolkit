@@ -8,6 +8,10 @@ Tooling for Obsidian plugins: the esbuild plugin builder, the shared ESLint and 
 npm install --save-dev @mnaoumov/obsidian-dev-toolkit
 ```
 
+## Documentation
+
+The guides and the API reference are at <https://mnaoumov.dev/obsidian-dev-toolkit/>.
+
 ## Where it fits
 
 It is one of five packages that replace [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils): [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-test-toolkit`](https://github.com/mnaoumov/typescript-test-toolkit), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) and [`@mnaoumov/obsidian-dev-toolkit`](https://github.com/mnaoumov/obsidian-dev-toolkit). It depends on [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit) and [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib). It moved here from that repository with its history.
