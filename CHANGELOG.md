@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.2.0
+
+- feat(test-runners): add defineObsidianPluginJestConfig
+- test(bundlers): load every bundler adapter's build in a real Obsidian
+
 ## 3.1.0
 
 - fix(deps): take obsidian-lib 3.x or 4.x as a peer dependency, so a plugin gets one copy
