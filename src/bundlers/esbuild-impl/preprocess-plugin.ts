@@ -8,7 +8,7 @@
  *
  * It is the generic `@mnaoumov/typescript-dev-toolkit` preprocess plugin plus two Obsidian-only parts: a CommonJS
  * `import(dot)meta(dot)url` fallback that reads `activeWindow`, and a `require` patch that resolves Obsidian's
- * built-in modules and stubs the rest on mobile. Both are serialized into the emitted bundle with `String(fn)`, so
+ * built-in modules and stubs the rest on mobile (a host with no `app` at all counts as desktop). Both are serialized into the emitted bundle with `String(fn)`, so
  * each is self-contained: it reads only globals and what it declares itself. Calling a function imported from
  * another module would compile to `(0, import_module.fn)(…)` in the CommonJS build of this package, naming a binding
  * the emitted bundle does not have.
@@ -121,8 +121,11 @@ function patchObsidianRequire(): void {
       return originalRequire?.(id);
     }
 
+    // A host without `app` (plain Node, Jest, a vitest `node` environment) loads a library built with this banner
+    // too, and is no mobile one.
     // eslint-disable-next-line @typescript-eslint/no-deprecated, obsidianmd/no-global-this  -- Need access to app. Actively use globalThis.
-    if (globalThis.app.isMobile) {
+    const app = globalThis.app as typeof globalThis.app | undefined;
+    if (app?.isMobile) {
       if (id === 'process' || id === 'node:process') {
         // eslint-disable-next-line no-console -- Valid usage.
         console.debug(`The most likely you can safely ignore this error. Module not found: ${id}. Fake process object is returned instead.`);
