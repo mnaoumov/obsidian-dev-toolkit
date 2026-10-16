@@ -295,10 +295,6 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
        * Obsidian's internal API is typed in `obsidian-typings`, so a `declare module 'obsidian'` augmentation in
        * shipped source may carry only the plugin's own custom-event overloads. Tests are exempt: a mock shape or a
        * harness global never ships.
-       *
-       * Registered but OFF: several plugins still declare internals locally, and turning it on before each of them
-       * imports those types from `obsidian-typings` would make their lint red. Switch it to `'error'` once none is
-       * left.
        */
       files: context.sourceFiles,
       ignores: context.testFiles,
@@ -306,7 +302,7 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
         'obsidian-dev-utils': obsidianDevUtilsPlugin
       },
       rules: {
-        'obsidian-dev-utils/no-local-obsidian-internals': 'off'
+        'obsidian-dev-utils/no-local-obsidian-internals': 'error'
       }
     },
     {
