@@ -22,6 +22,7 @@ import { extractDefaultExportInterop } from '@mnaoumov/typescript-lib/object-uti
 import { extname } from '@mnaoumov/typescript-lib/path';
 import { fileURLToPath } from 'node:url';
 
+import type { ObsidianPluginDeploymentOptions } from './obsidian-plugin-build.ts';
 import type {
   ObsidianPluginFeatureOptions,
   ObsidianPluginStylesOptions
@@ -82,17 +83,12 @@ export interface GetWebpackFeatureRulesParams {
 /**
  * Options for {@link ObsidianPluginWebpackPlugin}.
  */
-export interface ObsidianPluginWebpackPluginOptions extends ObsidianPluginFeatureOptions {
+export interface ObsidianPluginWebpackPluginOptions extends ObsidianPluginDeploymentOptions, ObsidianPluginFeatureOptions {
   /**
    * The build mode. Defaults to {@link BuildMode.Development} when webpack watches (`webpack --watch`) or
    * its `mode` is `development`, and {@link BuildMode.Production} otherwise.
    */
   readonly mode?: BuildMode;
-
-  /**
-   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable.
-   */
-  readonly obsidianConfigFolder?: string;
 }
 
 /**

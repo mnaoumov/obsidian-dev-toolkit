@@ -31,6 +31,7 @@ import {
   watch
 } from 'node:fs';
 
+import type { ObsidianPluginDeploymentOptions } from '../obsidian-plugin-build.ts';
 import type { ObsidianPluginFeatureOptions } from '../obsidian-plugin-features.ts';
 
 import { ObsidianPluginRepoPaths } from '../../obsidian-plugin-repo-paths.ts';
@@ -71,7 +72,7 @@ export const banner = getObsidianPluginBanner('esbuild');
 /**
  * Options for {@link buildObsidianPlugin}.
  */
-export interface BuildObsidianPluginParams extends ObsidianPluginFeatureOptions {
+export interface BuildObsidianPluginParams extends ObsidianPluginDeploymentOptions, ObsidianPluginFeatureOptions {
   /**
    * Custom esbuild plugins to be used during the build process.
    */
@@ -86,17 +87,12 @@ export interface BuildObsidianPluginParams extends ObsidianPluginFeatureOptions 
    * A build mode, either `Development` or `Production`
    */
   readonly mode: BuildMode;
-
-  /**
-   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable.
-   */
-  readonly obsidianConfigFolder?: string;
 }
 
 /**
  * Build parameters without the mode field, for use with {@link build} and {@link dev}.
  */
-export interface BuildOptions extends ObsidianPluginFeatureOptions {
+export interface BuildOptions extends ObsidianPluginDeploymentOptions, ObsidianPluginFeatureOptions {
   /**
    * Custom esbuild plugins to be used during the build process.
    */
@@ -106,11 +102,6 @@ export interface BuildOptions extends ObsidianPluginFeatureOptions {
    * Customizes the `esbuild` options.
    */
   readonly customizeEsbuildOptions?: (options: EsbuildOptions) => void;
-
-  /**
-   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable.
-   */
-  readonly obsidianConfigFolder?: string;
 }
 
 /**
@@ -139,7 +130,8 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
     isProductionBuild,
     mainJsPath: distPath,
     obsidianConfigFolder,
-    pluginName
+    pluginName,
+    reload
   } = buildContext;
 
   await cleanObsidianPluginDistFolder(distFolder);
@@ -195,7 +187,7 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
       fixEsmPlugin(),
       fixSourceMapsPlugin({ distPaths: [distPath, cssPath], isProductionBuild, pluginName }),
       ...params.customEsbuildPlugins ?? [],
-      copyToObsidianPluginsFolderPlugin({ distFolder, isProductionBuild, obsidianConfigFolder, pluginName })
+      copyToObsidianPluginsFolderPlugin({ distFolder, isProductionBuild, obsidianConfigFolder, pluginName, reload })
     ],
     sourcemap: !isProductionBuild && 'inline',
     target: 'ES2022',

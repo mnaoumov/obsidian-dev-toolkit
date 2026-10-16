@@ -215,6 +215,15 @@ if you want to view the source, please visit the github repository of this plugi
       expect(existsSync(join(context.distFolder, '.hotreload'))).toBe(false);
     });
 
+    it.each(['obsidian-cli', false] as const)('writes no HotReload marker in development with reload %s', async (reload) => {
+      const context = await resolveObsidianPluginBuildContext({ mode: BuildMode.Development, reload });
+
+      await completeObsidianPluginDistFolder(context);
+
+      expect(context.reload).toBe(reload);
+      expect(existsSync(join(context.distFolder, '.hotreload'))).toBe(false);
+    });
+
     it('tolerates a project with no root to read the manifest from', async () => {
       const distFolder = join(getRootFolder(), 'out');
       const context = { ...await resolveObsidianPluginBuildContext({ mode: BuildMode.Production }), distFolder };
@@ -236,7 +245,8 @@ if you want to view the source, please visit the github repository of this plugi
         isProductionBuild: true,
         mainJsPath: join(resolve(getRootFolder(), 'dist/build'), 'main.js'),
         obsidianConfigFolder: '',
-        pluginName: 'my-plugin'
+        pluginName: 'my-plugin',
+        reload: 'hot-reload-plugin'
       });
     });
 

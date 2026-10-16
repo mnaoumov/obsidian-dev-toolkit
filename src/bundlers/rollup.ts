@@ -19,7 +19,10 @@ import type {
 
 import { dirname } from '@mnaoumov/typescript-lib/path';
 
-import type { ObsidianPluginBuildContext } from './obsidian-plugin-build.ts';
+import type {
+  ObsidianPluginBuildContext,
+  ObsidianPluginDeploymentOptions
+} from './obsidian-plugin-build.ts';
 import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts';
 
 import {
@@ -78,17 +81,12 @@ export interface ApplyRollupOutputDefaultsParams {
 /**
  * Options for {@link obsidianPluginRollup}.
  */
-export interface ObsidianPluginRollupOptions extends ObsidianPluginFeatureOptions {
+export interface ObsidianPluginRollupOptions extends ObsidianPluginDeploymentOptions, ObsidianPluginFeatureOptions {
   /**
    * The build mode. Defaults to {@link BuildMode.Development} in watch mode (`rollup --watch`) and
    * {@link BuildMode.Production} otherwise.
    */
   readonly mode?: BuildMode;
-
-  /**
-   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable.
-   */
-  readonly obsidianConfigFolder?: string;
 }
 
 /**

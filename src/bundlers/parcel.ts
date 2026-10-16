@@ -37,7 +37,10 @@ import {
   writeFile
 } from 'node:fs/promises';
 
-import type { ObsidianPluginBuildContext } from './obsidian-plugin-build.ts';
+import type {
+  ObsidianPluginBuildContext,
+  ObsidianPluginDeploymentOptions
+} from './obsidian-plugin-build.ts';
 import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts';
 
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
@@ -70,16 +73,11 @@ export interface BuildObsidianPluginWithParcelParams extends BuildOptions {
 /**
  * Options for {@link build} and {@link dev}.
  */
-export interface BuildOptions extends ObsidianPluginFeatureOptions {
+export interface BuildOptions extends ObsidianPluginDeploymentOptions, ObsidianPluginFeatureOptions {
   /**
    * Customizes the options handed to parcel's `Parcel` class.
    */
   readonly customizeParcelOptions?: (options: InitialParcelOptions) => InitialParcelOptions;
-
-  /**
-   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable.
-   */
-  readonly obsidianConfigFolder?: string;
 }
 
 /**

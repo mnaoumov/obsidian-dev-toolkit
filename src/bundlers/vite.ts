@@ -17,7 +17,10 @@ import type {
   UserConfig
 } from 'vite';
 
-import type { ObsidianPluginBuildContext } from './obsidian-plugin-build.ts';
+import type {
+  ObsidianPluginBuildContext,
+  ObsidianPluginDeploymentOptions
+} from './obsidian-plugin-build.ts';
 import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts';
 import type { PostcssConfig } from './obsidian-plugin-transforms.ts';
 import type {
@@ -76,17 +79,12 @@ export interface GetViteFeatureConfigParams {
 /**
  * Options for {@link obsidianPluginVite}.
  */
-export interface ObsidianPluginViteOptions extends ObsidianPluginFeatureOptions {
+export interface ObsidianPluginViteOptions extends ObsidianPluginDeploymentOptions, ObsidianPluginFeatureOptions {
   /**
    * The build mode. Defaults to {@link BuildMode.Development} for `vite build --watch` (or
    * `--mode development`) and {@link BuildMode.Production} otherwise.
    */
   readonly mode?: BuildMode;
-
-  /**
-   * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable.
-   */
-  readonly obsidianConfigFolder?: string;
 }
 
 /**
