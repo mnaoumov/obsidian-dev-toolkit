@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.1.0
+
+- fix(deps): take obsidian-lib 3.x or 4.x as a peer dependency, so a plugin gets one copy
+
 ## 3.0.0
 
 - docs(ci): pin the reusable workflows to 3.0.0, the release that first ships them
