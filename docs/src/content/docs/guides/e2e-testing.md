@@ -111,4 +111,6 @@ await wrapCliTask(() => testEndToEndWithObsidianTest());
 
 It launches Obsidian with the `obsidian` command. When that is not on `PATH`, name the executable with `obsidianCommand`. Do not point `vaultPath` at the demo vault: `obsidian-test` installs the plugin into the vault it is given.
 
-**`obsidian-test` 0.1.2 does not run on Windows.** Its bundle step fails with `Could not resolve "./runners/dynamic.js"`, because it matches a module path against a `/`-separated suffix, and on Windows the path has `\` separators. Run it on macOS or Linux, for example in CI, until a release fixes it.
+**`obsidian-test` 0.1.2 does not run on Windows.** Its bundle step fails with `Could not resolve "./runners/dynamic.js"`, because it matches a module path against a `/`-separated suffix, and on Windows the path has `\` separators ([obsidian-test#7](https://github.com/b-camphart/obsidian-test/issues/7)). Run it on macOS or Linux, for example in CI, until a release fixes it.
+
+**`obsidian-test` looks for Obsidian's vault list only at `~/.config/obsidian/obsidian.json`, the Linux location.** Elsewhere, set the `OBSIDIAN_CONFIG_PATH` environment variable to that file, for example `~/Library/Application Support/obsidian/obsidian.json` on macOS or `%APPDATA%\obsidian\obsidian.json` on Windows. Without it, the run fails after the bundle step with `Obsidian config path "..." does not exist`.
