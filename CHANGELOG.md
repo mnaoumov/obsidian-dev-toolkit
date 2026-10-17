@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 3.2.1
+
+- fix(linters): load the ESLint layer without obsidian-integration-testing
+- test(bundlers): load every bundler adapter's build on Obsidian Mobile
+- build: validate the published dependencies with typescript-dev-toolkit's validateDependencies
+- docs(e2e-testing): link obsidian-test#7 and document OBSIDIAN_CONFIG_PATH
+- build: pass the tsconfig and types exports to generateLibraryExports as additionalExports
+- fix(bundlers): resolve parcel packages with browser conditions and tree-shake the bundle
+- fix(build): load the CommonJS build of dist/lib under plain Node
+- fix(bundlers): load obsidian-integration-testing only when the hot-reload deployment runs
+- build(docs): set the repository homepage to the docs site on each Pages build
+
 ## 3.2.0
 
 - feat(test-runners): add defineObsidianPluginJestConfig

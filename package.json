@@ -1,6 +1,6 @@
 {
   "name": "@mnaoumov/obsidian-dev-toolkit",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Tooling for Obsidian plugin development: the plugin builder for esbuild, vite, rollup, webpack and parcel, shared ESLint/Vitest configs, demo vaults and the release script.",
   "keywords": [
     "obsidian",
