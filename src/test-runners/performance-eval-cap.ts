@@ -1,13 +1,23 @@
 /**
  * @file
  *
- * The per-eval cap of the `integration-tests:desktop-performance` project, and the file suffix that
- * project collects.
+ * The per-eval caps the integration-test transports enforce, and the file suffix the
+ * `integration-tests:desktop-performance` project collects.
  *
- * Both live here, rather than in `vitest-config.ts`, because the `no-over-cap-wait-in-eval-in-obsidian`
+ * They live here, rather than in `vitest-config.ts`, because the `no-over-cap-wait-in-eval-in-obsidian`
  * ESLint rule reads them too, and the shared ESLint config loads that rule in every consuming repo:
  * importing `vitest-config.ts` from the rule would load `vitest/config` at lint time for nothing.
  */
+
+/**
+ * The per-eval cap both `obsidian-integration-testing` transports enforce by default, in milliseconds.
+ *
+ * It restates that package's own `DEFAULT_EVAL_CAP_IN_MILLISECONDS` instead of importing it, because
+ * `obsidian-integration-testing` is an OPTIONAL peer: the import made the ESLint rule, and with it the shared
+ * ESLint config every plugin lints with, fail to load in a project without the harness installed. A unit test
+ * pins the two numbers together, so they cannot drift apart.
+ */
+export const DEFAULT_EVAL_CAP_IN_MILLISECONDS = 30_000;
 
 /**
  * The per-eval cap the `integration-tests:desktop-performance` project gives its CDP transport, in

@@ -13,10 +13,11 @@
  * closure asking for more time than exists. That misdiagnosis cost two days.
  *
  * The cap the rule assumes when `capInMilliseconds` is not configured is
- * `DEFAULT_EVAL_CAP_IN_MILLISECONDS`, imported from `obsidian-integration-testing` — the same constant
- * both of its transports enforce, so the rule cannot drift from the thing it is predicting. That import
- * is why the harness is a required peer of this library rather than an optional one: the shared ESLint
- * config loads this rule, so every consuming repo resolves it at lint time.
+ * `DEFAULT_EVAL_CAP_IN_MILLISECONDS` (30 000), the cap both `obsidian-integration-testing` transports
+ * enforce. It is restated in `../../test-runners/performance-eval-cap.ts` rather than imported from the
+ * harness, because the harness is an OPTIONAL peer and the shared ESLint config loads this rule in every
+ * consuming repo, including one that does not run integration tests; a unit test there pins the two numbers
+ * together, so the rule still cannot drift from the thing it is predicting.
  *
  * ONE KIND OF FILE DEFAULTS HIGHER: a `*.desktop-performance.integration.test.ts` is measured against
  * `PERFORMANCE_EVAL_CAP_IN_MILLISECONDS` (600 000), the per-eval cap the shared vitest config gives the
@@ -125,9 +126,9 @@ import type {
 } from 'eslint';
 
 import { toTSESTreeNode } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/ts-estree-node';
-import { DEFAULT_EVAL_CAP_IN_MILLISECONDS } from 'obsidian-integration-testing';
 
 import {
+  DEFAULT_EVAL_CAP_IN_MILLISECONDS,
   DESKTOP_PERFORMANCE_TEST_FILE_SUFFIX,
   PERFORMANCE_EVAL_CAP_IN_MILLISECONDS
 } from '../../test-runners/performance-eval-cap.ts';

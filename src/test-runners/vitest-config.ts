@@ -27,10 +27,9 @@ import {
   DEFAULT_VITEST_TEST_EXCLUDE
 } from '@mnaoumov/typescript-dev-toolkit/test-runners/vitest-config';
 import process from 'node:process';
-import { DEFAULT_EVAL_CAP_IN_MILLISECONDS } from 'obsidian-integration-testing';
-import { defineConfig } from 'vitest/config';
 
 import {
+  DEFAULT_EVAL_CAP_IN_MILLISECONDS,
   DESKTOP_PERFORMANCE_TEST_FILE_SUFFIX,
   PERFORMANCE_EVAL_CAP_IN_MILLISECONDS
 } from './performance-eval-cap.ts';
@@ -53,8 +52,9 @@ export { DEFAULT_VITEST_REPORTERS };
 
 /*
  * How much a project's per-test budget clears `DEFAULT_EVAL_CAP_IN_MILLISECONDS` by — the per-eval cap
- * BOTH transports enforce, imported from `obsidian-integration-testing` rather than restated so the
- * budgets below and the cap they are sized against can never be two numbers. One `evalInObsidian` closure
+ * BOTH transports enforce, restated in `performance-eval-cap.ts` (the harness is an optional peer) and pinned
+ * there to the harness's own constant by a unit test, so the budgets below and the cap they are sized against
+ * can never be two numbers. One `evalInObsidian` closure
  * gets that much and no more, measured from the moment the transport dispatches it; outrunning it raises
  * `EvalCapExceededError`, which names the cap, the transport that enforced it, and the `pollInObsidian`
  * remedy — the one message that turns "this timed out" into "this closure asked for more time than
@@ -418,7 +418,13 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
       }
     }];
 
-  return defineConfig({
+  /*
+   * A plain object rather than `defineConfig(...)`, which is only an identity function for the types: calling it
+   * made this module load `vitest/config`, and so made the `test-runners` barrel fail to load in a project
+   * without `vitest`, an optional peer. `defineLibraryVitestConfig` in `@mnaoumov/typescript-dev-toolkit` returns
+   * its configuration the same way.
+   */
+  return {
     test: {
       coverage: {
         exclude: context.coverageExclude,
@@ -455,7 +461,7 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
       ],
       reporters: [...context.reporters]
     }
-  });
+  };
 }
 
 /**
