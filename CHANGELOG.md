@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.4.1
+
+- fix(types): type CSS module imports as their class names
+
 ## 3.4.0
 
 - feat(demo-vault-coverage): fail the suite on a Try it section without a code button by default
