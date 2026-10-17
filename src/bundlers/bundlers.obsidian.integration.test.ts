@@ -6,7 +6,9 @@
  * loader, which needs no Obsidian; this suite checks what only a live app has: the real `obsidian` module, a Node
  * builtin reached through Electron's `require`, and `styles.css` loaded and unloaded with the plugin.
  *
- * It needs a desktop Obsidian installed, so CI does not run it: `npm run test:integration:obsidian` runs it locally.
+ * Two projects run it: `obsidian-integration-tests` in a desktop Obsidian (`npm run test:integration:obsidian`) and
+ * `obsidian-android-integration-tests` in Obsidian Mobile on an Android emulator (`npm run
+ * test:integration:obsidian:android`). CI has neither, so both run locally only.
  */
 
 import {
@@ -28,6 +30,7 @@ import {
   beforeAll,
   describe,
   expect,
+  inject,
   it
 } from 'vitest';
 
@@ -51,6 +54,8 @@ const STYLED_CLASS_NAME = 'bundler-fixture-plugin';
 // Each case writes the same fixture's `dist` folder; the cases of one file run one after another.
 describe('every bundler adapter builds a plugin a real Obsidian loads', () => {
   const vault = getTemporaryVault();
+  // The project picks the platform; asserting `app.isMobile` against it proves the build ran where the project says.
+  const isMobile = inject('obsidianTransport')?.type === 'obsidian-android-appium';
   let fixtureFolder = '';
 
   beforeAll(() => {
@@ -102,8 +107,11 @@ describe('every bundler adapter builds a plugin a real Obsidian loads', () => {
         const command = app.commands.findCommand(fullCommandId);
         const loaded = {
           commandName: command?.name,
-          commandResult: command?.callback?.() as unknown,
+          // Mobile has no Node builtins, so the fixture's `sep` is missing there: esbuild's interop reads it as
+          // `undefined` and every other bundler throws. Gating a builtin is the plugin's job, not the bundle's.
+          commandResult: app.isMobile ? undefined : command?.callback?.() as unknown,
           isEnabled,
+          isMobile: app.isMobile,
           isPluginInstance: plugin instanceof obsidianModule.Plugin,
           styledContent: readStyledContent()
         };
@@ -121,9 +129,10 @@ describe('every bundler adapter builds a plugin a real Obsidian loads', () => {
 
     expect(result).toEqual({
       commandName: `${manifest.name}: Hello, bundler`,
-      commandResult: sep,
+      commandResult: isMobile ? undefined : sep,
       isCommandLeftAfterDisable: false,
       isEnabled: true,
+      isMobile,
       isPluginInstance: true,
       styledContent: '"bundler fixture"',
       styledContentAfterDisable: 'none'
