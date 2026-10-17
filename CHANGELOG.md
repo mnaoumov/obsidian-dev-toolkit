@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 3.3.0
+
+- feat(demo-vault-coverage): check that every Try it section has a code button
+- test(bundlers): give the framework compile tests a cold-load timeout
+- feat(build): keep the vitest- and harness-bound modules off the barrels
+- test(scripts): stop the bash workflow cases timing out under a loaded gate
+
 ## 3.2.1
 
 - fix(linters): load the ESLint layer without obsidian-integration-testing
