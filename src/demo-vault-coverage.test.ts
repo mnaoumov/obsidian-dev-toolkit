@@ -16,7 +16,8 @@ import {
   beforeEach,
   describe,
   expect,
-  it
+  it,
+  vi
 } from 'vitest';
 
 import {
@@ -203,8 +204,39 @@ registerDemoVaultCoverageSuite({
 // authoring checks must still run, which is why every other member is optional.
 registerDemoVaultCoverageSuite({ rootFolder: suiteRoot });
 
+// The Try it check at both severities: a vault whose one Try it section has a button passes as an error,
+// and a vault with a section lacking one passes as a warning, printing the section it found.
+const tryItRoot = createFixtureRoot('odu-dvc-try-it-');
+writeFixtureFile(tryItRoot, 'demo-vault/Surface.md', `${SURFACE_NOTE}\n## Try it\n\n\`\`\`code-button\nrun();\n\`\`\`\n`);
+
+registerDemoVaultCoverageSuite({ authoring: { tryItCodeButtons: 'error' }, rootFolder: tryItRoot });
+
+const manualTryItRoot = createFixtureRoot('odu-dvc-manual-try-it-');
+writeFixtureFile(manualTryItRoot, 'demo-vault/Surface.md', `${SURFACE_NOTE}\n## Try it\n\nOpen the settings and turn it on.\n`);
+
+describe('a Try it section without a code button, at the default severity', () => {
+  // The shared config restores every mock after each test, so the spy is installed per test and its calls
+  // are collected here.
+  const warnings: unknown[] = [];
+
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation((message: unknown) => {
+      warnings.push(message);
+    });
+  });
+
+  afterAll(() => {
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('  Surface.md: line 10');
+  });
+
+  registerDemoVaultCoverageSuite({ rootFolder: manualTryItRoot });
+});
+
 afterAll(() => {
   rmSync(suiteRoot, { force: true, recursive: true });
+  rmSync(tryItRoot, { force: true, recursive: true });
+  rmSync(manualTryItRoot, { force: true, recursive: true });
 });
 
 describe('DemoVaultCoverageChecker', () => {
@@ -567,6 +599,154 @@ Opens a region twice.
       'Stray.md: an enable on line 5 with no region open',
       'Trailing.md: a disable-next-line on line 5 covering no wikilink'
     ]);
+  });
+
+  it('finds a Try it section with no code button, at any heading level, up to the next sibling heading', () => {
+    writeFixtureFile(
+      root,
+      'demo-vault/Manual.md',
+      `# Manual
+
+Shows the feature.
+
+## Try it
+
+1. Open the settings.
+
+### Step 2
+
+Turn it on.
+
+## Try it yourself
+
+\`\`\`md
+## Try it
+\`\`\`
+
+## Notes
+
+\`\`\`code-button
+setUp();
+\`\`\`
+
+#### Try it again
+`
+    );
+    writeFixtureFile(
+      root,
+      'demo-vault/Scripted.md',
+      `# Scripted
+
+Shows the feature.
+
+## Try it
+
+1. Click the button.
+
+### Step 2
+
+~~~ code-button
+setUp();
+~~~
+
+### Try it on mobile
+
+\`\`\`code-button
+setUpMobile();
+\`\`\`
+
+## Notes
+
+Nothing to set up here.
+`
+    );
+    const checker = new DemoVaultCoverageChecker({ rootFolder: root });
+    expect(checker.findTryItSectionsWithoutCodeButton()).toEqual([
+      'Manual.md: line 5',
+      'Manual.md: line 13',
+      'Manual.md: line 25'
+    ]);
+  });
+
+  it('skips a Try it section whose heading a directive says cannot be scripted, and checks the directive', () => {
+    writeFixtureFile(
+      root,
+      'demo-vault/Manual.md',
+      `# Manual
+
+Shows the feature.
+
+<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
+
+## Try it
+
+Drag a file onto the explorer.
+
+<!-- obsidian-dev-utils-disable demo-vault-validation/try-it-code-button -- Both sections are gestures. -->
+
+## Try it on desktop
+
+Drag again.
+
+## Try it on mobile
+
+Long-press.
+
+<!-- obsidian-dev-utils-enable demo-vault-validation/try-it-code-button -->
+`
+    );
+    writeFixtureFile(
+      root,
+      'demo-vault/Spare.md',
+      `# Spare
+
+Shows the feature.
+
+<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Stale. -->
+
+## Try it
+
+\`\`\`code-button
+setUp();
+\`\`\`
+
+<!-- obsidian-dev-utils-disable demo-vault-validation/try-it-code-button -- Stale too. -->
+
+Plain prose.
+
+<!-- obsidian-dev-utils-enable demo-vault-validation/try-it-code-button -->
+
+<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Never reaches a line. -->
+`
+    );
+    const checker = new DemoVaultCoverageChecker({ rootFolder: root });
+    expect(checker.findTryItSectionsWithoutCodeButton()).toEqual([]);
+    expect(checker.findNotesWithUnjustifiedWikilinkAllowance()).toEqual([
+      'Spare.md: a disable-next-line on line 5 covering no Try it section without a code button',
+      'Spare.md: a region opened on line 13 covering no Try it section without a code button',
+      'Spare.md: a disable-next-line on line 19 covering no Try it section without a code button'
+    ]);
+  });
+
+  it('keeps a directive for one rule from exempting a line from another', () => {
+    writeFixtureFile(
+      root,
+      'demo-vault/Crossed.md',
+      `# Crossed
+
+Shows the feature.
+
+<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Wrong rule. -->
+
+## Try it [[Surface]]
+
+Open the settings.
+`
+    );
+    const checker = new DemoVaultCoverageChecker({ rootFolder: root });
+    expect(checker.findTryItSectionsWithoutCodeButton()).toEqual(['Crossed.md: line 7']);
+    expect(checker.findNotesWithWikilinks()).toEqual([]);
+    expect(checker.findNotesWithUnjustifiedWikilinkAllowance()).toEqual([]);
   });
 
   it('allows a wikilink in a note whose frontmatter says why it needs one', () => {

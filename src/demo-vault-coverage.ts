@@ -60,6 +60,20 @@
  * or a misspelled directive all fail: an exemption nobody can justify, that nothing needs any more, or that
  * silently does nothing is worse than no exemption at all.
  *
+ * They also check that every `Try it` section — a heading of any level starting `Try it`, up to the next
+ * heading of the same or a higher level — holds a `code-button` that performs its setup, because a reader
+ * asked to configure things by hand is a reader the demo lost. A section whose steps really cannot be
+ * scripted says so with the same directive, naming the `demo-vault-validation/try-it-code-button` rule on
+ * the heading, and with the same checks on the directive itself:
+ *
+ * ```markdown
+ * <!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
+ * ## Try it
+ * ```
+ *
+ * That check ships as a warning ({@link DemoVaultAuthoringSpec.tryItCodeButtons}), so a vault written
+ * before it existed keeps passing while it is brought up to it.
+ *
  * Two layers are exposed:
  * - {@link DemoVaultCoverageChecker} — a framework-agnostic core that reads the corpus, parses interface /
  *   class / enum members and exported functions, and returns diagnostic arrays (what is undemonstrated / stale
@@ -109,7 +123,19 @@ export interface DemoVaultAuthoringSpec {
    * `00 Start.md`.
    */
   readonly startNote?: string;
+
+  /**
+   * How a `Try it` section with no `code-button` and no directive explaining why is reported: `'warn'`
+   * prints the sections and passes, `'error'` fails the suite. Defaults to `'warn'`.
+   */
+  readonly tryItCodeButtons?: DemoVaultCheckSeverity;
 }
+
+/**
+ * How a check that is being introduced gradually reports what it finds: `'warn'` prints it and passes,
+ * `'error'` fails.
+ */
+export type DemoVaultCheckSeverity = 'error' | 'warn';
 
 /**
  * Reflects a config interface whose options are demonstrated by their bare name.
@@ -324,6 +350,53 @@ export interface DemoVaultNote {
 }
 
 /**
+ * What a note's inline `obsidian-dev-utils-disable…` directives allow, rule by rule, and what is wrong with
+ * them.
+ */
+export interface DirectiveScan {
+  /**
+   * For each rule, the zero-based line numbers a directive exempts from it.
+   */
+  readonly allowedLineIndexesByRule: ReadonlyMap<string, ReadonlySet<number>>;
+
+  /**
+   * The directive mistakes found, each phrased for a failing assertion.
+   */
+  readonly problems: string[];
+}
+
+/**
+ * The running state of a directive scan, threaded through the per-line helpers.
+ */
+export interface DirectiveScanState {
+  /**
+   * For each rule, the lines a directive has exempted from it so far.
+   */
+  readonly allowedLineIndexesByRule: Map<string, Set<number>>;
+
+  /**
+   * For each rule, the region currently open, and whether it has covered a target yet.
+   */
+  readonly openRegionsByRule: Map<string, OpenDirectiveRegion>;
+
+  /**
+   * For each rule, the line a `disable-next-line` was read on, while it still waits for the line it covers.
+   */
+  readonly pendingNextLineIndexesByRule: Map<string, number>;
+
+  /**
+   * The directive mistakes found so far.
+   */
+  readonly problems: string[];
+
+  /**
+   * For each rule, the lines of the note that break it — the lines a directive for it has to cover to be
+   * doing any work.
+   */
+  readonly targetLineIndexesByRule: ReadonlyMap<string, ReadonlySet<number>>;
+}
+
+/**
  * The parsed members of a source interface, class, or enum.
  */
 export interface InterfaceMembers {
@@ -361,6 +434,24 @@ export interface NoteLine {
 
 /**
  * A `disable` region that has been opened and not yet enabled again.
+ */
+export interface OpenDirectiveRegion {
+  /**
+   * Whether the region has covered a line breaking its rule, which is what stops it being reported as
+   * pointless.
+   */
+  isUsed: boolean;
+
+  /**
+   * The line the region was opened on.
+   */
+  readonly lineIndex: number;
+}
+
+/**
+ * A `disable` region that has been opened and not yet enabled again.
+ *
+ * @deprecated Use {@link OpenDirectiveRegion}: the directives now serve more than the wikilink rule.
  */
 export interface OpenWikilinkDirectiveRegion {
   /**
@@ -420,6 +511,8 @@ export interface RegisterDemoVaultCoverageSuiteParams {
 
 /**
  * What a note's inline `obsidian-dev-utils-disable…` directives allow, and what is wrong with them.
+ *
+ * @deprecated Use {@link DirectiveScan}: the directives now serve more than the wikilink rule.
  */
 export interface WikilinkDirectiveScan {
   /**
@@ -435,6 +528,8 @@ export interface WikilinkDirectiveScan {
 
 /**
  * The running state of a directive scan, threaded through the per-line helpers.
+ *
+ * @deprecated Use {@link DirectiveScanState}: the directives now serve more than the wikilink rule.
  */
 export interface WikilinkDirectiveScanState {
   /**
@@ -445,7 +540,7 @@ export interface WikilinkDirectiveScanState {
   /**
    * The region currently open, and whether it has covered a wikilink yet.
    */
-  openRegion: null | OpenWikilinkDirectiveRegion;
+  openRegion: null | OpenDirectiveRegion;
 
   /**
    * The line a `disable-next-line` was read on, while it still waits for the line it covers.
@@ -461,6 +556,15 @@ export interface WikilinkDirectiveScanState {
    * The lines of the note that carry a wikilink.
    */
   readonly wikilinkLineIndexes: ReadonlySet<number>;
+}
+
+/**
+ * A `Try it` section being read, from its heading to the next heading of the same or a higher level.
+ */
+interface TryItSection {
+  hasCodeButton: boolean;
+  readonly level: number;
+  readonly lineIndex: number;
 }
 
 /**
@@ -560,15 +664,16 @@ export class DemoVaultCoverageChecker {
   }
 
   /**
-   * Finds notes whose wikilink allowance is not doing any work — declared without a reason, or on a note
-   * that carries no wikilink at all. Both are drift: an exemption nobody can justify, and one nothing needs
-   * any more, which would go on hiding the next wikilink somebody adds by accident.
+   * Finds notes whose exemptions are not doing any work — a wikilink allowance or an inline directive for
+   * any rule declared without a reason, misspelled, or covering nothing that breaks its rule. All of them
+   * are drift: an exemption nobody can justify, and one nothing needs any more, which would go on hiding
+   * the next mistake somebody makes by accident.
    *
-   * @returns The relative paths of the offending notes.
+   * @returns One `<note>: <problem>` entry per problem found.
    */
   public findNotesWithUnjustifiedWikilinkAllowance(): string[] {
     return this.collectCheckableNotes().flatMap((note) => {
-      const scan = scanWikilinkDirectives(note.content);
+      const scan = scanDirectives(note.content);
       const problems = [...scan.problems];
       const reason = readWikilinkAllowanceReason(note.content);
       if (reason !== null) {
@@ -576,7 +681,7 @@ export class DemoVaultCoverageChecker {
           problems.push('a note-level allowance with no reason');
         } else if (!hasWikilink(note.content)) {
           problems.push('a note-level allowance covering no wikilink');
-        } else if (scan.allowedLineIndexes.size > 0) {
+        } else if (getAllowedLineIndexes(scan, WIKILINK_RULE).size > 0) {
           problems.push('inline directives the note-level allowance already covers');
         }
       }
@@ -598,7 +703,7 @@ export class DemoVaultCoverageChecker {
         if (readWikilinkAllowanceReason(note.content) !== null) {
           return false;
         }
-        const { allowedLineIndexes } = scanWikilinkDirectives(note.content);
+        const allowedLineIndexes = getAllowedLineIndexes(scanDirectives(note.content), WIKILINK_RULE);
         return findWikilinkLineIndexes(note.content).some((lineIndex) => !allowedLineIndexes.has(lineIndex));
       })
       .map((note) => note.relativePath);
@@ -615,6 +720,24 @@ export class DemoVaultCoverageChecker {
     const referenced = [...this.readCorpus().matchAll(new RegExp(String.raw`${params.receiver}\.(?<member>\w+)`, 'g'))]
       .map((match) => getMandatoryNamedGroup(match, 'member'));
     return [...new Set(referenced)].filter((member) => !validMembers.has(member));
+  }
+
+  /**
+   * Finds `Try it` sections with no `code-button` in them. A `Try it` section is a heading of any level
+   * starting `Try it`, up to the next heading of the same or a higher level; the setup it asks for is
+   * what a button is for, so a section that leaves the reader to do it by hand is the shape this check
+   * rejects. A section whose heading a `demo-vault-validation/try-it-code-button` directive covers has
+   * stated why it cannot be scripted, and is skipped — see the file overview.
+   *
+   * @returns One `<note>: line <n>` entry per offending section, naming the line of its heading.
+   */
+  public findTryItSectionsWithoutCodeButton(): string[] {
+    return this.collectCheckableNotes().flatMap((note) => {
+      const allowedLineIndexes = getAllowedLineIndexes(scanDirectives(note.content), TRY_IT_RULE);
+      return findTryItLineIndexesWithoutCodeButton(note.content)
+        .filter((lineIndex) => !allowedLineIndexes.has(lineIndex))
+        .map((lineIndex) => `${note.relativePath}: ${formatLineNumber(lineIndex)}`);
+    });
   }
 
   /**
@@ -760,6 +883,7 @@ export function registerDemoVaultCoverageSuite(params: RegisterDemoVaultCoverage
     rootFolder: params.rootFolder
   }));
   const startNote = params.authoring?.startNote ?? DEFAULT_START_NOTE;
+  const tryItCodeButtons = params.authoring?.tryItCodeButtons ?? DEFAULT_TRY_IT_CODE_BUTTONS_SEVERITY;
 
   describe('demo-vault coverage', () => {
     for (const spec of params.interfaces ?? []) {
@@ -816,8 +940,19 @@ export function registerDemoVaultCoverageSuite(params: RegisterDemoVaultCoverage
       expect(checker.findNotesWithWikilinks()).toEqual([]);
     });
 
-    it('justifies every wikilink allowance, and declares none it no longer needs', () => {
+    it('justifies every wikilink allowance and directive, and declares none it no longer needs', () => {
       expect(checker.findNotesWithUnjustifiedWikilinkAllowance()).toEqual([]);
+    });
+
+    it('gives every Try it section a code button, or a stated reason it has none', () => {
+      const sections = checker.findTryItSectionsWithoutCodeButton();
+      if (tryItCodeButtons === 'error') {
+        expect(sections).toEqual([]);
+        return;
+      }
+      if (sections.length > 0) {
+        console.warn(formatTryItWarning(sections));
+      }
     });
 
     it('carries no Docs link line, because the note is the docs', () => {
@@ -851,12 +986,16 @@ const ABSOLUTE_URL_REG_EXP = /^[a-z][\w+.-]*:/i;
 const ARROW_REG_EXP = /^\s*=>/;
 const FUNCTION_TYPE_PARAMETERS_REG_EXP = /^<[^>]*>\s*/;
 const ANGLE_BRACKETS_REG_EXP = /^<|>$/g;
+const CODE_BUTTON_FENCE_REG_EXP = /^\s*(?:```|~~~)\s*code-button\b/;
 const CODE_FENCE_REG_EXP = /^\s*(?:```|~~~)/;
 const DEFAULT_EXCLUDED_NOTES = ['README.md'];
 const DEFAULT_START_NOTE = '00 Start.md';
+// A warning while existing vaults are brought up to the check; it becomes an error once they are.
+const DEFAULT_TRY_IT_CODE_BUTTONS_SEVERITY: DemoVaultCheckSeverity = 'warn';
 const DOCS_LINK_REG_EXP = /^\s*\[Docs]\(/;
 const FRONTMATTER_REG_EXP = /^---\r?\n[\s\S]*?\r?\n---[^\S\n]*\r?\n?/;
 const H1_REG_EXP = /^# \S/;
+const HEADING_LEVEL_REG_EXP = /^ {0,3}(?<hashes>#{1,6})(?:\s|$)/;
 const HEADING_REG_EXP = /^#{1,6} /;
 const INLINE_CODE_REG_EXP = /`[^`\n]*`/g;
 const MARKDOWN_LINK_REG_EXP = /\[[^\]]*]\((?<target>[^)]+)\)/g;
@@ -867,19 +1006,28 @@ const DIRECTIVE_REG_EXP = /^\s*<!--\s*obsidian-dev-utils-(?<action>disable-next-
 // Catches a directive that was MEANT to be one but is misspelled: it would otherwise read as an ordinary
 // comment and silently do nothing, which is the failure mode a suppression syntax must never have.
 const DIRECTIVE_PROBE_REG_EXP = /<!--\s*obsidian-dev-utils-/;
+const TRY_IT_HEADING_REG_EXP = /^ {0,3}#{1,6}\s+Try it\b/i;
+const TRY_IT_RULE = 'demo-vault-validation/try-it-code-button';
 const WIKILINK_RULE = 'demo-vault-validation/no-wikilinks';
+// Every rule a directive may name, with what a line breaking it is called in a problem message.
+const DIRECTIVE_RULE_TARGETS = new Map([
+  [TRY_IT_RULE, 'Try it section without a code button'],
+  [WIKILINK_RULE, 'wikilink']
+]);
 // The `obsidian-dev-utils > demo-vault-validation > allow-wikilinks` frontmatter path, at any indentation:
 // The keys must nest in that order, and any line between them has to stay indented, so a dedent to the
 // document's own top level ends the match rather than reaching a same-named key under another parent.
 const WIKILINK_ALLOWANCE_REG_EXP = /^obsidian-dev-utils:[^\S\n]*\n(?:[^\S\n]+.*\n)*?[^\S\n]+demo-vault-validation:[^\S\n]*\n(?:[^\S\n]+.*\n)*?[^\S\n]+allow-wikilinks:(?<reason>.*)$/m;
 const WIKILINK_REG_EXP = /\[\[[^\]]+]]/;
 
-// Applies one parsed directive to the scan.
-function applyWikilinkDirective(state: WikilinkDirectiveScanState, lineIndex: number, match: RegExpExecArray): void {
+// Applies one parsed directive to the scan. Each rule keeps its own region and its own pending
+// `disable-next-line`, so a directive for one rule never exempts a line from another.
+function applyDirective(state: DirectiveScanState, lineIndex: number, match: RegExpExecArray): void {
   const action = getMandatoryNamedGroup(match, 'action');
   const rule = getMandatoryNamedGroup(match, 'rule');
   const reason = match.groups?.['reason']?.trim() ?? '';
-  if (rule !== WIKILINK_RULE) {
+  const target = DIRECTIVE_RULE_TARGETS.get(rule);
+  if (target === undefined) {
     state.problems.push(`an unknown rule "${rule}" on ${formatLineNumber(lineIndex)}`);
     return;
   }
@@ -889,45 +1037,52 @@ function applyWikilinkDirective(state: WikilinkDirectiveScanState, lineIndex: nu
   }
 
   if (action === 'disable-next-line') {
-    state.pendingNextLineIndex = lineIndex;
+    state.pendingNextLineIndexesByRule.set(rule, lineIndex);
     return;
   }
 
+  const openRegion = state.openRegionsByRule.get(rule);
   if (action === 'disable') {
-    if (state.openRegion) {
-      state.problems.push(`a disable on ${formatLineNumber(lineIndex)} inside the region opened on ${formatLineNumber(state.openRegion.lineIndex)}`);
+    if (openRegion) {
+      state.problems.push(`a disable on ${formatLineNumber(lineIndex)} inside the region opened on ${formatLineNumber(openRegion.lineIndex)}`);
       return;
     }
-    state.openRegion = { isUsed: false, lineIndex };
+    state.openRegionsByRule.set(rule, { isUsed: false, lineIndex });
     return;
   }
 
-  if (!state.openRegion) {
+  if (!openRegion) {
     state.problems.push(`an enable on ${formatLineNumber(lineIndex)} with no region open`);
     return;
   }
-  if (!state.openRegion.isUsed) {
-    state.problems.push(`a region opened on ${formatLineNumber(state.openRegion.lineIndex)} covering no wikilink`);
+  if (!openRegion.isUsed) {
+    state.problems.push(`a region opened on ${formatLineNumber(openRegion.lineIndex)} covering no ${target}`);
   }
-  state.openRegion = null;
+  state.openRegionsByRule.delete(rule);
 }
 
-// Applies one ordinary line to the scan: an open region covers it, and a pending `disable-next-line`
-// claims the first line with content on it — the directive and its target are usually a blank line apart.
-function applyWikilinkScanLine(state: WikilinkDirectiveScanState, lineIndex: number, line: string): void {
-  if (state.openRegion) {
-    state.allowedLineIndexes.add(lineIndex);
-    state.openRegion.isUsed ||= state.wikilinkLineIndexes.has(lineIndex);
-    return;
+// Applies one ordinary line to the scan, rule by rule: an open region covers it, and a pending
+// `disable-next-line` claims the first line with content on it — the directive and its target are usually a
+// blank line apart.
+function applyDirectiveScanLine(state: DirectiveScanState, lineIndex: number, line: string): void {
+  for (const [rule, target] of DIRECTIVE_RULE_TARGETS) {
+    const isTarget = ensureNonNullable(state.targetLineIndexesByRule.get(rule)).has(lineIndex);
+    const openRegion = state.openRegionsByRule.get(rule);
+    if (openRegion) {
+      getOrCreateLineIndexes(state.allowedLineIndexesByRule, rule).add(lineIndex);
+      openRegion.isUsed ||= isTarget;
+      continue;
+    }
+    const pendingNextLineIndex = state.pendingNextLineIndexesByRule.get(rule);
+    if (pendingNextLineIndex === undefined || line.trim() === '') {
+      continue;
+    }
+    getOrCreateLineIndexes(state.allowedLineIndexesByRule, rule).add(lineIndex);
+    if (!isTarget) {
+      state.problems.push(`a disable-next-line on ${formatLineNumber(pendingNextLineIndex)} covering no ${target}`);
+    }
+    state.pendingNextLineIndexesByRule.delete(rule);
   }
-  if (state.pendingNextLineIndex === null || line.trim() === '') {
-    return;
-  }
-  state.allowedLineIndexes.add(lineIndex);
-  if (!state.wikilinkLineIndexes.has(lineIndex)) {
-    state.problems.push(`a disable-next-line on ${formatLineNumber(state.pendingNextLineIndex)} covering no wikilink`);
-  }
-  state.pendingNextLineIndex = null;
 }
 
 function buildMembers(methods: string[], properties: string[]): InterfaceMembers {
@@ -1010,6 +1165,41 @@ function extractPropertyNames(interfaceBody: string): string[] {
     .map((match) => getMandatoryNamedGroup(match, 'name'));
 }
 
+// The heading lines of the `Try it` sections that hold no `code-button`. A section runs to the next heading
+// of the same or a higher level, so a `### Step 1` inside a `## Try it` stays part of it. Headings and
+// fences inside a fenced block are sample text, so only a fence that OPENS a block can be the button.
+function findTryItLineIndexesWithoutCodeButton(content: string): number[] {
+  const lineIndexes: number[] = [];
+  let section: null | TryItSection = null;
+  let isInsideFence = false;
+  for (const [index, line] of content.split('\n').entries()) {
+    if (CODE_FENCE_REG_EXP.test(line)) {
+      if (!isInsideFence && section && CODE_BUTTON_FENCE_REG_EXP.test(line)) {
+        section.hasCodeButton = true;
+      }
+      isInsideFence = !isInsideFence;
+      continue;
+    }
+    const hashes = isInsideFence ? undefined : HEADING_LEVEL_REG_EXP.exec(line)?.groups?.['hashes'];
+    if (hashes === undefined) {
+      continue;
+    }
+    if (section && hashes.length <= section.level) {
+      if (!section.hasCodeButton) {
+        lineIndexes.push(section.lineIndex);
+      }
+      section = null;
+    }
+    if (!section && TRY_IT_HEADING_REG_EXP.test(line)) {
+      section = { hasCodeButton: false, level: hashes.length, lineIndex: index };
+    }
+  }
+  if (section && !section.hasCodeButton) {
+    lineIndexes.push(section.lineIndex);
+  }
+  return lineIndexes;
+}
+
 // The line numbers carrying a wikilink that is navigation rather than sample text.
 function findWikilinkLineIndexes(content: string): number[] {
   return collectLinesOutsideFences(content)
@@ -1021,8 +1211,29 @@ function formatLineNumber(lineIndex: number): string {
   return `line ${String(lineIndex + 1)}`;
 }
 
+function formatTryItWarning(sections: string[]): string {
+  return [
+    `demo-vault coverage: ${String(sections.length)} Try it section(s) have no code-button to perform their setup.`,
+    `Add one, or state why the steps cannot be scripted with <!-- obsidian-dev-utils-disable-next-line ${TRY_IT_RULE} -- <reason> --> above the heading.`,
+    ...sections.map((section) => `  ${section}`)
+  ].join('\n');
+}
+
+function getAllowedLineIndexes(scan: DirectiveScan, rule: string): ReadonlySet<number> {
+  return scan.allowedLineIndexesByRule.get(rule) ?? new Set();
+}
+
 function getLinesOutsideFences(content: string): string[] {
   return collectLinesOutsideFences(content).map((noteLine) => noteLine.line);
+}
+
+function getOrCreateLineIndexes(lineIndexesByRule: Map<string, Set<number>>, rule: string): Set<number> {
+  let lineIndexes = lineIndexesByRule.get(rule);
+  if (!lineIndexes) {
+    lineIndexes = new Set();
+    lineIndexesByRule.set(rule, lineIndexes);
+  }
+  return lineIndexes;
 }
 
 // Whether the note's first content line (frontmatter and blank lines aside) is an `# H1`.
@@ -1121,37 +1332,40 @@ function readWikilinkAllowanceReason(content: string): null | string {
   return reason === undefined ? null : reason.trim().replace(/^(?<quote>["'])(?<value>[\s\S]*)\k<quote>$/, '$<value>');
 }
 
-// Reads the note's inline `obsidian-dev-utils-disable…` directives, returning which lines they allow a
-// wikilink on and everything wrong with them. A suppression that quietly does nothing is worse than none,
-// so a misspelled directive, one with no reason, an unclosed region and one covering no wikilink at all
-// are each reported rather than ignored.
-function scanWikilinkDirectives(content: string): WikilinkDirectiveScan {
-  const state: WikilinkDirectiveScanState = {
-    allowedLineIndexes: new Set<number>(),
-    openRegion: null,
-    pendingNextLineIndex: null,
+// Reads the note's inline `obsidian-dev-utils-disable…` directives, returning which lines they exempt from
+// each rule and everything wrong with them. A suppression that quietly does nothing is worse than none, so
+// a misspelled directive, one with no reason, an unclosed region and one covering nothing that breaks its
+// rule are each reported rather than ignored.
+function scanDirectives(content: string): DirectiveScan {
+  const state: DirectiveScanState = {
+    allowedLineIndexesByRule: new Map(),
+    openRegionsByRule: new Map(),
+    pendingNextLineIndexesByRule: new Map(),
     problems: [],
-    wikilinkLineIndexes: new Set(findWikilinkLineIndexes(content))
+    targetLineIndexesByRule: new Map([
+      [TRY_IT_RULE, new Set(findTryItLineIndexesWithoutCodeButton(content))],
+      [WIKILINK_RULE, new Set(findWikilinkLineIndexes(content))]
+    ])
   };
 
   for (const { index, line } of collectLinesOutsideFences(content)) {
     const match = DIRECTIVE_REG_EXP.exec(line);
     if (match) {
-      applyWikilinkDirective(state, index, match);
+      applyDirective(state, index, match);
     } else if (DIRECTIVE_PROBE_REG_EXP.test(line)) {
       state.problems.push(`a malformed directive on ${formatLineNumber(index)}`);
     } else {
-      applyWikilinkScanLine(state, index, line);
+      applyDirectiveScanLine(state, index, line);
     }
   }
 
-  if (state.openRegion) {
-    state.problems.push(`a region opened on ${formatLineNumber(state.openRegion.lineIndex)} that is never enabled again`);
+  for (const openRegion of state.openRegionsByRule.values()) {
+    state.problems.push(`a region opened on ${formatLineNumber(openRegion.lineIndex)} that is never enabled again`);
   }
-  if (state.pendingNextLineIndex !== null) {
-    state.problems.push(`a disable-next-line on ${formatLineNumber(state.pendingNextLineIndex)} covering no wikilink`);
+  for (const [rule, pendingNextLineIndex] of state.pendingNextLineIndexesByRule) {
+    state.problems.push(`a disable-next-line on ${formatLineNumber(pendingNextLineIndex)} covering no ${ensureNonNullable(DIRECTIVE_RULE_TARGETS.get(rule))}`);
   }
-  return { allowedLineIndexes: state.allowedLineIndexes, problems: state.problems };
+  return { allowedLineIndexesByRule: state.allowedLineIndexesByRule, problems: state.problems };
 }
 
 function stripFrontmatter(content: string): string {

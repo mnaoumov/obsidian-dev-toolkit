@@ -194,8 +194,16 @@ The demo vault is not a set of samples sitting beside the documentation — it *
 4. **`00 Start.md` is a getting-started narrative**, not a bare list — what the vault is, one concrete first success, then an index grouped under headings with a one-line description per entry. Every other note must be reachable from it.
 5. **The first success spells out the mechanics**, because a first-time reader has never seen CodeScript Toolkit: a code button renders as a captioned rectangle, **clicking it runs the code**, the result appears below it, and the `</>` toggle beside it reveals the source. Nothing about a coloured rectangle says "button" to someone who does not already know — say it once, in the first example, instead of assuming it.
 6. **`.obsidian/app.json` commits none of the [settings this package owns](#the-appjson-settings-this-package-owns)** — the reading experience they configure is injected into the archive, so the vault does not carry a second copy of it.
+7. **Every `Try it` section has a `code-button` that performs its setup.** A `Try it` section is a heading of any level starting `Try it`, up to the next heading of the same or a higher level, so a `### Step 2` inside it stays part of it. Flipping the setting the demo needs and creating the note it acts on is what the button is for; a reader asked to do it by hand is a reader the demo lost, and the button's caption or source still shows the manual steps. A section whose steps really cannot be scripted — a drag from outside Obsidian, a gesture on a phone — says so on its heading, with the reason, using the same directive as rule 2:
 
-Rules 1-3, the reachability half of rule 4, and rule 6 are machine-checked by the coverage suite below. Whether `00 Start.md` actually reads as a narrative and rule 5 are convention only — no check can tell prose from filler.
+   ```markdown
+   <!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
+   ## Try it
+   ```
+
+   The `disable` / `enable` region form works too, for several such sections in a row. The checks on the directive are rule 2's: no reason, or covering a section that has a button after all, fails the suite.
+
+Rules 1-3, the reachability half of rule 4, and rules 6-7 are machine-checked by the coverage suite below. Whether `00 Start.md` actually reads as a narrative and rule 5 are convention only — no check can tell prose from filler.
 
 ## Keeping the vault honest
 
@@ -228,9 +236,14 @@ authoring: {
   // Defaults to the vault's own README, which addresses someone browsing the repo.
   excludedNotes: ['README.md'],
   // The note every other note must be reachable from. Defaults to `00 Start.md`.
-  startNote: '00 Start.md'
+  startNote: '00 Start.md',
+  // How a Try it section with no code-button (rule 7) is reported: 'warn' prints the
+  // sections and passes, 'error' fails. Defaults to 'warn'.
+  tryItCodeButtons: 'error'
 }
 ```
+
+The `Try it` check is the one authoring check that starts as a warning, because it arrived after most vaults were written: a vault that predates it keeps passing and prints the sections it still has to fix. Set `tryItCodeButtons: 'error'` once a vault is clean, so it stays that way; the default becomes `'error'` in a later release.
 
 `docs` stays optional and is only for a plugin that still keeps a separate `docs/` folder: it checks that every feature doc has a demo note linking to it. A plugin whose vault is its documentation has no use for it.
 
