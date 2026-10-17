@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.4.0
+
+- feat(demo-vault-coverage): fail the suite on a Try it section without a code button by default
+
 ## 3.3.0
 
 - feat(demo-vault-coverage): check that every Try it section has a code button
