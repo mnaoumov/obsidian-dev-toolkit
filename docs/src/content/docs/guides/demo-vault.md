@@ -238,12 +238,12 @@ authoring: {
   // The note every other note must be reachable from. Defaults to `00 Start.md`.
   startNote: '00 Start.md',
   // How a Try it section with no code-button (rule 7) is reported: 'warn' prints the
-  // sections and passes, 'error' fails. Defaults to 'warn'.
-  tryItCodeButtons: 'error'
+  // sections and passes, 'error' fails. Defaults to 'error'.
+  tryItCodeButtons: 'warn'
 }
 ```
 
-The `Try it` check is the one authoring check that starts as a warning, because it arrived after most vaults were written: a vault that predates it keeps passing and prints the sections it still has to fix. Set `tryItCodeButtons: 'error'` once a vault is clean, so it stays that way; the default becomes `'error'` in a later release.
+The `Try it` check fails the suite like every other authoring check. It is the one you can relax, because it arrived after most vaults were written: set `tryItCodeButtons: 'warn'` while a vault is being brought up to it, so it keeps passing and prints the sections it still has to fix, then drop the setting once the vault is clean. It shipped as a warning in 3.3.0 and became an error by default in 3.4.0.
 
 `docs` stays optional and is only for a plugin that still keeps a separate `docs/` folder: it checks that every feature doc has a demo note linking to it. A plugin whose vault is its documentation has no use for it.
 

@@ -204,17 +204,19 @@ registerDemoVaultCoverageSuite({
 // authoring checks must still run, which is why every other member is optional.
 registerDemoVaultCoverageSuite({ rootFolder: suiteRoot });
 
-// The Try it check at both severities: a vault whose one Try it section has a button passes as an error,
-// and a vault with a section lacking one passes as a warning, printing the section it found.
+// The Try it check at both severities: a vault whose one Try it section has a button passes at the default
+// severity, an error, and a vault with a section lacking one passes as a warning, printing the section it found.
 const tryItRoot = createFixtureRoot('odu-dvc-try-it-');
 writeFixtureFile(tryItRoot, 'demo-vault/Surface.md', `${SURFACE_NOTE}\n## Try it\n\n\`\`\`code-button\nrun();\n\`\`\`\n`);
 
-registerDemoVaultCoverageSuite({ authoring: { tryItCodeButtons: 'error' }, rootFolder: tryItRoot });
+registerDemoVaultCoverageSuite({ rootFolder: tryItRoot });
+// As a warning, the same clean vault passes with nothing to print.
+registerDemoVaultCoverageSuite({ authoring: { tryItCodeButtons: 'warn' }, rootFolder: tryItRoot });
 
 const manualTryItRoot = createFixtureRoot('odu-dvc-manual-try-it-');
 writeFixtureFile(manualTryItRoot, 'demo-vault/Surface.md', `${SURFACE_NOTE}\n## Try it\n\nOpen the settings and turn it on.\n`);
 
-describe('a Try it section without a code button, at the default severity', () => {
+describe('a Try it section without a code button, as a warning', () => {
   // The shared config restores every mock after each test, so the spy is installed per test and its calls
   // are collected here.
   const warnings: unknown[] = [];
@@ -230,7 +232,7 @@ describe('a Try it section without a code button, at the default severity', () =
     expect(warnings[0]).toContain('  Surface.md: line 10');
   });
 
-  registerDemoVaultCoverageSuite({ rootFolder: manualTryItRoot });
+  registerDemoVaultCoverageSuite({ authoring: { tryItCodeButtons: 'warn' }, rootFolder: manualTryItRoot });
 });
 
 afterAll(() => {

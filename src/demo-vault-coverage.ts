@@ -71,8 +71,8 @@
  * ## Try it
  * ```
  *
- * That check ships as a warning ({@link DemoVaultAuthoringSpec.tryItCodeButtons}), so a vault written
- * before it existed keeps passing while it is brought up to it.
+ * That check fails the suite by default; {@link DemoVaultAuthoringSpec.tryItCodeButtons} set to `'warn'`
+ * prints the sections instead, for a vault still being brought up to it.
  *
  * Two layers are exposed:
  * - {@link DemoVaultCoverageChecker} — a framework-agnostic core that reads the corpus, parses interface /
@@ -126,7 +126,7 @@ export interface DemoVaultAuthoringSpec {
 
   /**
    * How a `Try it` section with no `code-button` and no directive explaining why is reported: `'warn'`
-   * prints the sections and passes, `'error'` fails the suite. Defaults to `'warn'`.
+   * prints the sections and passes, `'error'` fails the suite. Defaults to `'error'`.
    */
   readonly tryItCodeButtons?: DemoVaultCheckSeverity;
 }
@@ -990,8 +990,8 @@ const CODE_BUTTON_FENCE_REG_EXP = /^\s*(?:```|~~~)\s*code-button\b/;
 const CODE_FENCE_REG_EXP = /^\s*(?:```|~~~)/;
 const DEFAULT_EXCLUDED_NOTES = ['README.md'];
 const DEFAULT_START_NOTE = '00 Start.md';
-// A warning while existing vaults are brought up to the check; it becomes an error once they are.
-const DEFAULT_TRY_IT_CODE_BUTTONS_SEVERITY: DemoVaultCheckSeverity = 'warn';
+// It shipped as a warning while existing vaults were brought up to the check, and became an error once they were.
+const DEFAULT_TRY_IT_CODE_BUTTONS_SEVERITY: DemoVaultCheckSeverity = 'error';
 const DOCS_LINK_REG_EXP = /^\s*\[Docs]\(/;
 const FRONTMATTER_REG_EXP = /^---\r?\n[\s\S]*?\r?\n---[^\S\n]*\r?\n?/;
 const H1_REG_EXP = /^# \S/;
