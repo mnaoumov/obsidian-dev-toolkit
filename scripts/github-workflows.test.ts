@@ -73,6 +73,11 @@ interface WorkflowTriggers {
 const WORKFLOWS_FOLDER = resolve(import.meta.dirname, '../.github/workflows');
 const SHARED_SETUP_STEPS = ['Resolve settings', 'Setup pnpm', 'Setup Bun', 'Enable Corepack', 'Setup Node.js'];
 const BASH = findBash();
+// Every case under bash spawns processes, which a full gate slows by an order of magnitude while the other test projects
+// run beside it: measured alone at 0.1-1.5 s a case and 6-9 s a badge case, under the gate one case took 5.5 s and one
+// badge case 37 s. So the budgets are sized for a loaded full run, not for the file alone.
+const BASH_TIMEOUT_IN_MILLISECONDS = 60_000;
+const GIT_TIMEOUT_IN_MILLISECONDS = 180_000;
 
 function findBash(): null | string {
   if (process.platform !== 'win32') {
@@ -161,7 +166,7 @@ describe('the reusable workflows', () => {
   });
 });
 
-describe.skipIf(BASH === null)('the workflow steps under bash', () => {
+describe.skipIf(BASH === null)('the workflow steps under bash', { timeout: BASH_TIMEOUT_IN_MILLISECONDS }, () => {
   let folder = '';
 
   beforeEach(async () => {
@@ -339,7 +344,7 @@ describe.skipIf(BASH === null)('the workflow steps under bash', () => {
   });
 
   // Each case spawns a dozen git processes, which take seconds on Windows.
-  describe('Publish the coverage badge', { timeout: 30_000 }, () => {
+  describe('Publish the coverage badge', { timeout: GIT_TIMEOUT_IN_MILLISECONDS }, () => {
     const REPOSITORY = 'owner/plugin';
     const TOKEN = 'token';
     let remote = '';
@@ -374,7 +379,7 @@ describe.skipIf(BASH === null)('the workflow steps under bash', () => {
         join(folder, 'gitconfig'),
         `[url "${toPosix(remote)}"]\n\tinsteadOf = https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git\n`
       );
-    });
+    }, BASH_TIMEOUT_IN_MILLISECONDS);
 
     it('should create the branch, update it, and leave an unchanged badge alone', async () => {
       const first = await publishBadge('<svg>1</svg>');
