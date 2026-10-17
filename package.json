@@ -253,6 +253,7 @@
     "test:coverage": "jiti scripts/test-coverage.ts",
     "test:integration": "jiti scripts/test-integration.ts",
     "test:integration:obsidian": "jiti scripts/test-integration-obsidian.ts",
+    "test:integration:obsidian:android": "jiti scripts/test-integration-obsidian-android.ts",
     "test:watch": "jiti scripts/test-watch.ts",
     "version": "jiti scripts/version.ts"
   },

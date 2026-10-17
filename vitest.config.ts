@@ -12,6 +12,9 @@ const OBSIDIAN_INTEGRATION_TEST_FILES = 'src/**/*.obsidian.integration.test.ts';
 // shared worker; see AGENTS.md on why a timeout here is machine load rather than a broken rule.
 const ESLINT_TYPECHECK_GROUP_ORDER = 1;
 const BIG_TIMEOUT_IN_MILLISECONDS = 30_000;
+// Driving an emulator over Appium is slower than the desktop path; the global setup boots it, hence the hook budget.
+const ANDROID_TIMEOUT_IN_MILLISECONDS = 60_000;
+const ANDROID_HOOK_TIMEOUT_IN_MILLISECONDS = 600_000;
 
 // Some tests here load `@mnaoumov/obsidian-lib` modules, which import `obsidian`: the mocks stand in for it.
 const SHARED_RESOLVE = {
@@ -82,6 +85,29 @@ export default defineLibraryVitestConfig({
         server: SHARED_SERVER,
         setupFiles: ['obsidian-integration-testing/vitest-setup'],
         testTimeout: BIG_TIMEOUT_IN_MILLISECONDS
+      }
+    },
+    {
+      test: {
+        environment: 'node',
+        // The same suites on Obsidian Mobile: the harness starts Appium and boots the emulator itself.
+        environmentOptions: {
+          obsidianTransport: {
+            appiumUrl: 'http://localhost:4723',
+            avdName: 'obsidian_test',
+            type: 'obsidian-android-appium'
+          }
+        },
+        exclude: [...DEFAULT_VITEST_TEST_EXCLUDE],
+        fileParallelism: false,
+        globalSetup: ['obsidian-integration-testing/vitest-global-setup-no-plugin'],
+        hookTimeout: ANDROID_HOOK_TIMEOUT_IN_MILLISECONDS,
+        include: [OBSIDIAN_INTEGRATION_TEST_FILES],
+        // Not `obsidian-integration-tests:android`: the desktop script's `test()` selects `<name>:*` too.
+        name: 'obsidian-android-integration-tests',
+        server: SHARED_SERVER,
+        setupFiles: ['obsidian-integration-testing/vitest-setup'],
+        testTimeout: ANDROID_TIMEOUT_IN_MILLISECONDS
       }
     },
     {

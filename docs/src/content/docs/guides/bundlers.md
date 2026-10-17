@@ -266,6 +266,8 @@ One fixture plugin, `test-fixtures/obsidian-plugin` in this repository, is built
 
 `npm run test:integration:obsidian` then loads the same builds in a real Obsidian, through [obsidian-integration-testing]: each one is installed into an empty vault and enabled, its command must be registered and run, a Node builtin must come through Electron's `require`, and its `styles.css` must apply while the plugin is enabled and go away once it is disabled. It needs a desktop Obsidian installed, which CI does not have, so it runs locally.
 
+`npm run test:integration:obsidian:android` runs the same checks in Obsidian Mobile on an Android emulator, through the harness's Appium transport. Mobile has no Node builtins, so there the command is registered but not run: a plugin that reaches a builtin has to check the platform first, whichever bundler built it. It needs the Android SDK, an `obsidian_test` emulator with Obsidian installed, and Appium, so it also runs locally only.
+
 Each build feature has a fixture of its own in `test-fixtures/features/`: one per framework, one with PostCSS, Tailwind and a CSS module together, and one with a WebAssembly module. Every bundler builds each of them, in production and, where it can, in development, and each `main.js` runs in a DOM: the framework's component renders its text, the CSS module's scoped class name is in `styles.css` beside Tailwind's utility, and the WebAssembly module answers.
 
 [Hot Reload]: https://github.com/pjeby/hot-reload
