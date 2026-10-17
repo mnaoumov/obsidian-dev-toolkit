@@ -10,7 +10,8 @@ import {
   beforeAll,
   describe,
   expect,
-  it
+  it,
+  vi
 } from 'vitest';
 
 import {
@@ -25,6 +26,11 @@ import {
 } from './obsidian-plugin-transforms.ts';
 
 const REPO_ROOT = join(import.meta.dirname, '../..');
+
+// The first case of each framework pays for the cold load of its compiler (Babel with `babel-preset-solid`, Svelte, PostCSS with Tailwind), which takes more than vitest's default 5 s under a loaded gate.
+const COLD_LOAD_TIMEOUT_IN_MILLISECONDS = 60_000;
+
+vi.setConfig({ testTimeout: COLD_LOAD_TIMEOUT_IN_MILLISECONDS });
 
 // Inside the repository's `node_modules`, so the packages a transform imports from the project resolve from there.
 const TEMP_PARENT_FOLDER = join(REPO_ROOT, 'node_modules/.cache/obsidian-dev-toolkit-tests');
