@@ -13,6 +13,11 @@ import type { ObsidianPluginWebpackLoaderOptions } from './obsidian-plugin-webpa
 
 import obsidianPluginWebpackLoader, { raw } from './obsidian-plugin-webpack-loader.ts';
 
+// The first case of each framework pays for the cold load of its compiler (Babel with `babel-preset-solid`, Svelte, PostCSS with Tailwind), which takes more than vitest's default 5 s under a loaded gate.
+const COLD_LOAD_TIMEOUT_IN_MILLISECONDS = 60_000;
+
+vi.setConfig({ testTimeout: COLD_LOAD_TIMEOUT_IN_MILLISECONDS });
+
 interface LoaderRun {
   readonly code: string | undefined;
   readonly dependencies: readonly string[];
