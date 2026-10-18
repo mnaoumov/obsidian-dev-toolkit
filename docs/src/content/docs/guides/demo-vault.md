@@ -113,16 +113,19 @@ const zipPath = await archivePluginDemoVault();
 
 ## Runtime side: the `Open demo vault` command
 
-The runtime side is opt-in. Register `OpenDemoVaultCommandHandler` directly from your plugin (for example in your `CommandHandlerComponent`'s command handlers) — no platform guard is needed, even in a plugin that also runs on mobile:
+The runtime side is opt-in. Register `OpenDemoVaultCommandHandler` directly from your plugin (for example in your `CommandHandlerComponent`'s command handlers) — no platform guard is needed, even in a plugin that also runs on mobile. Here `plugin` is your plugin instance and `pluginNoticeComponent` its notice component:
+
+<!-- snippet-check: context declare const plugin: import('obsidian').Plugin; -->
+<!-- snippet-check: context declare const pluginNoticeComponent: import('@mnaoumov/obsidian-lib/components/plugin-notice-component').PluginNoticeComponent; -->
 
 ```ts
 import { OpenDemoVaultCommandHandler } from '@mnaoumov/obsidian-lib/command-handlers/open-demo-vault-command-handler';
 
 new OpenDemoVaultCommandHandler({
-  app: this.app,
-  pluginId: this.manifest.id,
-  pluginNoticeComponent: this.pluginNoticeComponent,
-  pluginVersion: this.manifest.version
+  app: plugin.app,
+  pluginId: plugin.manifest.id,
+  pluginNoticeComponent,
+  pluginVersion: plugin.manifest.version
 });
 ```
 
@@ -231,16 +234,22 @@ It asserts that every reflected member is demonstrated somewhere in the notes, t
 The authoring checks are always on — a note that breaks the convention is broken for real readers, so there is no flag to turn them off. The optional `authoring` member only tunes them:
 
 ```ts
-authoring: {
-  // Notes outside the learning path, exempt from every authoring check.
-  // Defaults to the vault's own README, which addresses someone browsing the repo.
-  excludedNotes: ['README.md'],
-  // The note every other note must be reachable from. Defaults to `00 Start.md`.
-  startNote: '00 Start.md',
-  // How a Try it section with no code-button (rule 7) is reported: 'warn' prints the
-  // sections and passes, 'error' fails. Defaults to 'error'.
-  tryItCodeButtons: 'warn'
-}
+import { registerDemoVaultCoverageSuite } from '@mnaoumov/obsidian-dev-toolkit/demo-vault-coverage';
+import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
+
+registerDemoVaultCoverageSuite({
+  authoring: {
+    // Notes outside the learning path, exempt from every authoring check.
+    // Defaults to the vault's own README, which addresses someone browsing the repo.
+    excludedNotes: ['README.md'],
+    // The note every other note must be reachable from. Defaults to `00 Start.md`.
+    startNote: '00 Start.md',
+    // How a Try it section with no code-button (rule 7) is reported: 'warn' prints the
+    // sections and passes, 'error' fails. Defaults to 'error'.
+    tryItCodeButtons: 'warn'
+  },
+  rootFolder: getRootFolder() ?? process.cwd()
+});
 ```
 
 The `Try it` check fails the suite like every other authoring check. It is the one you can relax, because it arrived after most vaults were written: set `tryItCodeButtons: 'warn'` while a vault is being brought up to it, so it keeps passing and prints the sections it still has to fix, then drop the setting once the vault is clean. It shipped as a warning in 3.3.0 and became an error by default in 3.4.0.
@@ -250,6 +259,9 @@ The `Try it` check fails the suite like every other authoring check. It is the o
 `rootFolder` is the only required member. A plugin with no settings and no public API to reflect — nothing to put in `configInterfaces`, `interfaces` or `nonTrivialGuard` — registers the suite with that alone:
 
 ```ts
+import { registerDemoVaultCoverageSuite } from '@mnaoumov/obsidian-dev-toolkit/demo-vault-coverage';
+import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
+
 registerDemoVaultCoverageSuite({ rootFolder: getRootFolder() ?? process.cwd() });
 ```
 
@@ -278,6 +290,9 @@ It registers one `it` per note that declares at least one button, and runs one `
 Every option has a default worth knowing before overriding it:
 
 ```ts
+import { registerDemoVaultButtonSuite } from '@mnaoumov/obsidian-dev-toolkit/demo-vault-buttons';
+import { getRootFolder } from '@mnaoumov/typescript-dev-toolkit/root';
+
 registerDemoVaultButtonSuite({
   // How long a clicked button may take to report a result. Defaults to 10000.
   buttonResultTimeoutInMilliseconds: 10_000,
@@ -358,6 +373,13 @@ Do exactly that, once; the installed copy is gitignored, so each machine that ru
 The suite drives a real desktop Obsidian, like the desktop project, but against a populated copy of `demo-vault/` rather than an empty vault — so it needs its own `globalSetup`, and its own file suffix so the desktop project does not collect it and open it against a vault with no notes:
 
 ```ts
+import type { TestProjectConfiguration } from 'vitest/config';
+
+import {
+  defineObsidianPluginVitestConfig,
+  type ObsidianPluginVitestConfigContext
+} from '@mnaoumov/obsidian-dev-toolkit/test-runners/vitest-config';
+
 export const config = defineObsidianPluginVitestConfig({
   customProjects(context: ObsidianPluginVitestConfigContext): TestProjectConfiguration[] {
     return [

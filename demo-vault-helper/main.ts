@@ -5,7 +5,7 @@
  *
  * A tiny, plugin-agnostic plugin injected into every demo vault at release time. On layout-ready it
  * bootstraps `CodeScript Toolkit` so the demo notes' `code-button`s work with no manual setup. The real
- * logic lives in `obsidian-dev-utils` (`bootstrapDemoVault`); this wrapper is only the Obsidian plugin
+ * logic lives in `@mnaoumov/obsidian-lib` (`bootstrapDemoVault`); this wrapper is only the Obsidian plugin
  * shell, bundled standalone so the injected copy needs no runtime dependency on the library.
  */
 

@@ -3,7 +3,7 @@
  *
  * Builds the `demo-vault-helper` bootstrap plugin into `dist/demo-vault-helper/`.
  *
- * The bundle is a standalone CommonJS Obsidian plugin (it bundles the `obsidian-dev-utils`
+ * The bundle is a standalone CommonJS Obsidian plugin (it bundles the `@mnaoumov/obsidian-lib`
  * bootstrap logic), shipped in the package so `archivePluginDemoVault` can inject it into a
  * plugin's demo vault at release time.
  */

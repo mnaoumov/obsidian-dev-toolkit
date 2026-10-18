@@ -218,7 +218,7 @@ function injectAppJson(params: InjectAppJsonParams): void {
   entries.set(entryName, Buffer.from(buildArchivedDemoVaultAppJsonContent({ appJson }), 'utf-8'));
 }
 
-// Injects the built, `obsidian-dev-utils`-owned `demo-vault-helper` bootstrap plugin (shipped in this package) into the demo vault, so no per-vault copy is committed and an `obsidian-dev-utils` bump propagates fixes.
+// Injects the built, package-owned `demo-vault-helper` bootstrap plugin (shipped in this package) into the demo vault, so no per-vault copy is committed and an `obsidian-dev-toolkit` bump propagates fixes.
 //
 // Alongside the binaries it writes the helper's own `data.json` naming the demonstrated plugin. That is
 // the one moment the id is known for certain — it comes from the plugin's own manifest — whereas the
@@ -292,7 +292,7 @@ async function readCommittedAppJson(): Promise<DemoVaultAppJson> {
   const ownedSettings = findOwnedDemoVaultAppJsonSettings({ appJson });
   if (ownedSettings.length > 0) {
     throw new Error(
-      `${appJsonPath} sets ${ownedSettings.join(', ')}, which obsidian-dev-utils owns and writes into the archived demo vault. Settings it owns must not be committed.`
+      `${appJsonPath} sets ${ownedSettings.join(', ')}, which obsidian-dev-toolkit owns and writes into the archived demo vault. Settings it owns must not be committed.`
     );
   }
 

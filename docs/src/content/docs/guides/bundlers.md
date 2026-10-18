@@ -52,6 +52,8 @@ export default defineConfig({
 npm install --save-dev rollup rollup-plugin-esbuild rollup-plugin-css-only
 ```
 
+<!-- snippet-check: skip rollup-plugin-css-only is a plugin's own dependency, not installed here. -->
+
 ```javascript
 // rollup.config.mjs
 import { obsidianPluginRollup } from '@mnaoumov/obsidian-dev-toolkit/bundlers/rollup';
@@ -194,6 +196,8 @@ export default defineConfig({
   plugins: [obsidianPluginVite({ framework: 'vue', styles: { cssModules: true }, wasm: true })]
 });
 ```
+
+<!-- snippet-check: skip The types of @rollup/plugin-commonjs declare its default export in CommonJS form, so a type-checked ES module sees no call signature; rollup loads it correctly. -->
 
 ```javascript
 // rollup.config.mjs: a Solid plugin with PostCSS. With `styles`, the adapter compiles every stylesheet itself.

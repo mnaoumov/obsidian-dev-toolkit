@@ -38,6 +38,7 @@ Every script is a thin entry point under `scripts/`, run with `jiti`, over the s
 - `npm run lint` / `npm run lint:fix` — ESLint. A warning fails it. ESLint is type-aware and reads the generated barrels, so build first on a fresh clone.
 - `npm run lint:md` / `npm run lint:md:fix`, `npm run format` / `npm run format:check`, `npm run spellcheck` — markdownlint (with the soft-break rule on: every paragraph is one physical line), dprint and cspell.
 - `npm run docs:build` / `npm run docs:dev` / `npm run docs:preview` — this package's documentation site, built with `@mnaoumov/typescript-dev-toolkit`'s docs-site builder (`scripts/docs-site-config.ts`, `astro.config.ts`, `docs/`): the API reference generated into `docs/src/content/docs/api`, the Open Graph cards, `astro build` into `docs/dist`, then a check of every link of the output, external ones included. `.github/workflows/build-pages.yml` builds and deploys it to `https://mnaoumov.dev/obsidian-dev-toolkit/` on every published release. Its pages link into the sites of `typescript-lib`, `typescript-dev-toolkit`, `typescript-test-toolkit` and `obsidian-lib`, so those deploy first. The guides moved here from `obsidian-dev-utils`. `src/docs-site/obsidian-external-type-links.ts` (`OBSIDIAN_EXTERNAL_TYPE_LINKS`) is the Obsidian layer of the builder's `externalTypeLinks`, the CodeMirror and Moment types an Obsidian package's API names. This site takes it from `../src/`, and `obsidian-lib`'s site is meant to import it once a release carries it, in place of its own copy of the same ten entries.
+- `npm run docs:check-snippets` — type-checks every fenced `ts` / `js` block of the guides against `src/` (`scripts/helpers/docs-snippets.ts`), mapping this package's own name onto `src/` for the check alone. The gate runs the same check as `scripts/helpers/docs-snippets.test.ts` in the `unit-tests:scripts` project, beside `outdated-references.test.ts`, which fails on a retired `obsidian-dev-utils` module path, import, repository link or console recipe in the README, this file, the guides, the sources, the scripts, the two shipped plugins and `templates/`. The bare name stays legal, because the demo-vault directives (`obsidian-dev-utils-disable…`), the `__obsidianDevUtils` bag and `window.__obsidianDevUtilsModule` are wire names kept on purpose. An HTML comment above a fence shapes its check: `<!-- snippet-check: context <declarations> -->` declares names the prose already introduced, and `<!-- snippet-check: skip <reason> -->` exempts a snippet that cannot compile here, such as one needing a package a plugin installs and this repository does not. A line that names an old address on purpose carries `outdated-reference-ok`. Both helpers are copies of `typescript-test-toolkit`'s, until `@mnaoumov/typescript-dev-toolkit` ships them.
 - `npm run commit` — a guided Conventional-Commits message.
 - `npm run version '--' <type> [--no-changelog-editing]` — the release. Quote the `--` in PowerShell.
 
@@ -107,7 +108,7 @@ export function myFunction(param: Type): ReturnType {
 - esbuild for bundling (ESM + CJS dual output)
 - `src/**/index.ts` files are auto-generated — do NOT edit them manually
 - `package.json` exports are auto-generated via `build:generate-exports`
-- `mnaoumov/obsidian-lib:src/__merged.ts` is an auto-generated flat re-export barrel of every renderer-safe **value** export (gitignored + eslint-ignored, exactly like `index.ts`; produced by `build:generate-merged`, which runs before `build:generate-index`). It backs the `obsidian-dev-utils/__merged` subpath and the `lib` bag injected into `evalInObsidian` closures — wired via `registerLibResolver` in `scripts/integration-test-obsidian-setup.ts` plus the `Lib` augmentation in `mnaoumov/obsidian-lib:src/@types/obsidian-integration-testing.d.ts`. The generator **fails the build if two modules export the same value name**: every public value export must be unique (this is why `path.ts` / `string.ts` `normalize` were renamed to `normalizePath` / `normalizeString`). Do NOT edit `__merged.ts` manually.
+- `mnaoumov/obsidian-lib:src/__merged.ts` is an auto-generated flat re-export barrel of every renderer-safe **value** export (gitignored + eslint-ignored, exactly like `index.ts`; produced by `build:generate-merged`, which runs before `build:generate-index`). It backs the `__merged` namespace of the `@mnaoumov/obsidian-lib` root export and the `lib` bag injected into `evalInObsidian` closures — wired via `registerLibResolver` in `scripts/integration-test-obsidian-setup.ts` plus the `Lib` augmentation in `mnaoumov/obsidian-lib:src/@types/obsidian-integration-testing.d.ts`. The generator **fails the build if two modules export the same value name**: every public value export must be unique (this is why `path.ts` / `string.ts` `normalize` were renamed to `normalizePath` / `normalizeString`). Do NOT edit `__merged.ts` manually.
 - **The integration-test harness plugin bundle is checked at build time for whether it can load on mobile.** `buildIntegrationTestPlugin` runs `assertMobileLoadableBundle` (`scripts/helpers/assert-mobile-loadable-bundle.ts`), which evaluates the emitted `main.js` in a `node:vm` context shaped like Obsidian mobile — `require` returns `undefined` for every Node builtin and a permissive stand-in for the app-provided externals, and `process` is present and renderer-shaped so a load-time branch (as in `debug`) takes the browser path a webview does. It asserts only that module INITIALIZATION survives, so L6's call-time dynamic `import()` of platform-only work still passes. It guards both outputs (`dist/integration-test-plugin/`, which ships, and `dist/dev/`), because that bundle is seeded into an Android integration vault, where a load-time reach for a platform-only API surfaces as an opaque "plugin failed to load" with every test in the project failing behind it.
 - **That one check covers the whole library, which is why L5 can allow the barrels to re-export every module.** The harness plugin's entry imports `../src/index.ts` — the entire public surface — so its bundle is the worst-case consumer: a plugin that imports everything. Any module that stops being import-safe on mobile fails `npm run build` here, long before it reaches a phone. Do not weaken that entry to a narrower import; it is what makes the check load-bearing rather than incidental.
 
@@ -164,12 +165,12 @@ export function myFunction(param: Type): ReturnType {
 
 ### Consumer Script Pattern
 
-Consumer projects import functions from `obsidian-dev-utils` and wrap them with `wrapCliTask()`:
+Consumer projects import functions from `@mnaoumov/obsidian-dev-toolkit` (the Obsidian layer) and `@mnaoumov/typescript-dev-toolkit` (the generic one) and wrap them with `wrapCliTask()`:
 
 ```typescript
 // scripts/build.ts
-import { wrapCliTask } from 'obsidian-dev-utils/script-utils/cli-utils';
-import { build } from 'obsidian-dev-utils/script-utils/bundlers/esbuild';
+import { build } from '@mnaoumov/obsidian-dev-toolkit/bundlers/esbuild';
+import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
 
 await wrapCliTask(() => build());
 ```
@@ -178,27 +179,33 @@ For scripts needing argv:
 
 ```typescript
 // scripts/version.ts
+import {
+  parseVersionArguments,
+  updateVersion
+} from '@mnaoumov/obsidian-dev-toolkit/version';
+import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
 import process from 'node:process';
-import { wrapCliTask } from 'obsidian-dev-utils/script-utils/cli-utils';
-import { updateVersion } from 'obsidian-dev-utils/script-utils/version';
 
-const [, , versionUpdateType] = process.argv;
-await wrapCliTask(() => updateVersion(versionUpdateType));
+const [, , ...$arguments] = process.argv;
+const { options, versionUpdateType } = parseVersionArguments($arguments);
+await wrapCliTask(() => updateVersion(versionUpdateType, options));
 ```
 
 Config scripts re-export shared configs:
 
 ```typescript
 // scripts/commitlint-config.ts
-import { obsidianDevUtilsConfig } from 'obsidian-dev-utils/script-utils/commitlint-config';
-export const config = obsidianDevUtilsConfig;
+import { commitlintConfig } from '@mnaoumov/typescript-dev-toolkit/commitlint-config';
+
+export const config = commitlintConfig;
 ```
 
 The nano-staged config script calls `getNanoStagedConfig()` (not a bare re-export) so the pre-commit checks honor the `NANO_STAGED=0` `.env` opt-out:
 
 ```typescript
 // scripts/nano-staged-config.ts
-import { getNanoStagedConfig } from 'obsidian-dev-utils/script-utils/nano-staged-config';
+import { getNanoStagedConfig } from '@mnaoumov/typescript-dev-toolkit/nano-staged-config';
+
 export const config = getNanoStagedConfig();
 ```
 

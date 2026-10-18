@@ -48,6 +48,8 @@ The result is plain data, so anything else is changed by spreading it: `{ ...def
 
 Add `@wdio/globals/types`, `@wdio/mocha-framework` and `wdio-obsidian-service` to the `types` of the `tsconfig.json` that covers `e2e/`. A spec then reads:
 
+<!-- snippet-check: skip WebdriverIO and its mocha globals are a plugin's own dependencies, not installed here. -->
+
 ```typescript
 // e2e/plugin.spec.ts
 import { browser, expect } from '@wdio/globals';
@@ -81,6 +83,8 @@ npm install --save-dev obsidian-test
 ```
 
 A test is a `node:test` test inside `embedded()`, which runs it only inside Obsidian:
+
+<!-- snippet-check: skip obsidian-test is a plugin's own dependency, not installed here. -->
 
 ```typescript
 // e2e/plugin.spec.ts

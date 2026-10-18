@@ -47,6 +47,8 @@ Set `OBSIDIAN_VERSION` to pin the desktop project to a specific Obsidian (for ex
 Customize through the two hooks: `editContext` edits the standard projects in place, and `customProjects` appends projects the base does not know about:
 
 ```typescript
+import { defineObsidianPluginVitestConfig } from '@mnaoumov/obsidian-dev-toolkit/test-runners/vitest-config';
+
 export const config = defineObsidianPluginVitestConfig({
   customProjects(context) {
     return [{
@@ -78,6 +80,8 @@ The `integration-tests:demo-vault` project above is the one [Clicking every butt
 The one thing it cannot do is redefine `window`, `document`, `location` or `top`: inside a VM context those four are non-configurable, so `vi.stubGlobal('window', …)` or `Object.defineProperty(window, 'location', …)` throws `Cannot redefine property`. Every other global stubs as usual. List a file that redefines one of the four in `globalStubTestFiles`, and it moves to a sibling `unit-tests:global-stubs` project on the default pool:
 
 ```typescript
+import { defineObsidianPluginVitestConfig } from '@mnaoumov/obsidian-dev-toolkit/test-runners/vitest-config';
+
 export const config = defineObsidianPluginVitestConfig({
   editContext(context) {
     context.globalStubTestFiles.push('src/window-timers.test.ts');
@@ -129,7 +133,11 @@ await wrapCliTask(() => test());
 
 [`obsidian-integration-testing`](https://github.com/mnaoumov/obsidian-integration-testing) runs a closure inside a real Obsidian, and injects a `lib` bag into it. This package can merge the **entire** helper surface of `@mnaoumov/obsidian-lib` into that bag, so a serialized closure, which cannot use imports, reaches any helper as `lib.<helper>`:
 
+<!-- snippet-check: context /// <reference types="@mnaoumov/obsidian-lib/@types/obsidian-integration-testing" /> -->
+
 ```typescript
+import { evalInObsidian } from 'obsidian-integration-testing';
+
 await evalInObsidian({
   async callback({ app, lib: { ensureMetadataCacheReady } }) {
     await ensureMetadataCacheReady(app);
@@ -143,6 +151,8 @@ Three pieces make that work, and **all three are required**: the runtime without
 
 The helpers are published by a small harness plugin that this package ships. It has to be installed in the test vault **alongside** your own plugin, so replace `obsidian-integration-testing/vitest-global-setup-plugin` with the drop-in below (do not list both):
 
+<!-- snippet-check: skip A property of a vitest project's test options, not a module. -->
+
 ```typescript
 // vitest.config.ts (each integration-test project)
 globalSetup: ['@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup'],
@@ -151,6 +161,8 @@ globalSetup: ['@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-set
 It does everything the harness's own global setup does (a temporary vault, your plugin installed and enabled) and additionally seeds and enables the harness plugin.
 
 If a project already needs its own `populate` (demo-vault fixtures, a large performance vault), compose instead of replacing:
+
+<!-- snippet-check: context declare function myFixtures(): import('obsidian-integration-testing').PopulateFilesParams; -->
 
 ```typescript
 import {
@@ -166,6 +178,8 @@ export const { setup, teardown } = createSetup({
 ```
 
 ### 2. Setup file: register the resolver
+
+<!-- snippet-check: skip A property of a vitest project's test options, not a module. -->
 
 ```typescript
 // vitest.config.ts (each integration-test project)
