@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 3.7.0
+
+- build(deps): accept @mnaoumov/obsidian-lib 5.0.0 as a peer and build with it
+- docs(linters): record why plugin-name-as-code reports inline quotations
+- docs: check guide snippets and retired obsidian-dev-utils references
+
 ## 3.6.0
 
 - feat(linters): fail lint on plugin API contract entries without schemas
