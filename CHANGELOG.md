@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.5.0
+
+- feat(linters): fail lint on plugin names not marked as code
+
 ## 3.4.2
 
 - fix(vitest-config): keep unit-test workers alive on Node 24
