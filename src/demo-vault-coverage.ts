@@ -10,7 +10,7 @@
  * vault is a learning resource, and these checks only guard that it stays truthful.
  *
  * They also guard the vault's own `.obsidian/app.json`: the settings listed in
- * {@link DEMO_VAULT_APP_JSON_SETTINGS} belong to `obsidian-dev-utils`, which writes them into the archived
+ * {@link DEMO_VAULT_APP_JSON_SETTINGS} belong to this package, which writes them into the archived
  * vault at release time, so a vault that commits any of them is keeping a second copy nothing reconciles.
  *
  * They also enforce the demo-vault AUTHORING convention — every note opens with an `# H1` and a plain
@@ -615,7 +615,7 @@ export class DemoVaultCoverageChecker {
   }
 
   /**
-   * Finds the `.obsidian/app.json` settings the vault commits that `obsidian-dev-utils` owns and writes
+   * Finds the `.obsidian/app.json` settings the vault commits that this package owns and writes
    * into the archived vault itself. A committed one is a second copy of a setting nothing reconciles, and
    * it is the copy that goes stale — so the convention is that the vault commits none of them.
    *
@@ -959,7 +959,7 @@ export function registerDemoVaultCoverageSuite(params: RegisterDemoVaultCoverage
       expect(checker.findNotesWithDocsLinks()).toEqual([]);
     });
 
-    it('commits none of the app.json settings obsidian-dev-utils injects at release time', () => {
+    it('commits none of the app.json settings obsidian-dev-toolkit injects at release time', () => {
       expect(checker.findCommittedAppJsonSettings()).toEqual([]);
     });
 

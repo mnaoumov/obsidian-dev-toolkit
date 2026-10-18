@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * The `.obsidian/app.json` settings `obsidian-dev-utils` owns in every demo vault.
+ * The `.obsidian/app.json` settings this package owns in every demo vault.
  *
  * A demo vault is documentation first and an editing surface second, so four Obsidian settings have to be
  * the same in every one of them. They are **not** committed: a vault that wrote them itself would drift

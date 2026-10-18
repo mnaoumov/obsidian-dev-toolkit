@@ -299,7 +299,7 @@ describe('archivePluginDemoVault', () => {
     committedVaultFiles.set(APP_JSON_RELATIVE_PATH, JSON.stringify({ livePreview: true, newLinkFormat: 'absolute' }));
 
     await expect(archivePluginDemoVault()).rejects.toThrow(
-      `${APP_JSON_PATH} sets livePreview, newLinkFormat, which obsidian-dev-utils owns and writes into the archived demo vault. Settings it owns must not be committed.`
+      `${APP_JSON_PATH} sets livePreview, newLinkFormat, which obsidian-dev-toolkit owns and writes into the archived demo vault. Settings it owns must not be committed.`
     );
     expect(mockWriteFile).not.toHaveBeenCalledWith(ARCHIVE_PATH, expect.anything());
   });

@@ -14,7 +14,7 @@
  *
  * The trusted alternatives — `pressKey`, `clickElement`, `clickMouse`, `hoverElement`,
  * `typeIntoEditor` — are seeded into the `evalInObsidian` callback's `lib` bag, and are
- * also importable from `obsidian-dev-utils/obsidian/trusted-input`, which picks the
+ * also importable from `@mnaoumov/obsidian-lib/trusted-input`, which picks the
  * desktop or mobile injector itself. All of them work on Android except the hover
  * helpers, which throw there because `:hover` has no touch equivalent.
  *
