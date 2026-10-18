@@ -18,6 +18,13 @@
  * - a block quote, which quotes somebody else's words;
  * - an Obsidian `[[wikilink]]` and an inline `<code>` element, which micromark reads as plain text, and a bare URL.
  *
+ * An inline quotation is NOT skipped, on purpose. A double-quoted span in prose cannot be told apart from our own
+ * quoted text: a step, a button label or a scare quote such as "install `CodeScript Toolkit`" is ours and must be
+ * marked, while somebody else's words quoted inline must stay as they wrote them. Our own kind is the commoner one, so
+ * skipping every quoted span would exempt our own prose to spare the rare real quotation. A real quotation inline
+ * carries `<!-- markdownlint-disable-line plugin-name-as-code -- quotes the reporter -->` instead, which names the
+ * exception and its reason where it is.
+ *
  * Not attempted: a multi-word name broken across two lines of one paragraph.
  */
 
