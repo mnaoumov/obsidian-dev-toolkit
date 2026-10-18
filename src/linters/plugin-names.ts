@@ -42,12 +42,14 @@ export const MNAOUMOV_PLUGIN_NAMES: readonly string[] = [
   'Edit Link Alias',
   'Email to Vault',
   'Embed HTML',
+  'Explorer Multi-Select',
   'External Rename Handler',
   'File Bundles',
   'File Explorer Reload',
   'Fix Tab Size',
   'Frontmatter Markdown Links',
   'Insert Multiple Attachments',
+  'Labelled Links',
   'Link Picker',
   'More Events',
   'Nested Properties',
@@ -56,6 +58,7 @@ export const MNAOUMOV_PLUGIN_NAMES: readonly string[] = [
   'Refresh Any View',
   'Root Folder Context Menu',
   'Sample Plugin Extended',
+  'Sibling Notes',
   'Smart Rename'
 ];
 
