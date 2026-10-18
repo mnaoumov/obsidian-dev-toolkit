@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 3.4.2
+
+- fix(vitest-config): keep unit-test workers alive on Node 24
+- build(deps): bump @mnaoumov/typescript-dev-toolkit to ^3.6.3
+- docs: use the approved obsidian-dev-toolkit logo and favicon
+
 ## 3.4.1
 
 - fix(types): type CSS module imports as their class names
