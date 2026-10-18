@@ -24,9 +24,9 @@ describe('obsidianMarkdownlintCli2Config', () => {
     expect(obsidianMarkdownlintCli2Config.globs).toEqual(obsidianDevUtilsConfig.globs);
   });
 
-  it('should register the plugin-name rule, switched off', () => {
+  it('should register the plugin-name rule, switched on', () => {
     expect(obsidianMarkdownlintCli2Config.customRules).toEqual([...obsidianDevUtilsConfig.customRules ?? [], pluginNameAsCodeRule]);
-    expect(obsidianMarkdownlintCli2Config.config?.[PLUGIN_NAME_AS_CODE_RULE_NAME]).toBe(false);
+    expect(obsidianMarkdownlintCli2Config.config?.[PLUGIN_NAME_AS_CODE_RULE_NAME]).toBe(true);
   });
 
   it('should register the plugin-name rule alone when the generic configuration has no custom rules', async () => {

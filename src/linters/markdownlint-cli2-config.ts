@@ -21,12 +21,10 @@ export const obsidianMarkdownlintCli2Config: MarkdownlintCli2ConfigSchema = {
   ...obsidianDevUtilsConfig,
   config: {
     ...obsidianDevUtilsConfig.config,
-    // Registered but OFF by default: markdownlint enables an unlisted custom rule, so landing it silent has to be
-    // said out loud. Repositories still carry plain plugin names from before the rule existed; each one fixes them
-    // (`npm run lint:md:fix` does it) and turns the rule on by overriding this one key in its own
-    // `scripts/markdownlint-cli2-config.ts`. The rule takes `{ additionalPluginNames: [...] }` for names the shared
-    // list lacks.
-    [PLUGIN_NAME_AS_CODE_RULE_NAME]: false
+    // Markdownlint would enable an unlisted custom rule anyway; it is listed so a repository that needs names the
+    // shared list lacks overrides this one key with `{ additionalPluginNames: [...] }` in its own
+    // `scripts/markdownlint-cli2-config.ts`. `npm run lint:md:fix` fixes what it reports.
+    [PLUGIN_NAME_AS_CODE_RULE_NAME]: true
   },
   customRules: [
     ...obsidianDevUtilsConfig.customRules ?? [],
