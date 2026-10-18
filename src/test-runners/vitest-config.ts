@@ -331,8 +331,9 @@ export class ObsidianPluginVitestConfigContext {
     exclude: [...SHARED_EXCLUDE, INTEGRATION_TEST_FILES],
     // A threads/forks pool option that still reaches the worker under the VM pool below: measured
     // 2026-09-16, `process.execArgv` carries it and Node's own `localStorage` descriptor is gone, as it
-    // is under `threads`. Without the flag the descriptor is back under both pools.
-    execArgv: ['--no-webstorage'],
+    // is under `threads`. Without the flag the descriptor is back under both pools. See
+    // `getUnitTestExecArgv` for why it is passed only where Node knows it.
+    execArgv: getUnitTestExecArgv(),
     include: [UNIT_TEST_FILES],
     name: 'unit-tests',
     /*
@@ -462,6 +463,26 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
       reporters: [...context.reporters]
     }
   };
+}
+
+/**
+ * Builds the `execArgv` of the unit projects: `--no-webstorage` where the running Node knows the flag, and
+ * nothing where it does not.
+ *
+ * A worker refuses an `execArgv` flag its Node does not know, so on Node 24 — the current LTS, and what CI
+ * runs for a plugin with no `.nvmrc` — an unconditional `--no-webstorage` killed every unit-test worker with
+ * `ERR_WORKER_INVALID_EXEC_ARGV`. Such a Node needs no flag either: it installs no `localStorage` global
+ * unless asked to, so jsdom's own is the one a test sees.
+ *
+ * The probe is `--webstorage`, not `--no-webstorage`: `process.allowedNodeEnvironmentFlags` lists a boolean
+ * flag by its positive form only. Measured 2026-10-17: Node 26.10.0 answers `true` for `--webstorage` and
+ * `false` for `--no-webstorage`, and Node 22.23.2 and 24.18.0 answer `false` for both, and throw
+ * `ERR_WORKER_INVALID_EXEC_ARGV` for a worker given `--no-webstorage`.
+ *
+ * @returns The `execArgv` list.
+ */
+function getUnitTestExecArgv(): string[] {
+  return process.allowedNodeEnvironmentFlags.has('--webstorage') ? ['--no-webstorage'] : [];
 }
 
 /**

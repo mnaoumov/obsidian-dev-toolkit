@@ -14,6 +14,7 @@ import {
   basename,
   join
 } from 'node:path';
+import process from 'node:process';
 import {
   afterAll,
   afterEach,
@@ -47,6 +48,15 @@ const STANDARD_PROJECT_NAMES = [
   'integration-tests:android'
 ];
 
+/**
+ * Makes `process.allowedNodeEnvironmentFlags` report exactly the given flags, as a Node of another version would.
+ *
+ * @param flags - The flags the running Node should appear to know.
+ */
+function mockAllowedNodeEnvironmentFlags(flags: string[]): void {
+  vi.spyOn(process, 'allowedNodeEnvironmentFlags', 'get').mockReturnValue(new Set(flags));
+}
+
 describe('ObsidianPluginVitestConfigContext', () => {
   beforeEach(() => {
     vi.stubEnv('OBSIDIAN_VERSION', undefined);
@@ -54,6 +64,7 @@ describe('ObsidianPluginVitestConfigContext', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it('should expose the documented timeout defaults', () => {
@@ -139,8 +150,23 @@ describe('ObsidianPluginVitestConfigContext', () => {
   it('should run the unit project on the VM pool with no global-stub files by default', () => {
     const context = new ObsidianPluginVitestConfigContext();
     expect(context.unitTests.pool).toBe('vmThreads');
-    expect(context.unitTests.execArgv).toEqual(['--no-webstorage']);
     expect(context.globalStubTestFiles).toEqual([]);
+  });
+
+  it('should turn Node web storage off in the unit project where Node knows the flag', () => {
+    mockAllowedNodeEnvironmentFlags(['--webstorage']);
+    const context = new ObsidianPluginVitestConfigContext();
+    expect(context.unitTests.execArgv).toEqual(['--no-webstorage']);
+  });
+
+  /*
+   * Node 24 has no such flag, and a worker given one it does not know dies with
+   * `ERR_WORKER_INVALID_EXEC_ARGV` before it runs a single test.
+   */
+  it('should pass no flag to the unit project where Node does not know it', () => {
+    mockAllowedNodeEnvironmentFlags([]);
+    const context = new ObsidianPluginVitestConfigContext();
+    expect(context.unitTests.execArgv).toEqual([]);
   });
 
   /*
@@ -191,6 +217,7 @@ describe('defineObsidianPluginVitestConfig', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it('should declare the standard projects in order', () => {
@@ -265,6 +292,7 @@ describe('defineObsidianPluginVitestConfig', () => {
   });
 
   it('should move the global-stub files to a sibling unit project on the default pool', () => {
+    mockAllowedNodeEnvironmentFlags(['--webstorage']);
     const config = defineObsidianPluginVitestConfig({
       customProjects(): TestProjectConfiguration[] {
         return [{ test: { include: ['src/**/*.demo-vault.integration.test.ts'], name: 'integration-tests:demo-vault' } }];
