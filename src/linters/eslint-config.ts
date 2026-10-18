@@ -313,9 +313,6 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
        * Every method entry of a plugin API contract carries an `input` and an `output` schema, so a `{}` entry that
        * validates nothing cannot come back where the contract type is untyped and the compiler does not refuse it.
        * Tests are exempt: they may publish a deliberately broken contract.
-       *
-       * Registered but OFF: several providers and consumers still carry `{}` entries, and turning it on first would
-       * make their lint red. Switch it to `'error'` once none is left.
        */
       files: context.sourceFiles,
       ignores: context.testFiles,
@@ -323,7 +320,7 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
         'obsidian-dev-toolkit': obsidianDevToolkitPlugin
       },
       rules: {
-        'obsidian-dev-toolkit/require-plugin-api-contract-schemas': 'off'
+        'obsidian-dev-toolkit/require-plugin-api-contract-schemas': 'error'
       }
     },
     {
