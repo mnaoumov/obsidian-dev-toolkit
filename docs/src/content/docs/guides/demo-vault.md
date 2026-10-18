@@ -56,10 +56,10 @@ These four settle the **Obsidian** reader and nothing else. GitHub never reads `
 ### Consumer setup
 
 - Create `demo-vault/` with the curated notes and an `.obsidian/` config. The config directory must be the default `.obsidian` — the tooling resolves it by name.
-- Commit `demo-vault/.obsidian/community-plugins.json` containing **both** ids: `["demo-vault-helper", "<plugin-id>"]`. Listing only the helper is a silent failure: the helper installs, configures and enables **CodeScript Toolkit only**, so the vault would bootstrap and run `startup.ts` while the plugin the vault exists to demonstrate stays disabled.
+- Commit `demo-vault/.obsidian/community-plugins.json` containing **both** ids: `["demo-vault-helper", "<plugin-id>"]`. Listing only the helper is a silent failure: the helper installs, configures and enables **`CodeScript Toolkit` only**, so the vault would bootstrap and run `startup.ts` while the plugin the vault exists to demonstrate stays disabled.
 - Do not commit the four [`app.json` settings above](#the-appjson-settings-this-package-owns) — they are injected at release time.
 - If `demo-vault/README.md` tells the reader which file to download, name `<plugin-id>-demo-vault.zip` — not a versioned one. Leave its `# heading` unversioned too; the version is [added to the archived copy](#where-the-version-lives) at release time, and a hand-typed one would go stale the moment you release again.
-- Commit no plugin `data.json` for any plugin: the helper writes CodeScript Toolkit's config at runtime, before enabling it.
+- Commit no plugin `data.json` for any plugin: the helper writes `CodeScript Toolkit`'s config at runtime, before enabling it.
 - Gitignore the injected plugins and the workspace state that rewrites itself on every session:
 
   ```text
@@ -72,20 +72,20 @@ These four settle the **Obsidian** reader and nothing else. GitHub never reads `
 
 ### The `demo-vault-helper` bootstrap plugin
 
-A demo vault usually showcases the plugin through notes whose `code-button`s run TypeScript via [CodeScript Toolkit](https://github.com/mnaoumov/obsidian-codescript-toolkit). So those buttons work with no manual setup, `archivePluginDemoVault` injects a tiny, plugin-agnostic bootstrap plugin — `demo-vault-helper`, owned, versioned, and bundled by `@mnaoumov/obsidian-dev-toolkit` — into every demo vault at release time. On layout-ready it installs CodeScript Toolkit from the community store (if missing), writes its settings, and enables it (writing the settings **before** a fresh enable, so it loads already configured with no reload). If CodeScript Toolkit is already enabled but the settings just changed, it is reloaded so it re-reads them; an ordinary re-open (settings unchanged) reloads nothing. CodeScript Toolkit then runs the vault's `startup.ts`, and the helper raises the [sandbox notice](#the-sandbox-notice).
+A demo vault usually showcases the plugin through notes whose `code-button`s run TypeScript via [CodeScript Toolkit](https://github.com/mnaoumov/obsidian-codescript-toolkit). So those buttons work with no manual setup, `archivePluginDemoVault` injects a tiny, plugin-agnostic bootstrap plugin — `demo-vault-helper`, owned, versioned, and bundled by `@mnaoumov/obsidian-dev-toolkit` — into every demo vault at release time. On layout-ready it installs `CodeScript Toolkit` from the community store (if missing), writes its settings, and enables it (writing the settings **before** a fresh enable, so it loads already configured with no reload). If `CodeScript Toolkit` is already enabled but the settings just changed, it is reloaded so it re-reads them; an ordinary re-open (settings unchanged) reloads nothing. `CodeScript Toolkit` then runs the vault's `startup.ts`, and the helper raises the [sandbox notice](#the-sandbox-notice).
 
-Among the settings it writes is a `defaultCodeButtonConfig` that turns CodeScript Toolkit's source viewer on for every button, so a reader can see the code a button runs. Because it is written by the helper, every demo vault gets it without editing a single note.
+Among the settings it writes is a `defaultCodeButtonConfig` that turns `CodeScript Toolkit`'s source viewer on for every button, so a reader can see the code a button runs. Because it is written by the helper, every demo vault gets it without editing a single note.
 
-Because `@mnaoumov/obsidian-dev-toolkit` owns and injects it, a demo vault commits **nothing** helper-related and never needs a manual "install CodeScript Toolkit" step; a toolkit bump propagates any fix to every demo vault. To adopt it, a demo vault commits only:
+Because `@mnaoumov/obsidian-dev-toolkit` owns and injects it, a demo vault commits **nothing** helper-related and never needs a manual "install `CodeScript Toolkit`" step; a toolkit bump propagates any fix to every demo vault. To adopt it, a demo vault commits only:
 
 - `demo-vault/.obsidian/community-plugins.json` listing `demo-vault-helper` (alongside your own `<plugin-id>`), so it auto-enables once injected.
 - `demo-vault/_assets/CodeScriptToolkit/startup.ts` exporting `invoke(app)` — where the vault opens its start note (e.g. `00 Start`) and does any plugin-specific setup.
 
-No CodeScript Toolkit config (`data.json`) is committed — the helper writes it at runtime.
+No `CodeScript Toolkit` config (`data.json`) is committed — the helper writes it at runtime.
 
-The settings it writes put CodeScript Toolkit's module root at `_assets/CodeScriptToolkit`, its invocable scripts in `Invocables`, and its startup script at `startup.ts`. Three consequences for what the vault commits:
+The settings it writes put `CodeScript Toolkit`'s module root at `_assets/CodeScriptToolkit`, its invocable scripts in `Invocables`, and its startup script at `startup.ts`. Three consequences for what the vault commits:
 
-- **`startup.ts` must `export` an `invoke` function**, not run at top level. CodeScript Toolkit requires the module and calls `startupScript.invoke(app)`, so a direct-execution script that leans on a top-level global `app` throws `TypeError: this.startupScript.invoke is not a function` the moment the vault loads. An optional `export async function cleanup(app) {}` is called on unload. Use `invoke` to open the start note and do live-safe setup (binding a demo hotkey, say); anything that has to be in place *before* the plugin loads is written by the helper, not here.
+- **`startup.ts` must `export` an `invoke` function**, not run at top level. `CodeScript Toolkit` requires the module and calls `startupScript.invoke(app)`, so a direct-execution script that leans on a top-level global `app` throws `TypeError: this.startupScript.invoke is not a function` the moment the vault loads. An optional `export async function cleanup(app) {}` is called on unload. Use `invoke` to open the start note and do live-safe setup (binding a demo hotkey, say); anything that has to be in place *before* the plugin loads is written by the helper, not here.
 - **Put shared button code in `_assets/CodeScriptToolkit/demoSetup.ts`** so each note's `code-button` stays a one-liner — `require('/demoSetup.ts').installAndEnable(app, '<id>')` — instead of a block copy-pasted across notes. Third-party prerequisites install through `installCommunityPlugin` / `enableCommunityPlugin`; never commit someone else's plugin binary.
 - **Commit no `Invocables/` placeholder.** The helper creates the folder at runtime, so an empty directory or a `.gitkeep` in git is noise that has to be maintained.
 
@@ -192,7 +192,7 @@ The demo vault is not a set of samples sitting beside the documentation — it *
    Either exempts the note from the wikilink rule only; the rest still apply. A declaration with no reason, one covering no wikilink, a region never enabled again, or a misspelled directive all fail the suite — an exemption nobody can justify, that nothing needs any more, or that silently does nothing is worse than none. Both spellings keep the `obsidian-dev-utils` prefix they had when the suite lived in that package, so the vaults that already carry them need no edit.
 3. **No `[Docs](…)` link line.** The note is the docs; a line pointing elsewhere for the real explanation is the shape this convention exists to remove.
 4. **`00 Start.md` is a getting-started narrative**, not a bare list — what the vault is, one concrete first success, then an index grouped under headings with a one-line description per entry. Every other note must be reachable from it.
-5. **The first success spells out the mechanics**, because a first-time reader has never seen CodeScript Toolkit: a code button renders as a captioned rectangle, **clicking it runs the code**, the result appears below it, and the `</>` toggle beside it reveals the source. Nothing about a coloured rectangle says "button" to someone who does not already know — say it once, in the first example, instead of assuming it.
+5. **The first success spells out the mechanics**, because a first-time reader has never seen `CodeScript Toolkit`: a code button renders as a captioned rectangle, **clicking it runs the code**, the result appears below it, and the `</>` toggle beside it reveals the source. Nothing about a coloured rectangle says "button" to someone who does not already know — say it once, in the first example, instead of assuming it.
 6. **`.obsidian/app.json` commits none of the [settings this package owns](#the-appjson-settings-this-package-owns)** — the reading experience they configure is injected into the archive, so the vault does not carry a second copy of it.
 7. **Every `Try it` section has a `code-button` that performs its setup.** A `Try it` section is a heading of any level starting `Try it`, up to the next heading of the same or a higher level, so a `### Step 2` inside it stays part of it. Flipping the setting the demo needs and creating the note it acts on is what the button is for; a reader asked to do it by hand is a reader the demo lost, and the button's caption or source still shows the manual steps. A section whose steps really cannot be scripted — a drag from outside Obsidian, a gesture on a phone — says so on its heading, with the reason, using the same directive as rule 2:
 
@@ -257,7 +257,7 @@ It then runs every authoring check, plus a guard that the vault is not empty —
 
 ## Clicking every button
 
-The coverage suite reads the notes; it never runs them. A button whose `require('/demoSetup.ts')` path is wrong, or that calls an API which has since changed shape, fails **at click time** — `lint:md` reads the markdown, the coverage suite checks the conventions, and neither executes anything, so nothing in a normal gate run ever finds out. `registerDemoVaultButtonSuite` (from `@mnaoumov/obsidian-dev-toolkit/demo-vault-buttons`) is the gate that does: it opens every note of the in-repo `demo-vault/` in a real Obsidian, clicks each `code-button`, and fails with the note, the caption and CodeScript Toolkit's own captured error for any button that reports an error or never reports at all.
+The coverage suite reads the notes; it never runs them. A button whose `require('/demoSetup.ts')` path is wrong, or that calls an API which has since changed shape, fails **at click time** — `lint:md` reads the markdown, the coverage suite checks the conventions, and neither executes anything, so nothing in a normal gate run ever finds out. `registerDemoVaultButtonSuite` (from `@mnaoumov/obsidian-dev-toolkit/demo-vault-buttons`) is the gate that does: it opens every note of the in-repo `demo-vault/` in a real Obsidian, clicks each `code-button`, and fails with the note, the caption and `CodeScript Toolkit`'s own captured error for any button that reports an error or never reports at all.
 
 It takes three pieces of wiring, and all three are needed — the suite alone, without the other two, collects nothing or passes vacuously.
 
@@ -302,7 +302,7 @@ registerDemoVaultButtonSuite({
 
 ### The global setup
 
-The suite opens a temporary copy of the vault, so something has to put the vault there first — including the CodeScript Toolkit binary, without which every ```` ```code-button ```` fence stays an inert code block. That half is `buildDemoVaultPopulate` from `obsidian-integration-testing`; this package deliberately does not duplicate it. Put it in `scripts/demo-vault-global-setup.ts`:
+The suite opens a temporary copy of the vault, so something has to put the vault there first — including the `CodeScript Toolkit` binary, without which every ```` ```code-button ```` fence stays an inert code block. That half is `buildDemoVaultPopulate` from `obsidian-integration-testing`; this package deliberately does not duplicate it. Put it in `scripts/demo-vault-global-setup.ts`:
 
 ```ts
 import type { PopulateFilesParams } from 'obsidian-integration-testing';
@@ -342,7 +342,7 @@ export {
 };
 ```
 
-`CODE_SCRIPT_TOOLKIT_PLUGIN_ID` is exported by the same module so no repo has to hard-code `fix-require-modules` — CodeScript Toolkit still carries its original manifest id, which no longer matches its name and cannot be changed now that it is published.
+`CODE_SCRIPT_TOOLKIT_PLUGIN_ID` is exported by the same module so no repo has to hard-code `fix-require-modules` — `CodeScript Toolkit` still carries its original manifest id, which no longer matches its name and cannot be changed now that it is published.
 
 The binary is **copied out of your own `demo-vault/`**, where the in-vault `demo-vault-helper` installs it from the community registry the first time the vault is opened. That keeps the run hermetic — no network, nothing to rate-limit — at the price of one manual step per repo. Until it has been done, the setup fails with:
 
