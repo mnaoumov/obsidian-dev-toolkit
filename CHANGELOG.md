@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.6.0
+
+- feat(linters): fail lint on plugin API contract entries without schemas
+
 ## 3.5.0
 
 - feat(linters): fail lint on plugin names not marked as code
