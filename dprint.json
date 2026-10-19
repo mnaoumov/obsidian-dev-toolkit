@@ -15,11 +15,10 @@
   "markdown": {},
   // dprint respects .gitignore by default (--no-gitignore opts out), so dist, docs/dist, .astro and
   // Node_modules need no entry here. Only paths git does NOT ignore belong below. Claude Code's tool-local
-  // Settings are ignored only by the developer's global git ignore, which dprint does not read.
+  // Settings need no entry either: the format runner excludes them on every run.
   "excludes": [
     "**/*-lock.json",
-    "**/*.md",
-    "**/.claude/settings.local.json"
+    "**/*.md"
   ],
   "plugins": [
     "https://plugins.dprint.dev/typescript-0.93.3.wasm",
