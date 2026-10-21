@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.0.0
+
+- feat!: move to obsidian-lib 6 and rename the harness global to __obsidianLibModule
+
 ## 4.0.0
 
 - feat(demo-vault-coverage)!: spell the validation directives and key as obsidian-dev-toolkit
