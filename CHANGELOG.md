@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.0.1
+
+- fix(deps): bundle the demo-vault helper from obsidian-lib 6.0.1
+
 ## 5.0.0
 
 - feat!: move to obsidian-lib 6 and rename the harness global to __obsidianLibModule
