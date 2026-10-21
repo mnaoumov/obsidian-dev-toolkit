@@ -205,6 +205,52 @@ describe('formatFailures', () => {
     expect(message).toContain('- "Alpha" [error]: Error: boom at somewhere');
     expect(message).toContain('- "Bravo" [timeout]:');
   });
+
+  it('tells a button that never rendered from one that never reported, and says what was mounted instead', () => {
+    const message = formatFailures('01 One.md', [
+      {
+        caption: 'Bravo',
+        mountState: {
+          activeFilePath: '01 One.md',
+          activeViewMode: 'preview',
+          activeViewType: 'markdown',
+          mountedCaptions: ['Alpha', 'Charlie'],
+          scrollHeight: 2400,
+          scrollTop: 800
+        },
+        output: 'code button "Bravo" never rendered within 12000 ms',
+        status: 'notRendered'
+      },
+      { caption: 'Delta', output: 'Running...', status: 'timeout' }
+    ]);
+
+    expect(message).toContain('- "Bravo" [notRendered]: code button "Bravo" never rendered within 12000 ms\n');
+    expect(message).toContain(
+      'mounted at give-up: active file "01 One.md"; view markdown in preview mode; 2 button(s) mounted: "Alpha", "Charlie"; scrollTop 800 of scrollHeight 2400'
+    );
+    // A button that rendered and was clicked carries no snapshot: what was mounted is not its question.
+    expect(message).toMatch(/- "Delta" \[timeout\]: Running\.\.\.$/);
+  });
+
+  it('says so when nothing was there to snapshot', () => {
+    const message = formatFailures('01 One.md', [
+      {
+        caption: 'Bravo',
+        mountState: {
+          activeFilePath: null,
+          activeViewMode: null,
+          activeViewType: null,
+          mountedCaptions: [],
+          scrollHeight: null,
+          scrollTop: null
+        },
+        output: 'code button "Bravo" never rendered within 12000 ms',
+        status: 'notRendered'
+      }
+    ]);
+
+    expect(message).toContain('mounted at give-up: no active file; view (none) in (no) mode; no buttons mounted; no reading-view scroller');
+  });
 });
 
 describe('countRenderedButtons', () => {
@@ -283,12 +329,24 @@ describe('selectUnexpectedFailures', () => {
     { caption: 'Works', output: '', status: 'ok' },
     { caption: 'Run on error only', output: '', status: 'error' },
     { caption: 'shouldShowSystemMessages=false', output: '', status: 'timeout' },
-    { caption: 'Broken', output: '', status: 'unknown' }
+    { caption: 'Broken', output: '', status: 'unknown' },
+    { caption: 'Unmounted', output: '', status: 'notRendered' }
   ];
 
   it('returns every non-ok result when nothing is expected', () => {
     expect(selectUnexpectedFailures('01 One.md', results, []).map((result) => result.caption))
-      .toEqual(['Run on error only', 'shouldShowSystemMessages=false', 'Broken']);
+      .toEqual(['Run on error only', 'shouldShowSystemMessages=false', 'Broken', 'Unmounted']);
+  });
+
+  it('does not let a button expected to time out pass when it never rendered', () => {
+    expect(
+      selectUnexpectedFailures('01 One.md', results, [{ captionIncludes: 'Unmounted', note: '01 One.md', status: 'timeout' }])
+        .map((result) => result.caption)
+    ).toContain('Unmounted');
+    expect(
+      selectUnexpectedFailures('01 One.md', results, [{ captionIncludes: 'Unmounted', note: '01 One.md', status: 'notRendered' }])
+        .map((result) => result.caption)
+    ).not.toContain('Unmounted');
   });
 
   it('drops a result matching an expected note, caption substring and status', () => {
@@ -297,7 +355,7 @@ describe('selectUnexpectedFailures', () => {
         { captionIncludes: 'on error only', note: '01 One.md', status: 'error' },
         { captionIncludes: 'shouldShowSystemMessages', note: '01 One.md', status: 'timeout' }
       ]).map((result) => result.caption)
-    ).toEqual(['Broken']);
+    ).toEqual(['Broken', 'Unmounted']);
   });
 
   it('keeps a result whose status differs from the expected one', () => {
