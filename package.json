@@ -288,7 +288,7 @@
     "@babel/core": "^7.29.7",
     "@commitlint/cli": "^21.2.2",
     "@jest/globals": "^30.5.2",
-    "@mnaoumov/obsidian-lib": "^6.0.1",
+    "@mnaoumov/obsidian-lib": "^6.0.2",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
     "@parcel/config-default": "^2.16.4",
     "@parcel/core": "^2.16.4",
