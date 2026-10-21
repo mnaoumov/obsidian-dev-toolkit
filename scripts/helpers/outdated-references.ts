@@ -47,6 +47,14 @@ const OUTDATED_REFERENCE_PATTERNS: readonly OutdatedReferencePattern[] = [
   {
     hint: 'the legacy `__obsidianDevUtils` console recipe; use `getSharedAbortController()` or the `Symbol.for(\'@mnaoumov/typescript-lib/state\')` slot',
     regExp: /__obsidianDevUtils\.sharedAbortController/u
+  },
+  {
+    hint: 'a demo-vault directive spelled with the retired `obsidian-dev-utils-` prefix; write `obsidian-dev-toolkit-disable-next-line` / `-disable` / `-enable`',
+    regExp: /obsidian-dev-utils-(?:disable|enable)/u
+  },
+  {
+    hint: 'the demo-vault frontmatter key spelled `obsidian-dev-utils:`; write `obsidian-dev-toolkit:`',
+    regExp: /^\s*obsidian-dev-utils:\s*$/u
   }
 ];
 

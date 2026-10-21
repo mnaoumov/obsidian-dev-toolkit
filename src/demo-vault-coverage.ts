@@ -35,12 +35,12 @@
  * spelling these vaults already use for `markdownlint-disable-next-line`:
  *
  * ```markdown
- * <!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Clicking a link to a note that does not exist yet IS the feature. -->
+ * <!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- Clicking a link to a note that does not exist yet IS the feature. -->
  * 2. Click this link: [[Projects/Fresh idea]].
  *
- * <!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
+ * <!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
  * ![[basic.html|400]]
- * <!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->
+ * <!-- obsidian-dev-toolkit-enable demo-vault-validation/no-wikilinks -->
  * ```
  *
  * Per note, in the note's own frontmatter — the only form that can reach a wikilink INSIDE frontmatter,
@@ -48,7 +48,7 @@
  *
  * ```yaml
  * ---
- * obsidian-dev-utils:
+ * obsidian-dev-toolkit:
  *   demo-vault-validation:
  *     allow-wikilinks: The `wikilink` property value is the contrast this note is built around.
  * ---
@@ -67,7 +67,7 @@
  * the heading, and with the same checks on the directive itself:
  *
  * ```markdown
- * <!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
+ * <!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
  * ## Try it
  * ```
  *
@@ -350,7 +350,7 @@ export interface DemoVaultNote {
 }
 
 /**
- * What a note's inline `obsidian-dev-utils-disable…` directives allow, rule by rule, and what is wrong with
+ * What a note's inline `obsidian-dev-toolkit-disable…` directives allow, rule by rule, and what is wrong with
  * them.
  */
 export interface DirectiveScan {
@@ -510,7 +510,7 @@ export interface RegisterDemoVaultCoverageSuiteParams {
 }
 
 /**
- * What a note's inline `obsidian-dev-utils-disable…` directives allow, and what is wrong with them.
+ * What a note's inline `obsidian-dev-toolkit-disable…` directives allow, and what is wrong with them.
  *
  * @deprecated Use {@link DirectiveScan}: the directives now serve more than the wikilink rule.
  */
@@ -667,7 +667,9 @@ export class DemoVaultCoverageChecker {
    * Finds notes whose exemptions are not doing any work — a wikilink allowance or an inline directive for
    * any rule declared without a reason, misspelled, or covering nothing that breaks its rule. All of them
    * are drift: an exemption nobody can justify, and one nothing needs any more, which would go on hiding
-   * the next mistake somebody makes by accident.
+   * the next mistake somebody makes by accident. A directive or frontmatter key still spelled with the retired
+   * `obsidian-dev-utils` prefix is reported too, naming the `obsidian-dev-toolkit` spelling to write, and is not
+   * honored.
    *
    * @returns One `<note>: <problem>` entry per problem found.
    */
@@ -675,6 +677,9 @@ export class DemoVaultCoverageChecker {
     return this.collectCheckableNotes().flatMap((note) => {
       const scan = scanDirectives(note.content);
       const problems = [...scan.problems];
+      if (LEGACY_WIKILINK_ALLOWANCE_KEY_REG_EXP.test(FRONTMATTER_REG_EXP.exec(note.content)?.[0] ?? '')) {
+        problems.push('a frontmatter key spelled obsidian-dev-utils:; write obsidian-dev-toolkit: instead');
+      }
       const reason = readWikilinkAllowanceReason(note.content);
       if (reason !== null) {
         if (reason.trim() === '') {
@@ -1002,10 +1007,14 @@ const MARKDOWN_LINK_REG_EXP = /\[[^\]]*]\((?<target>[^)]+)\)/g;
 // An inline directive, shaped after ESLint's and written as an HTML comment so it is invisible BOTH in
 // Obsidian and on GitHub — the same spelling the vaults already use for `markdownlint-disable-next-line`.
 // An Obsidian `%% … %%` comment would show up as literal text on GitHub, which is half the readership.
-const DIRECTIVE_REG_EXP = /^\s*<!--\s*obsidian-dev-utils-(?<action>disable-next-line|disable|enable)\s+(?<rule>[\w-]+\/[\w-]+)(?:\s+--\s+(?<reason>.*?))?\s*-->\s*$/;
+const DIRECTIVE_REG_EXP = /^\s*<!--\s*obsidian-dev-toolkit-(?<action>disable-next-line|disable|enable)\s+(?<rule>[\w-]+\/[\w-]+)(?:\s+--\s+(?<reason>.*?))?\s*-->\s*$/;
 // Catches a directive that was MEANT to be one but is misspelled: it would otherwise read as an ordinary
 // comment and silently do nothing, which is the failure mode a suppression syntax must never have.
-const DIRECTIVE_PROBE_REG_EXP = /<!--\s*obsidian-dev-utils-/;
+const DIRECTIVE_PROBE_REG_EXP = /<!--\s*obsidian-dev-toolkit-/;
+// The spellings used before this package took the grammar over. They are not read as an alias: each one is
+// reported, naming the spelling to write instead, so a vault that still carries one is told to migrate.
+const LEGACY_DIRECTIVE_PROBE_REG_EXP = /<!--\s*obsidian-dev-utils-/;
+const LEGACY_WIKILINK_ALLOWANCE_KEY_REG_EXP = /^obsidian-dev-utils:/m;
 const TRY_IT_HEADING_REG_EXP = /^ {0,3}#{1,6}\s+Try it\b/i;
 const TRY_IT_RULE = 'demo-vault-validation/try-it-code-button';
 const WIKILINK_RULE = 'demo-vault-validation/no-wikilinks';
@@ -1014,10 +1023,10 @@ const DIRECTIVE_RULE_TARGETS = new Map([
   [TRY_IT_RULE, 'Try it section without a code button'],
   [WIKILINK_RULE, 'wikilink']
 ]);
-// The `obsidian-dev-utils > demo-vault-validation > allow-wikilinks` frontmatter path, at any indentation:
+// The `obsidian-dev-toolkit > demo-vault-validation > allow-wikilinks` frontmatter path, at any indentation:
 // The keys must nest in that order, and any line between them has to stay indented, so a dedent to the
 // document's own top level ends the match rather than reaching a same-named key under another parent.
-const WIKILINK_ALLOWANCE_REG_EXP = /^obsidian-dev-utils:[^\S\n]*\n(?:[^\S\n]+.*\n)*?[^\S\n]+demo-vault-validation:[^\S\n]*\n(?:[^\S\n]+.*\n)*?[^\S\n]+allow-wikilinks:(?<reason>.*)$/m;
+const WIKILINK_ALLOWANCE_REG_EXP = /^obsidian-dev-toolkit:[^\S\n]*\n(?:[^\S\n]+.*\n)*?[^\S\n]+demo-vault-validation:[^\S\n]*\n(?:[^\S\n]+.*\n)*?[^\S\n]+allow-wikilinks:(?<reason>.*)$/m;
 const WIKILINK_REG_EXP = /\[\[[^\]]+]]/;
 
 // Applies one parsed directive to the scan. Each rule keeps its own region and its own pending
@@ -1214,7 +1223,7 @@ function formatLineNumber(lineIndex: number): string {
 function formatTryItWarning(sections: string[]): string {
   return [
     `demo-vault coverage: ${String(sections.length)} Try it section(s) have no code-button to perform their setup.`,
-    `Add one, or state why the steps cannot be scripted with <!-- obsidian-dev-utils-disable-next-line ${TRY_IT_RULE} -- <reason> --> above the heading.`,
+    `Add one, or state why the steps cannot be scripted with <!-- obsidian-dev-toolkit-disable-next-line ${TRY_IT_RULE} -- <reason> --> above the heading.`,
     ...sections.map((section) => `  ${section}`)
   ].join('\n');
 }
@@ -1319,7 +1328,7 @@ function parseMembers(keyword: string, body: string): InterfaceMembers {
   }
 }
 
-// Reads the note's `obsidian-dev-utils > demo-vault-validation > allow-wikilinks` declaration: the stated
+// Reads the note's `obsidian-dev-toolkit > demo-vault-validation > allow-wikilinks` declaration: the stated
 // reason, `''` when the key is present with nothing after it, or `null` when the note declares nothing.
 // Read with a regular expression rather than a YAML parser: it is one known key path, and every plugin that
 // installs this package would otherwise carry a YAML dependency for it.
@@ -1332,7 +1341,7 @@ function readWikilinkAllowanceReason(content: string): null | string {
   return reason === undefined ? null : reason.trim().replace(/^(?<quote>["'])(?<value>[\s\S]*)\k<quote>$/, '$<value>');
 }
 
-// Reads the note's inline `obsidian-dev-utils-disable…` directives, returning which lines they exempt from
+// Reads the note's inline `obsidian-dev-toolkit-disable…` directives, returning which lines they exempt from
 // each rule and everything wrong with them. A suppression that quietly does nothing is worse than none, so
 // a misspelled directive, one with no reason, an unclosed region and one covering nothing that breaks its
 // rule are each reported rather than ignored.
@@ -1352,6 +1361,8 @@ function scanDirectives(content: string): DirectiveScan {
     const match = DIRECTIVE_REG_EXP.exec(line);
     if (match) {
       applyDirective(state, index, match);
+    } else if (LEGACY_DIRECTIVE_PROBE_REG_EXP.test(line)) {
+      state.problems.push(`a directive spelled obsidian-dev-utils-… on ${formatLineNumber(index)}; write obsidian-dev-toolkit-… instead`);
     } else if (DIRECTIVE_PROBE_REG_EXP.test(line)) {
       state.problems.push(`a malformed directive on ${formatLineNumber(index)}`);
     } else {

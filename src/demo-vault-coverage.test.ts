@@ -504,7 +504,7 @@ describe('DemoVaultCoverageChecker authoring checks', () => {
 
 Clicking a link to a note that does not exist yet is the whole feature.
 
-<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- The reader clicks it while it resolves to nothing. -->
+<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- The reader clicks it while it resolves to nothing. -->
 
 2. Click this link: [[Fresh idea]].
 `
@@ -516,13 +516,13 @@ Clicking a link to a note that does not exist yet is the whole feature.
 
 Teaches both embed spellings.
 
-<!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
+<!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
 
 ![[page.html|400]]
 
 ![[page.html]]
 
-<!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->
+<!-- obsidian-dev-toolkit-enable demo-vault-validation/no-wikilinks -->
 `
     );
     const checker = new DemoVaultCoverageChecker({ rootFolder: root });
@@ -538,11 +538,11 @@ Teaches both embed spellings.
 
 Only the embed is deliberate.
 
-<!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
+<!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
 
 ![[page.html]]
 
-<!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->
+<!-- obsidian-dev-toolkit-enable demo-vault-validation/no-wikilinks -->
 
 See [[Surface]] for more.
 `
@@ -552,11 +552,11 @@ See [[Surface]] for more.
   });
 
   it('reports a directive that is misspelled, unreasoned, unclosed, or covering no wikilink', () => {
-    writeFixtureFile(root, 'demo-vault/Malformed.md', '# Malformed\n\nNames no rule.\n\n<!-- obsidian-dev-utils-disable-next-line -- Why. -->\n\n[[Surface]]\n');
-    writeFixtureFile(root, 'demo-vault/Silent.md', '# Silent\n\nStates no reason.\n\n<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -->\n\n[[Surface]]\n');
-    writeFixtureFile(root, 'demo-vault/Open.md', '# Open\n\nNever enables again.\n\n<!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- Why. -->\n\n[[Surface]]\n');
-    writeFixtureFile(root, 'demo-vault/Spare.md', '# Spare\n\nCovers nothing.\n\n<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Why. -->\n\nPlain prose.\n');
-    writeFixtureFile(root, 'demo-vault/Wrong.md', '# Wrong\n\nNames a rule that does not exist.\n\n<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilink -- Why. -->\n\n[[Surface]]\n');
+    writeFixtureFile(root, 'demo-vault/Malformed.md', '# Malformed\n\nNames no rule.\n\n<!-- obsidian-dev-toolkit-disable-next-line -- Why. -->\n\n[[Surface]]\n');
+    writeFixtureFile(root, 'demo-vault/Silent.md', '# Silent\n\nStates no reason.\n\n<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -->\n\n[[Surface]]\n');
+    writeFixtureFile(root, 'demo-vault/Open.md', '# Open\n\nNever enables again.\n\n<!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- Why. -->\n\n[[Surface]]\n');
+    writeFixtureFile(root, 'demo-vault/Spare.md', '# Spare\n\nCovers nothing.\n\n<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- Why. -->\n\nPlain prose.\n');
+    writeFixtureFile(root, 'demo-vault/Wrong.md', '# Wrong\n\nNames a rule that does not exist.\n\n<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilink -- Why. -->\n\n[[Surface]]\n');
     const checker = new DemoVaultCoverageChecker({ rootFolder: root });
     expect(checker.findNotesWithUnjustifiedWikilinkAllowance()).toEqual([
       'Malformed.md: a malformed directive on line 5',
@@ -570,6 +570,21 @@ See [[Surface]] for more.
     expect(checker.findNotesWithWikilinks()).toEqual(['Malformed.md', 'Silent.md', 'Wrong.md']);
   });
 
+  it('reports the legacy obsidian-dev-utils spellings, naming the one to write instead, and does not honor them', () => {
+    writeFixtureFile(root, 'demo-vault/Directive.md', '# Directive\n\nOld prefix.\n\n<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Why. -->\n[[Surface]]\n');
+    writeFixtureFile(
+      root,
+      'demo-vault/Frontmatter.md',
+      '---\nobsidian-dev-utils:\n  demo-vault-validation:\n    allow-wikilinks: Why.\n---\n# Frontmatter\n\nOld key.\n\n[[Surface]]\n'
+    );
+    const checker = new DemoVaultCoverageChecker({ rootFolder: root });
+    expect(checker.findNotesWithUnjustifiedWikilinkAllowance()).toEqual([
+      'Directive.md: a directive spelled obsidian-dev-utils-… on line 5; write obsidian-dev-toolkit-… instead',
+      'Frontmatter.md: a frontmatter key spelled obsidian-dev-utils:; write obsidian-dev-toolkit: instead'
+    ]);
+    expect(checker.findNotesWithWikilinks()).toEqual(['Directive.md', 'Frontmatter.md']);
+  });
+
   it('reports a nested region, a stray enable, a region covering nothing, and a trailing disable-next-line', () => {
     writeFixtureFile(
       root,
@@ -578,22 +593,22 @@ See [[Surface]] for more.
 
 Opens a region twice.
 
-<!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- Why. -->
+<!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- Why. -->
 
 [[Surface]]
 
-<!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- Why again. -->
+<!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- Why again. -->
 
-<!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->
+<!-- obsidian-dev-toolkit-enable demo-vault-validation/no-wikilinks -->
 `
     );
-    writeFixtureFile(root, 'demo-vault/Stray.md', '# Stray\n\nEnables what was never disabled.\n\n<!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->\n');
+    writeFixtureFile(root, 'demo-vault/Stray.md', '# Stray\n\nEnables what was never disabled.\n\n<!-- obsidian-dev-toolkit-enable demo-vault-validation/no-wikilinks -->\n');
     writeFixtureFile(
       root,
       'demo-vault/Pointless.md',
-      '# Pointless\n\nWraps prose.\n\n<!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- Why. -->\n\nPlain prose.\n\n<!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->\n'
+      '# Pointless\n\nWraps prose.\n\n<!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- Why. -->\n\nPlain prose.\n\n<!-- obsidian-dev-toolkit-enable demo-vault-validation/no-wikilinks -->\n'
     );
-    writeFixtureFile(root, 'demo-vault/Trailing.md', '# Trailing\n\nEnds on the directive.\n\n<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Why. -->\n');
+    writeFixtureFile(root, 'demo-vault/Trailing.md', '# Trailing\n\nEnds on the directive.\n\n<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- Why. -->\n');
     const checker = new DemoVaultCoverageChecker({ rootFolder: root });
     expect(checker.findNotesWithUnjustifiedWikilinkAllowance()).toEqual([
       'Nested.md: a disable on line 9 inside the region opened on line 5',
@@ -678,13 +693,13 @@ Nothing to set up here.
 
 Shows the feature.
 
-<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
+<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
 
 ## Try it
 
 Drag a file onto the explorer.
 
-<!-- obsidian-dev-utils-disable demo-vault-validation/try-it-code-button -- Both sections are gestures. -->
+<!-- obsidian-dev-toolkit-disable demo-vault-validation/try-it-code-button -- Both sections are gestures. -->
 
 ## Try it on desktop
 
@@ -694,7 +709,7 @@ Drag again.
 
 Long-press.
 
-<!-- obsidian-dev-utils-enable demo-vault-validation/try-it-code-button -->
+<!-- obsidian-dev-toolkit-enable demo-vault-validation/try-it-code-button -->
 `
     );
     writeFixtureFile(
@@ -704,7 +719,7 @@ Long-press.
 
 Shows the feature.
 
-<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Stale. -->
+<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/try-it-code-button -- Stale. -->
 
 ## Try it
 
@@ -712,13 +727,13 @@ Shows the feature.
 setUp();
 \`\`\`
 
-<!-- obsidian-dev-utils-disable demo-vault-validation/try-it-code-button -- Stale too. -->
+<!-- obsidian-dev-toolkit-disable demo-vault-validation/try-it-code-button -- Stale too. -->
 
 Plain prose.
 
-<!-- obsidian-dev-utils-enable demo-vault-validation/try-it-code-button -->
+<!-- obsidian-dev-toolkit-enable demo-vault-validation/try-it-code-button -->
 
-<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Never reaches a line. -->
+<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/try-it-code-button -- Never reaches a line. -->
 `
     );
     const checker = new DemoVaultCoverageChecker({ rootFolder: root });
@@ -738,7 +753,7 @@ Plain prose.
 
 Shows the feature.
 
-<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Wrong rule. -->
+<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- Wrong rule. -->
 
 ## Try it [[Surface]]
 
@@ -756,7 +771,7 @@ Open the settings.
       root,
       'demo-vault/Embeds.md',
       `---
-obsidian-dev-utils:
+obsidian-dev-toolkit:
   demo-vault-validation:
     allow-wikilinks: The size in an embed has no Markdown equivalent.
 ---
@@ -777,7 +792,7 @@ Embeds a page at a fixed size.
       root,
       'demo-vault/Both.md',
       `---
-obsidian-dev-utils:
+obsidian-dev-toolkit:
   demo-vault-validation:
     allow-wikilinks: The property values ARE the demo.
 ---
@@ -785,7 +800,7 @@ obsidian-dev-utils:
 
 Declares the allowance twice over.
 
-<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Redundant. -->
+<!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- Redundant. -->
 
 See [[Surface]].
 `
@@ -798,7 +813,7 @@ See [[Surface]].
 
   it('rejects a wikilink allowance with no reason, and one the note no longer needs', () => {
     function declare(reason: string): string {
-      return `---\nobsidian-dev-utils:\n  demo-vault-validation:\n    allow-wikilinks:${reason}\n---\n`;
+      return `---\nobsidian-dev-toolkit:\n  demo-vault-validation:\n    allow-wikilinks:${reason}\n---\n`;
     }
 
     writeFixtureFile(root, 'demo-vault/Bare.md', `${declare('')}# Bare\n\nStates no reason.\n\n[[Surface]]\n`);
