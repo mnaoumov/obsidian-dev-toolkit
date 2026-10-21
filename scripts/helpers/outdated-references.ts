@@ -2,12 +2,12 @@
  * @file
  *
  * Finds references to the retired `obsidian-dev-utils` package that point a reader at something that no longer
- * exists: one of its module paths, a link into its repository, or the legacy console recipe for the shared abort
- * controller.
+ * exists: one of its module paths, a link into its repository, the legacy console recipe for the shared abort
+ * controller, or one of the wire names `@mnaoumov/obsidian-lib` 6 and this package's 5.0.0 renamed.
  *
- * The bare name `obsidian-dev-utils` is NOT flagged: `@mnaoumov/obsidian-lib` keeps it on purpose as a wire name (its debug
- * namespace, CSS class and event prefix), and a migration note may name the package. What is flagged is the name used
- * as an ADDRESS.
+ * The bare name `obsidian-dev-utils` is NOT flagged: a migration note may name the package, and a debug filter or a
+ * selector written for an older release may still carry it. What is flagged is the name used as an ADDRESS, and the
+ * renamed wire names a reader would copy.
  *
  * Scanned: `README.md`, `AGENTS.md`, the guides under `docs/src/content/docs` (not the generated API reference,
  * which is rendered from the TSDoc this also scans), every non-test `.ts` file under `src/`, `scripts/`,
@@ -45,8 +45,20 @@ const OUTDATED_REFERENCE_PATTERNS: readonly OutdatedReferencePattern[] = [
     regExp: /from\s+['"]obsidian-dev-utils['"]/u
   },
   {
-    hint: 'the legacy `__obsidianDevUtils` console recipe; use `getSharedAbortController()` or the `Symbol.for(\'@mnaoumov/typescript-lib/state\')` slot',
-    regExp: /__obsidianDevUtils\.sharedAbortController/u
+    hint: 'the legacy shared-abort-controller console recipe; use `getSharedAbortController()` or the `Symbol.for(\'@mnaoumov/typescript-lib/state\')` slot',
+    regExp: /__obsidian[D]evUtils\.sharedAbortController/u
+  },
+  {
+    hint: 'the shared-state bag of `@mnaoumov/obsidian-lib` before 6.0.0; it is `globalThis.__obsidianLib` now',
+    regExp: /__obsidian[D]evUtils\b(?!\.sharedAbortController)/u
+  },
+  {
+    hint: 'the old name of the integration-test harness global; it is `window.__obsidianLibModule` now',
+    regExp: /__obsidian[D]evUtilsModule/u
+  },
+  {
+    hint: 'the shared-state module of `@mnaoumov/obsidian-lib` before 6.0.0; import `@mnaoumov/obsidian-lib/obsidian-lib-state`',
+    regExp: /obsidian-dev-utils-[s]tate/u
   },
   {
     hint: 'a demo-vault directive spelled with the retired `obsidian-dev-utils-` prefix; write `obsidian-dev-toolkit-disable-next-line` / `-disable` / `-enable`',

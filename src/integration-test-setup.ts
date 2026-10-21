@@ -18,7 +18,7 @@
  * argument of every `evalInObsidian` callback. Two more pieces are needed for `lib.<helper>` to work:
  *
  * - The **harness plugin** must be loaded in the test vault, because it is what publishes the library on
- *   `window.__obsidianDevUtilsModule`. Seed and enable it via
+ *   `window.__obsidianLibModule`. Seed and enable it via
  *   `@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup` (or, when composing with your own vault
  *   fixtures, {@link getIntegrationTestPluginPopulate} +
  *   `createSetup({ enableCommunityPlugins: [OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID] })`).

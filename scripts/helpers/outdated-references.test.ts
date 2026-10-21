@@ -22,17 +22,19 @@ describe('findOutdatedReferencesInText', () => {
       'https://github.com/mnaoumov/obsidian-dev-utils/releases/latest/download/styles.css',
       '<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Why. -->',
       '<!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->',
-      'obsidian-dev-utils:'
+      'obsidian-dev-utils:',
+      'globalThis.__obsidianDevUtils.pluginApiRegistry.value.records[pluginId]',
+      'window.__obsidianDevUtilsModule.__merged',
+      'import { resetObsidianDevUtilsState } from \'@mnaoumov/obsidian-lib/obsidian-dev-utils-state\';'
     ].join('\n');
-    expect(findOutdatedReferencesInText('a.md', text).map((reference) => reference.line)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(findOutdatedReferencesInText('a.md', text).map((reference) => reference.line)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
-  it('should not flag the wire names this library keeps', () => {
+  it('should not flag the bare package name', () => {
     const text = [
       'window.DEBUG.enable(\'*:obsidian-dev-utils:*\');',
       '.alpha-bravo.obsidian-dev-utils :invalid {',
-      'It replaces [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils).',
-      'globalThis.__obsidianDevUtils.pluginApiRegistry.value.records[pluginId]'
+      'It replaces [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils).'
     ].join('\n');
     expect(findOutdatedReferencesInText('a.md', text)).toEqual([]);
   });

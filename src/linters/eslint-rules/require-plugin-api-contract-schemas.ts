@@ -5,15 +5,15 @@
  *
  * Reports a method entry of a plugin API contract that lacks an `input` or an `output` schema.
  *
- * A typed `PluginApiContract<MyApi>` already refuses such an entry at compile time. The untyped default, the
- * structurally typed contracts a provider ships beside its `api.d.ts`, and every repository still on
- * `obsidian-dev-utils` get no such check, so a `{}` entry there compiles, declares only that the method exists, and
- * validates nothing. This rule closes that gap for every contract it can recognize.
+ * A typed `ApiContract<MyApi>` already refuses such an entry at compile time. The untyped default and the
+ * structurally typed contracts a provider ships beside its `api.d.ts` get no such check, so a `{}` entry there
+ * compiles, declares only that the method exists, and validates nothing. This rule closes that gap for every contract it can recognize.
  *
  * An object literal is read as a contract when it is:
  *
- * - the initializer of a variable typed `PluginApiContract` (or `TypedPluginApiContract`);
- * - the operand of `satisfies PluginApiContract` or `as PluginApiContract`;
+ * - the initializer of a variable typed `ApiContract` (or `TypedApiContract`), from
+ *   `@mnaoumov/typescript-lib/api-contract`;
+ * - the operand of `satisfies ApiContract` or `as ApiContract`;
  * - the value of a `contract` property of an object literal, as passed to `publishPluginApi`, `watchPluginApi` or
  *   `findPluginApi`;
  * - the initializer of a variable named `*_API_CONTRACT`, optionally followed by a `_V<n>` version suffix.
@@ -41,7 +41,7 @@ export const MESSAGE_ID = 'requirePluginApiContractSchemas';
 /**
  * The type names that mark an object literal as a plugin API contract.
  */
-const CONTRACT_TYPE_NAMES = new Set(['PluginApiContract', 'TypedPluginApiContract']);
+const CONTRACT_TYPE_NAMES = new Set(['ApiContract', 'TypedApiContract']);
 
 /**
  * The name of a variable holding a plugin API contract, such as `MY_API_CONTRACT` or `MY_API_CONTRACT_V2`.
