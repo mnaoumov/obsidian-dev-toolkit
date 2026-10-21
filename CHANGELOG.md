@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 4.0.0
+
+- feat(demo-vault-coverage)!: spell the validation directives and key as obsidian-dev-toolkit
+- feat(demo-vault-buttons): report a button that never rendered apart from one that never reported
+- chore(dprint): rely on the format runner to exclude Claude Code's tool-local settings
+- chore(build): drop the duplicate build:compile:typescript script
+- fix(dprint): exclude Claude Code's tool-local settings from formatting
+
 ## 3.7.0
 
 - build(deps): accept @mnaoumov/obsidian-lib 5.0.0 as a peer and build with it
