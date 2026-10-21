@@ -19,9 +19,12 @@ describe('findOutdatedReferencesInText', () => {
       'See `obsidian-dev-utils/obsidian/markdown`.',
       'import { loop } from \'obsidian-dev-utils\';',
       '__obsidianDevUtils.sharedAbortController.value.abort();',
-      'https://github.com/mnaoumov/obsidian-dev-utils/releases/latest/download/styles.css'
+      'https://github.com/mnaoumov/obsidian-dev-utils/releases/latest/download/styles.css',
+      '<!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Why. -->',
+      '<!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->',
+      'obsidian-dev-utils:'
     ].join('\n');
-    expect(findOutdatedReferencesInText('a.md', text).map((reference) => reference.line)).toEqual([1, 2, 3, 4]);
+    expect(findOutdatedReferencesInText('a.md', text).map((reference) => reference.line)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   it('should not flag the wire names this library keeps', () => {

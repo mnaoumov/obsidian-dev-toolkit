@@ -174,25 +174,25 @@ The demo vault is not a set of samples sitting beside the documentation — it *
    Per line or per region, as an HTML comment (invisible in Obsidian *and* on GitHub — the spelling already used for `markdownlint-disable-next-line`):
 
    ```markdown
-   <!-- obsidian-dev-utils-disable-next-line demo-vault-validation/no-wikilinks -- Clicking a link to a note that does not exist yet IS the feature. -->
+   <!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- Clicking a link to a note that does not exist yet IS the feature. -->
    2. Click this link: [[Projects/Fresh idea]].
 
-   <!-- obsidian-dev-utils-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
+   <!-- obsidian-dev-toolkit-disable demo-vault-validation/no-wikilinks -- The wikilink embed is the syntax this note teaches. -->
    ![[basic.html|400]]
-   <!-- obsidian-dev-utils-enable demo-vault-validation/no-wikilinks -->
+   <!-- obsidian-dev-toolkit-enable demo-vault-validation/no-wikilinks -->
    ```
 
    Per note, in its frontmatter — the only form that reaches a wikilink **inside** frontmatter, where a comment cannot go:
 
    ```yaml
    ---
-   obsidian-dev-utils:
+   obsidian-dev-toolkit:
      demo-vault-validation:
        allow-wikilinks: The `wikilink` property value is the contrast this note is built around.
    ---
    ```
 
-   Either exempts the note from the wikilink rule only; the rest still apply. A declaration with no reason, one covering no wikilink, a region never enabled again, or a misspelled directive all fail the suite — an exemption nobody can justify, that nothing needs any more, or that silently does nothing is worse than none. Both spellings keep the `obsidian-dev-utils` prefix they had when the suite lived in that package, so the vaults that already carry them need no edit.
+   Either exempts the note from the wikilink rule only; the rest still apply. A declaration with no reason, one covering no wikilink, a region never enabled again, or a misspelled directive all fail the suite — an exemption nobody can justify, that nothing needs any more, or that silently does nothing is worse than none. Before 4.0.0 both forms were spelled with the retired `obsidian-dev-utils` prefix; that spelling is no longer read, and the suite reports every directive and frontmatter key still written with it, naming the `obsidian-dev-toolkit` spelling to write instead.
 3. **No `[Docs](…)` link line.** The note is the docs; a line pointing elsewhere for the real explanation is the shape this convention exists to remove.
 4. **`00 Start.md` is a getting-started narrative**, not a bare list — what the vault is, one concrete first success, then an index grouped under headings with a one-line description per entry. Every other note must be reachable from it.
 5. **The first success spells out the mechanics**, because a first-time reader has never seen `CodeScript Toolkit`: a code button renders as a captioned rectangle, **clicking it runs the code**, the result appears below it, and the `</>` toggle beside it reveals the source. Nothing about a coloured rectangle says "button" to someone who does not already know — say it once, in the first example, instead of assuming it.
@@ -200,7 +200,7 @@ The demo vault is not a set of samples sitting beside the documentation — it *
 7. **Every `Try it` section has a `code-button` that performs its setup.** A `Try it` section is a heading of any level starting `Try it`, up to the next heading of the same or a higher level, so a `### Step 2` inside it stays part of it. Flipping the setting the demo needs and creating the note it acts on is what the button is for; a reader asked to do it by hand is a reader the demo lost, and the button's caption or source still shows the manual steps. A section whose steps really cannot be scripted — a drag from outside Obsidian, a gesture on a phone — says so on its heading, with the reason, using the same directive as rule 2:
 
    ```markdown
-   <!-- obsidian-dev-utils-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
+   <!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/try-it-code-button -- Dragging a file in from outside Obsidian cannot be scripted. -->
    ## Try it
    ```
 
