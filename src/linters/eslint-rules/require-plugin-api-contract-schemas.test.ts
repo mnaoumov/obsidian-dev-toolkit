@@ -22,12 +22,12 @@ const MISSING_BOTH = '`input` and `output`';
 ruleTester.run('require-plugin-api-contract-schemas', toRuleTesterModule(requirePluginApiContractSchemas), {
   invalid: [
     {
-      code: 'const contract: PluginApiContract = { foo: {} };',
+      code: 'const contract: ApiContract = { foo: {} };',
       errors: [{ data: { method: 'foo', missing: MISSING_BOTH }, messageId: MESSAGE_ID }],
-      name: 'an empty entry in a variable typed PluginApiContract'
+      name: 'an empty entry in a variable typed ApiContract'
     },
     {
-      code: 'const contract: PluginApiContract<MyApi> = { foo: { input: a }, bar: { output: b } };',
+      code: 'const contract: ApiContract<MyApi> = { foo: { input: a }, bar: { output: b } };',
       errors: [
         { data: { method: 'foo', missing: '`output`' }, messageId: MESSAGE_ID },
         { data: { method: 'bar', missing: '`input`' }, messageId: MESSAGE_ID }
@@ -35,7 +35,7 @@ ruleTester.run('require-plugin-api-contract-schemas', toRuleTesterModule(require
       name: 'entries each lacking one schema'
     },
     {
-      code: 'const contract: lib.TypedPluginApiContract<MyApi> = { \'foo\': { input: a } };',
+      code: 'const contract: lib.TypedApiContract<MyApi> = { \'foo\': { input: a } };',
       errors: [{ data: { method: 'foo', missing: '`output`' }, messageId: MESSAGE_ID }],
       name: 'a contract type reached through a namespace, with a string key'
     },
@@ -73,54 +73,54 @@ ruleTester.run('require-plugin-api-contract-schemas', toRuleTesterModule(require
       name: 'one contract reached two ways, reported once'
     },
     {
-      code: 'const c = { foo: {} } satisfies PluginApiContract;',
+      code: 'const c = { foo: {} } satisfies ApiContract;',
       errors: [{ data: { method: 'foo', missing: MISSING_BOTH }, messageId: MESSAGE_ID }],
-      name: 'satisfies PluginApiContract'
+      name: 'satisfies ApiContract'
     },
     {
-      code: 'const c = { foo: {} as Entry } as PluginApiContract;',
+      code: 'const c = { foo: {} as Entry } as ApiContract;',
       errors: [{ data: { method: 'foo', missing: MISSING_BOTH }, messageId: MESSAGE_ID }],
-      name: 'as PluginApiContract, with a cast entry'
+      name: 'as ApiContract, with a cast entry'
     },
     {
-      code: 'const c: PluginApiContract = { [key]: {}, foo: { input: a, output: b, [other]: c } };',
+      code: 'const c: ApiContract = { [key]: {}, foo: { input: a, output: b, [other]: c } };',
       errors: [{ data: { method: '[computed]', missing: MISSING_BOTH }, messageId: MESSAGE_ID }],
       name: 'a computed entry key, and a computed member beside both schemas'
     },
     {
-      code: 'const c: PluginApiContract = { 1: { input: a } };',
+      code: 'const c: ApiContract = { 1: { input: a } };',
       errors: [{ data: { method: '[computed]', missing: '`output`' }, messageId: MESSAGE_ID }],
       name: 'a numeric entry key'
     },
     {
-      code: 'const c: PluginApiContract = { foo: entry! }; const entry = {};',
+      code: 'const c: ApiContract = { foo: entry! }; const entry = {};',
       errors: [{ data: { method: 'foo', missing: MISSING_BOTH }, messageId: MESSAGE_ID }],
       name: 'a non-null asserted entry'
     }
   ],
   valid: [
     {
-      code: 'const contract: PluginApiContract<MyApi> = { foo: { input: a, output: b }, \'bar\': { \'input\': a, \'output\': b } };',
+      code: 'const contract: ApiContract<MyApi> = { foo: { input: a, output: b }, \'bar\': { \'input\': a, \'output\': b } };',
       name: 'every entry with both schemas'
     },
     {
-      code: 'const c: PluginApiContract = { ...base, foo: { ...shared }, bar: makeEntry(), baz: imported };',
+      code: 'const c: ApiContract = { ...base, foo: { ...shared }, bar: makeEntry(), baz: imported };',
       name: 'a spread, a call and an import, which cannot be read statically'
     },
     {
-      code: 'let entry = {}; const c: PluginApiContract = { foo: entry };',
+      code: 'let entry = {}; const c: ApiContract = { foo: entry };',
       name: 'an entry naming a let, which may change'
     },
     {
-      code: 'function f(entry) { const c: PluginApiContract = { foo: entry }; }',
+      code: 'function f(entry) { const c: ApiContract = { foo: entry }; }',
       name: 'an entry naming a parameter'
     },
     {
-      code: 'const c: PluginApiContract = { foo: A }; const A = B; const B = A;',
+      code: 'const c: ApiContract = { foo: A }; const A = B; const B = A;',
       name: 'a cycle of constants'
     },
     {
-      code: 'const c: PluginApiContract = makeContract();',
+      code: 'const c: ApiContract = makeContract();',
       name: 'a contract built by a call'
     },
     {
@@ -132,7 +132,7 @@ ruleTester.run('require-plugin-api-contract-schemas', toRuleTesterModule(require
       name: 'declarators that hold no contract'
     },
     {
-      code: 'const c: Array<PluginApiContract> = [{ foo: {} }]; const d: string = \'\';',
+      code: 'const c: Array<ApiContract> = [{ foo: {} }]; const d: string = \'\';',
       name: 'a contract type that is not the declared type itself'
     },
     {

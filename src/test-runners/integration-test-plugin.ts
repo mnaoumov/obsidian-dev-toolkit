@@ -7,7 +7,7 @@
  * Two halves, and both must be wired or `lib.<helper>` fails:
  *
  * - {@link getIntegrationTestPluginPopulate} puts the harness plugin's binaries in the test vault. The
- *   harness plugin is what publishes the library on `window.__obsidianDevUtilsModule`; in this repo's own
+ *   harness plugin is what publishes the library on `window.__obsidianLibModule`; in this repo's own
  *   suite it IS the plugin-under-test, but in a consumer's suite the plugin-under-test is the consumer's own
  *   plugin, so the harness has to ride along as a second, test-only community plugin — seeded here, and
  *   turned on by `obsidian-integration-testing`'s `createSetup({ enableCommunityPlugins })`.
@@ -36,15 +36,15 @@ export const OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID = 'obsidian-dev-too
 /**
  * The flat library barrel the harness plugin publishes.
  */
-interface ObsidianDevUtilsModule {
+interface ObsidianLibModule {
   __merged: object;
 }
 
 /**
  * The shape the harness plugin publishes on the renderer's `window`.
  */
-interface ObsidianDevUtilsModuleWindow {
-  __obsidianDevUtilsModule: ObsidianDevUtilsModule;
+interface ObsidianLibModuleWindow {
+  __obsidianLibModule: ObsidianLibModule;
 }
 
 /**
@@ -100,14 +100,14 @@ export function getIntegrationTestPluginPopulate(): Record<string, Uint8Array> {
  */
 export function registerIntegrationTestLibResolver(): void {
   registerLibResolver((): object => {
-    const obsidianDevUtilsModule = (window as Partial<ObsidianDevUtilsModuleWindow>).__obsidianDevUtilsModule;
-    if (!obsidianDevUtilsModule) {
+    const obsidianLibModule = (window as Partial<ObsidianLibModuleWindow>).__obsidianLibModule;
+    if (!obsidianLibModule) {
       throw new Error(
         'The library module is not exposed on `window`. Is the @mnaoumov/obsidian-dev-toolkit integration-test '
           + 'harness plugin installed and enabled in the test vault? See '
           + '`@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup`.'
       );
     }
-    return obsidianDevUtilsModule.__merged;
+    return obsidianLibModule.__merged;
   });
 }

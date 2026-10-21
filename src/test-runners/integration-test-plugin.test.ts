@@ -87,7 +87,7 @@ describe('registerIntegrationTestLibResolver', () => {
     expect(mockRegisterLibResolver).toHaveBeenCalledTimes(1);
     const resolver = mockRegisterLibResolver.mock.calls[0]?.[0];
     const merged = { someHelper: (): void => undefined };
-    vi.stubGlobal('window', { __obsidianDevUtilsModule: { __merged: merged } });
+    vi.stubGlobal('window', { __obsidianLibModule: { __merged: merged } });
     try {
       expect(resolver?.()).toBe(merged);
     } finally {

@@ -1,7 +1,7 @@
 import type { HookRegistrar } from '@mnaoumov/typescript-test-toolkit/setup';
 
 import { ObsidianLibrary } from '@mnaoumov/obsidian-lib/library';
-import { getObsidianDevUtilsState } from '@mnaoumov/obsidian-lib/obsidian-dev-utils-state';
+import { getObsidianLibState } from '@mnaoumov/obsidian-lib/obsidian-lib-state';
 import { noop } from '@mnaoumov/typescript-lib/function';
 import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
@@ -38,7 +38,7 @@ describe('setup', () => {
     expect(mockSetupGeneric).toHaveBeenCalledWith(params);
   });
 
-  it('should reset the __obsidianDevUtils bag and the Obsidian library context before each test', async () => {
+  it('should reset the __obsidianLib bag and the Obsidian library context before each test', async () => {
     let beforeEachCallback: Parameters<HookRegistrar>[0] | undefined;
     setup({
       afterAll: noop,
@@ -48,14 +48,14 @@ describe('setup', () => {
       }
     });
 
-    const before = getObsidianDevUtilsState('setup-test-key', 'a');
+    const before = getObsidianLibState('setup-test-key', 'a');
     before.value = 'mutated';
     ObsidianLibrary.init({ cssClassScope: 'mutated-scope' });
 
     assertNonNullable(beforeEachCallback);
     await beforeEachCallback();
 
-    const after = getObsidianDevUtilsState('setup-test-key', 'b');
+    const after = getObsidianLibState('setup-test-key', 'b');
     expect(after).not.toBe(before);
     expect(after.value).toBe('b');
     expect(ObsidianLibrary.cssClassScope).toBe('');

@@ -13,7 +13,7 @@ An Obsidian plugin's tests take the setup endpoints of this package rather than 
 - **Jest**: `@mnaoumov/obsidian-dev-toolkit/jest-setup`
 - **Any framework**: `setup` from `@mnaoumov/obsidian-dev-toolkit/setup`
 
-Each does everything the generic endpoint does, and before each test it also resets the state `@mnaoumov/obsidian-lib` keeps between calls: the `globalThis.__obsidianDevUtils` bag (queues, registered handlers, the plugin-API registry) and the library context `ObsidianLibrary` holds. The Obsidian reset runs first, then the generic one. The endpoints live here rather than in the test toolkit because the test toolkit must not depend on `@mnaoumov/obsidian-lib`.
+Each does everything the generic endpoint does, and before each test it also resets the state `@mnaoumov/obsidian-lib` keeps between calls: the `globalThis.__obsidianLib` bag (queues, registered handlers, the plugin-API registry) and the library context `ObsidianLibrary` holds. The Obsidian reset runs first, then the generic one. The endpoints live here rather than in the test toolkit because the test toolkit must not depend on `@mnaoumov/obsidian-lib`.
 
 The plugin Vitest configuration below already lists `@mnaoumov/obsidian-dev-toolkit/vitest-setup` in its `unit-tests` project, after `obsidian-test-mocks/vitest-setup`, and the [plugin Jest configuration](#plugin-jest-configuration) lists `@mnaoumov/obsidian-dev-toolkit/jest-setup` in `setupFilesAfterEnv` the same way, so a plugin built on either wires nothing by hand.
 
