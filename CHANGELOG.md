@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.0.2
+
+- fix(deps): bundle the demo-vault helper from obsidian-lib 6.0.2
+
 ## 5.0.1
 
 - fix(deps): bundle the demo-vault helper from obsidian-lib 6.0.1
