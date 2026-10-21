@@ -59,6 +59,41 @@ export interface ClickButtonTimeouts {
 }
 
 /**
+ * What the active view held when a button was given up on as never rendered.
+ */
+export interface DemoVaultButtonMountState {
+  /**
+   * The path of the active file, or `null` when none is open.
+   */
+  readonly activeFilePath: null | string;
+
+  /**
+   * The mode of the active markdown view, `preview` or `source`, or `null` when there is none.
+   */
+  readonly activeViewMode: null | string;
+
+  /**
+   * The type of the most recent leaf's view, such as `markdown`, or `null` when there is none.
+   */
+  readonly activeViewType: null | string;
+
+  /**
+   * The captions of the buttons mounted at that moment, in document order.
+   */
+  readonly mountedCaptions: readonly string[];
+
+  /**
+   * The reading-view scroller's `scrollHeight`, or `null` when it was not found.
+   */
+  readonly scrollHeight: null | number;
+
+  /**
+   * The reading-view scroller's `scrollTop`, or `null` when it was not found.
+   */
+  readonly scrollTop: null | number;
+}
+
+/**
  * The outcome of clicking one button.
  */
 export interface DemoVaultButtonResult {
@@ -68,14 +103,22 @@ export interface DemoVaultButtonResult {
   readonly caption: string;
 
   /**
-   * The result line `CodeScript Toolkit` printed under the button, truncated.
+   * What the active view held when the button was given up on as never rendered. Set only for
+   * `notRendered`, so that failure can be diagnosed from the log alone.
+   */
+  readonly mountState?: DemoVaultButtonMountState;
+
+  /**
+   * The result line `CodeScript Toolkit` printed under the button, truncated. For `notRendered`, the
+   * reason the wait gave up.
    */
   readonly output: string;
 
   /**
-   * Whether the button reported success, reported an error, or never reported at all.
+   * Whether the button reported success, reported an error, never reported a result after it was
+   * clicked (`timeout`), or never rendered to be clicked at all (`notRendered`).
    */
-  readonly status: 'error' | 'ok' | 'timeout' | 'unknown';
+  readonly status: 'error' | 'notRendered' | 'ok' | 'timeout' | 'unknown';
 }
 
 /**
@@ -347,7 +390,10 @@ export function formatFailures(noteName: string, failures: readonly DemoVaultBut
   }
 
   const details = failures
-    .map((failure) => `  - "${failure.caption}" [${failure.status}]: ${failure.output.replaceAll(/\s+/g, ' ').trim()}`)
+    .map((failure) => {
+      const line = `  - "${failure.caption}" [${failure.status}]: ${failure.output.replaceAll(/\s+/g, ' ').trim()}`;
+      return failure.mountState ? `${line}\n    ${formatMountState(failure.mountState)}` : line;
+    })
     .join('\n');
   return `${String(failures.length)} button(s) in ${noteName} did not run cleanly:\n${details}`;
 }
@@ -432,6 +478,24 @@ export function selectUnexpectedFailures(
         && result.caption.includes(expected.captionIncludes))
     )
   );
+}
+
+/**
+ * Describes what the active view held when a button was given up on as never rendered.
+ *
+ * @param mountState - The {@link DemoVaultButtonMountState}.
+ * @returns One line naming the active file, its view, the buttons mounted and the scroll position.
+ */
+function formatMountState(mountState: DemoVaultButtonMountState): string {
+  const file = mountState.activeFilePath === null ? 'no active file' : `active file "${mountState.activeFilePath}"`;
+  const view = `view ${mountState.activeViewType ?? '(none)'} in ${mountState.activeViewMode ?? '(no)'} mode`;
+  const captions = mountState.mountedCaptions.length === 0
+    ? 'no buttons mounted'
+    : `${String(mountState.mountedCaptions.length)} button(s) mounted: ${mountState.mountedCaptions.map((caption) => `"${caption}"`).join(', ')}`;
+  const scroll = mountState.scrollTop === null || mountState.scrollHeight === null
+    ? 'no reading-view scroller'
+    : `scrollTop ${String(mountState.scrollTop)} of scrollHeight ${String(mountState.scrollHeight)}`;
+  return `mounted at give-up: ${file}; ${view}; ${captions}; ${scroll}`;
 }
 
 /**
@@ -722,7 +786,7 @@ async function clickButton(params: ClickButtonParams): Promise<DemoVaultButtonRe
       // holds a whole note's buttons. Advance a viewport at a time and wrap back to the top, remounting
       // every section in turn until the one being looked for appears. Pinning to the BOTTOM instead —
       // what this did until 94.4.1 — only ever mounts the note's tail, so a button anywhere but at the
-      // end of its note was reported as never rendered (`status: 'timeout'`, empty output) however
+      // end of its note was reported as never rendered (then `status: 'timeout'`, empty output) however
       // healthy it was.
       const SCROLL_BOTTOM_TOLERANCE_IN_PIXELS = 4;
       const SCROLL_STEP_RATIO = 0.8;
@@ -754,13 +818,33 @@ async function clickButton(params: ClickButtonParams): Promise<DemoVaultButtonRe
       // Re-open the note before every click instead of assuming the previous button left the workspace
       // where it was found. Every helper above reads the ACTIVE view, and opening a note is one of the
       // most ordinary things a demo button does — so the first such button would otherwise send each
-      // later button in its note to `status: 'timeout'` with an empty output, which is the shape of a
-      // button that never rendered rather than one that was looked for in the wrong view.
+      // later button in its note to `status: 'notRendered'`, which reads as a button that never rendered
+      // rather than one that was looked for in the wrong view.
       await app.workspace.openLinkText(notePathToOpen.replace(/\.md$/, ''), '', false);
       await app.workspace.getLeaf(false).setViewState({ state: { file: notePathToOpen, mode: 'preview' }, type: 'markdown' });
 
       // Held from the predicate rather than re-queried after it: the walk above keeps moving the
       // viewport, so a button found on one poll can be unmounted again by the next.
+      // A button given up on here is reported as `notRendered`, apart from a button that rendered and then
+      // never reported (`timeout`), with a snapshot of what WAS mounted, so the next occurrence can be
+      // diagnosed from the log alone rather than by re-running the suite until it recurs.
+      function notRendered(): DemoVaultButtonResult {
+        const scroller = previewEl();
+        return {
+          caption,
+          mountState: {
+            activeFilePath: app.workspace.getActiveFile()?.path ?? null,
+            activeViewMode: view()?.getMode() ?? null,
+            activeViewType: app.workspace.getMostRecentLeaf()?.view.getViewType() ?? null,
+            mountedCaptions: buttons().map((candidate) => candidate.textContent),
+            scrollHeight: scroller?.scrollHeight ?? null,
+            scrollTop: scroller?.scrollTop ?? null
+          },
+          output: `code button "${caption}" never rendered within ${String(settleTimeoutInMilliseconds)} ms`,
+          status: 'notRendered'
+        };
+      }
+
       let button: HTMLButtonElement | undefined;
       try {
         await waitUntil({
@@ -774,11 +858,11 @@ async function clickButton(params: ClickButtonParams): Promise<DemoVaultButtonRe
           timeoutInMilliseconds: settleTimeoutInMilliseconds
         });
       } catch {
-        return { caption, output: '', status: 'timeout' };
+        return notRendered();
       }
 
       if (!button) {
-        return { caption, output: '', status: 'timeout' };
+        return notRendered();
       }
 
       const block = button.closest<HTMLElement>('.block-language-code-button') ?? button.parentElement;
