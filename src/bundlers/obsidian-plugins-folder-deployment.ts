@@ -288,7 +288,7 @@ async function importObsidianIntegrationTesting(): Promise<ObsidianIntegrationTe
  * The install-if-missing / enable-if-disabled logic below intentionally mirrors the public
  * `installCommunityPlugin` / `enableCommunityPlugin` helpers in `src/obsidian/community-plugins.ts`. It
  * cannot import and call them: the `fn` is serialized (`toString()`) and executed in the renderer, and
- * this build-owned Obsidian instance is bare — it has no dev-utils `lib` provider wired (that resolver is
+ * this build-owned Obsidian instance is bare — it has no obsidian-lib `lib` provider wired (that resolver is
  * registered only in the integration-test setup, whose fixture publishes the merged surface on `window`),
  * so the closure has no access to the library surface and must inline the equivalent steps.
  *
