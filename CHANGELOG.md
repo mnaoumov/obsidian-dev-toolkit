@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 5.1.0
+
+- feat(linters): let the plugin-name rules exclude a name
+- docs: name obsidian-lib where comments said dev-utils
+
 ## 5.0.2
 
 - fix(deps): bundle the demo-vault helper from obsidian-lib 6.0.2
