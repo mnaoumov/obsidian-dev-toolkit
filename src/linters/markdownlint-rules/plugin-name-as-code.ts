@@ -5,7 +5,7 @@
  *
  * Reports an Obsidian plugin's display name written as plain text in markdown, and fixes it by wrapping the name in
  * backticks. The names come from `plugin-names.ts`: the shared list, the project's own `manifest.json` `name`, and
- * the rule's `additionalPluginNames` option.
+ * the rule's `additionalPluginNames` option, less its `excludedPluginNames` option.
  *
  * Only prose is read: the `data` tokens micromark leaves in paragraphs, lists, tables and emphasis. Everything else is
  * left alone because a code span there would be wrong or would change something:
@@ -92,7 +92,11 @@ export const pluginNameAsCodeRule: Rule = {
   function: (params, onError) => {
     // The markdownlint engine hands an enabled rule its configuration object, or an empty one when the rule is merely `true`.
     const options = params.config as PluginNameRuleOptions;
-    const pluginNames = getPluginNames({ additionalPluginNames: options.additionalPluginNames, cwd: process.cwd() });
+    const pluginNames = getPluginNames({
+      additionalPluginNames: options.additionalPluginNames,
+      cwd: process.cwd(),
+      excludedPluginNames: options.excludedPluginNames
+    });
     const proseRangesByLine = new Map<number, ColumnRange[]>();
     collectProseRanges(params.parsers.micromark.tokens, proseRangesByLine);
 

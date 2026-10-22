@@ -11,8 +11,11 @@
  * The list is the display name (`manifest.json` `name`) of every `mnaoumov/obsidian-*` plugin, plus the third-party
  * plugins those repositories mention. A few third-party names (`Linter`, `Projects`, `Copilot`) are left out on
  * purpose: they are ordinary words, so matching them bare reports prose rather than plugin names. A project adds its
- * own `manifest.json` `name` automatically, and can extend the list through each rule's `additionalPluginNames`
- * option.
+ * own `manifest.json` `name` automatically, can extend the list through each rule's `additionalPluginNames` option,
+ * and can take a name out of it through `excludedPluginNames`: that is the escape for a plugin whose own name is an
+ * ordinary word too, such as `Patterns`, which its own text uses as a noun and as a UI label far more often than as
+ * the plugin's name. An exclusion wins over every source, the project's own name and `additionalPluginNames`
+ * included.
  */
 
 import {
@@ -98,6 +101,11 @@ export interface GetPluginNamesParams {
    * The project root, whose `manifest.json` `name` is added to the list when it has one.
    */
   readonly cwd: string;
+
+  /**
+   * Names to leave out of the list, whichever source adds them.
+   */
+  readonly excludedPluginNames?: readonly string[] | undefined;
 }
 
 /**
@@ -123,6 +131,12 @@ export interface PluginNameRuleOptions {
    * Names to check on top of the shared list.
    */
   readonly additionalPluginNames?: readonly string[];
+
+  /**
+   * Names to leave out of the list, whichever source adds them: the shared list, the project's own `manifest.json`
+   * `name` or `additionalPluginNames`.
+   */
+  readonly excludedPluginNames?: readonly string[];
 }
 
 /**
@@ -164,7 +178,7 @@ export function findPluginNameMatches(text: string, pluginNames: readonly string
 
 /**
  * Builds the list of plugin names a project checks: the shared list, the project's own `manifest.json` `name`, and
- * any names the project adds.
+ * any names the project adds, less any names the project excludes.
  *
  * @param params - The {@link GetPluginNamesParams}.
  * @returns The names, without duplicates.
@@ -174,6 +188,9 @@ export function getPluginNames(params: GetPluginNamesParams): string[] {
   const ownName = readManifestName(params.cwd);
   if (ownName) {
     names.add(ownName);
+  }
+  for (const name of params.excludedPluginNames ?? []) {
+    names.delete(name);
   }
   return [...names];
 }

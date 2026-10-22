@@ -57,7 +57,11 @@ const ELEMENT_FACTORY_NAMES = new Set(['createDiv', 'createEl', 'createSpan']);
 export const pluginNameAsCodeInUi: Rule.RuleModule = {
   create(context) {
     const options = context.options[0] as PluginNameRuleOptions | undefined;
-    const pluginNames = getPluginNames({ additionalPluginNames: options?.additionalPluginNames, cwd: context.cwd });
+    const pluginNames = getPluginNames({
+      additionalPluginNames: options?.additionalPluginNames,
+      cwd: context.cwd,
+      excludedPluginNames: options?.excludedPluginNames
+    });
 
     return {
       CallExpression(node: CallExpression): void {

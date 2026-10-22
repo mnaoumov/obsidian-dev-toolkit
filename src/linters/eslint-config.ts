@@ -327,7 +327,8 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       /*
        * A plugin's display name is marked as code: backticks in a comment (`plugin-name-as-code`, autofixed), a
        * `<code>` element in UI (`plugin-name-as-code-in-ui`, reported only). Both take
-       * `{ additionalPluginNames: [...] }` for names the shared list lacks.
+       * `{ additionalPluginNames: [...] }` for names the shared list lacks, and `{ excludedPluginNames: [...] }` for a
+       * name that is an ordinary word in that project, its own manifest `name` included.
        */
       files: context.allFiles(),
       plugins: {

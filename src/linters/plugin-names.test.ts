@@ -91,6 +91,15 @@ describe('getPluginNames', () => {
     expect(getPluginNames({ cwd })).toContain('My Own Plugin');
   });
 
+  it('should leave out the names a project excludes, whichever source adds them', () => {
+    writeFileSync(join(cwd, 'manifest.json'), '{"name":"Patterns"}');
+    const names = getPluginNames({ additionalPluginNames: ['My Plugin'], cwd, excludedPluginNames: ['Patterns', 'Dataview', 'My Plugin'] });
+    expect(names).not.toContain('Patterns');
+    expect(names).not.toContain('Dataview');
+    expect(names).not.toContain('My Plugin');
+    expect(names).toHaveLength(MNAOUMOV_PLUGIN_NAMES.length + THIRD_PARTY_PLUGIN_NAMES.length - 1);
+  });
+
   it.each([
     ['does not parse', '{'],
     ['is null', 'null'],

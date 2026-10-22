@@ -73,6 +73,11 @@ ruleTester.run('plugin-name-as-code', toRuleTesterModule(pluginNameAsCode), {
     {
       code: '// Supports My Plugin.',
       name: 'a name nobody lists'
+    },
+    {
+      code: '// Reads Dataview pages.',
+      name: 'a name the project excludes',
+      options: [{ excludedPluginNames: ['Dataview'] }]
     }
   ]
 });
