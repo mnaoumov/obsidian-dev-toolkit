@@ -53,6 +53,10 @@ describe('plugin-name-as-code', () => {
     expect(await lintMarkdown('My Plugin is here.\n', { additionalPluginNames: ['My Plugin'] })).toHaveLength(1);
   });
 
+  it('should skip the names a project excludes', async () => {
+    expect(await lintMarkdown('Dataview and Templater.\n', { excludedPluginNames: ['Dataview'] })).toHaveLength(1);
+  });
+
   it.each([
     ['a code span', 'Use `Dataview` here.\n'],
     ['fenced code', '```\nDataview\n```\n'],

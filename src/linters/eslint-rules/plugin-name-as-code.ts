@@ -8,7 +8,8 @@
  *
  * Every comment is read: `//`, `/* *\/` and JSDoc / TSDoc. A name already inside a code span, an inline `@link` tag
  * (whose target is an identifier) or a URL is left alone. The names come from `plugin-names.ts`: the shared list,
- * the project's own `manifest.json` `name`, and the rule's `additionalPluginNames` option.
+ * the project's own `manifest.json` `name`, and the rule's `additionalPluginNames` option, less its
+ * `excludedPluginNames` option.
  *
  * Not attempted: a multi-word name broken across two comment lines, which a reader cannot tell from two unrelated
  * words without understanding the prose.
@@ -52,6 +53,10 @@ export const PLUGIN_NAME_RULE_SCHEMA: Rule.RuleMetaData['schema'] = [
       additionalPluginNames: {
         items: { type: 'string' },
         type: 'array'
+      },
+      excludedPluginNames: {
+        items: { type: 'string' },
+        type: 'array'
       }
     },
     type: 'object'
@@ -64,7 +69,11 @@ export const PLUGIN_NAME_RULE_SCHEMA: Rule.RuleMetaData['schema'] = [
 export const pluginNameAsCode: Rule.RuleModule = {
   create(context) {
     const options = context.options[0] as PluginNameRuleOptions | undefined;
-    const pluginNames = getPluginNames({ additionalPluginNames: options?.additionalPluginNames, cwd: context.cwd });
+    const pluginNames = getPluginNames({
+      additionalPluginNames: options?.additionalPluginNames,
+      cwd: context.cwd,
+      excludedPluginNames: options?.excludedPluginNames
+    });
     const sourceCode = context.sourceCode;
 
     return {

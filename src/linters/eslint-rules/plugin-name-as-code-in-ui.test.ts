@@ -61,6 +61,11 @@ ruleTester.run('plugin-name-as-code-in-ui', toRuleTesterModule(pluginNameAsCodeI
   ],
   valid: [
     {
+      code: 'new Notice(\'Dataview is not enabled\');',
+      name: 'a name the project excludes',
+      options: [{ excludedPluginNames: ['Dataview'] }]
+    },
+    {
       code: 'this.addCommand({ id: \'x\', name: \'Open Dataview view\' });',
       name: 'a command name, which cannot hold markup'
     },
