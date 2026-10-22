@@ -346,7 +346,7 @@
     "yaml": "^2.9.1"
   },
   "peerDependencies": {
-    "@babel/core": "^7.29.7",
+    "@babel/core": "^7.29.7 || ^8.0.0",
     "@jest/globals": "^30.5.2",
     "@mnaoumov/obsidian-lib": "^6.0.0",
     "@parcel/config-default": "^2.16.4",
