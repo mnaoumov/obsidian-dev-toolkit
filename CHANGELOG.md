@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.1.1
+
+- fix(deps): let the optional @babel/core peer admit Babel 8
+
 ## 5.1.0
 
 - feat(linters): let the plugin-name rules exclude a name
