@@ -326,7 +326,7 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
     {
       /*
        * A plugin's display name is marked as code: backticks in a comment (`plugin-name-as-code`, autofixed), a
-       * `<code>` element in UI (`plugin-name-as-code-in-ui`, reported only). Both take
+       * `appendCodeBlock()` in UI (`plugin-name-as-code-in-ui`, reported only). Both take
        * `{ additionalPluginNames: [...] }` for names the shared list lacks, and `{ excludedPluginNames: [...] }` for a
        * name that is an ordinary word in that project, its own manifest `name` included.
        */
@@ -337,6 +337,20 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       rules: {
         'obsidian-dev-toolkit/plugin-name-as-code': 'error',
         'obsidian-dev-toolkit/plugin-name-as-code-in-ui': 'error'
+      }
+    },
+    {
+      /*
+       * A `<code>` element in UI is built with `appendCodeBlock()`: a bare `createEl('code', ...)` gets no inline-code
+       * chip in Obsidian's UI, only a monospace font. Tests are exempt: a fixture may build any element.
+       */
+      files: context.sourceFiles,
+      ignores: context.testFiles,
+      plugins: {
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+      },
+      rules: {
+        'obsidian-dev-toolkit/no-bare-code-element': 'error'
       }
     }
   ]);

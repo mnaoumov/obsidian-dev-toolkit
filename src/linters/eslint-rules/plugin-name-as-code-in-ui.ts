@@ -4,8 +4,10 @@
  * ESLint rule: plugin-name-as-code-in-ui
  *
  * Reports an Obsidian plugin's display name inside a string that is shown in UI as plain text. In UI the name is
- * built as a `<code>` element instead: `appendCodeBlock()` into a `DocumentFragment`, or `createFragmentWithCodeBlocks()`
- * with `asCodeBlock()`, from `@mnaoumov/obsidian-lib`'s `html-element.ts`, and the fragment is what is passed on.
+ * built with `appendCodeBlock()` into a `DocumentFragment`, or with `createFragmentWithCodeBlocks()` and
+ * `asCodeBlock()`, from `@mnaoumov/obsidian-lib`'s `html-element.ts`, and the fragment is what is passed on. A bare
+ * `createEl('code', ...)` is not the way: Obsidian's UI gives it no inline-code chip, and `no-bare-code-element`
+ * reports it.
  *
  * Detection is best effort, by call shape, without type information. A string literal or template literal (or a
  * `+` concatenation or `? :` branch made of them) is read when it is:
@@ -52,7 +54,7 @@ const UI_TEXT_METHOD_NAMES = new Set(['appendText', 'setDesc', 'setName', 'setTe
 const ELEMENT_FACTORY_NAMES = new Set(['createDiv', 'createEl', 'createSpan']);
 
 /**
- * ESLint rule requiring a plugin name shown in UI to be built as a `<code>` element.
+ * ESLint rule requiring a plugin name shown in UI to be built with `appendCodeBlock()`.
  */
 export const pluginNameAsCodeInUi: Rule.RuleModule = {
   create(context) {
@@ -147,10 +149,10 @@ export const pluginNameAsCodeInUi: Rule.RuleModule = {
   },
   meta: {
     docs: {
-      description: 'Require a plugin name shown in UI to be built as a `<code>` element'
+      description: 'Require a plugin name shown in UI to be built with `appendCodeBlock()`, as inline code'
     },
     messages: {
-      [MESSAGE_ID]: 'The plugin name `{{ name }}` is shown in UI as plain text. Build it as a `<code>` element instead: `appendCodeBlock()` into a `DocumentFragment`, or `createFragmentWithCodeBlocks()` with `asCodeBlock()`, from `@mnaoumov/obsidian-lib`\'s `html-element.ts`.'
+      [MESSAGE_ID]: 'The plugin name `{{ name }}` is shown in UI as plain text. Build it with `appendCodeBlock()` into a `DocumentFragment`, or with `createFragmentWithCodeBlocks()` and `asCodeBlock()`, from `@mnaoumov/obsidian-lib`\'s `html-element.ts`. A bare `createEl(\'code\', ...)` gets no inline-code chip in Obsidian\'s UI.'
     },
     schema: PLUGIN_NAME_RULE_SCHEMA,
     type: 'suggestion'
