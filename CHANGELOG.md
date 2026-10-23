@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.2.0
+
+- feat(eslint): add the `obsidian-dev-toolkit/no-bare-code-element` rule, which reports a bare `code` element and points UI code to `appendCodeBlock`
+
 ## 5.1.1
 
 - fix(deps): let the optional @babel/core peer admit Babel 8
