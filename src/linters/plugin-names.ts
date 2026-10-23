@@ -4,7 +4,7 @@
  * The plugin names the plugin-name lint rules look for, and the matcher they share.
  *
  * Whenever text mentions an Obsidian plugin by name, the name is marked as code: backticks in markdown and in code
- * comments, a `<code>` element in UI. The ESLint rules `plugin-name-as-code` / `plugin-name-as-code-in-ui` and the
+ * comments, `appendCodeBlock()` in UI. The ESLint rules `plugin-name-as-code` / `plugin-name-as-code-in-ui` and the
  * markdownlint rule `plugin-name-as-code` all read the one list here, so a name added to it is checked everywhere at
  * once.
  *
