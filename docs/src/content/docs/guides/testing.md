@@ -42,6 +42,8 @@ A behavior that must hold on **both** platforms therefore lives in exactly one `
 
 `unit-tests` resolves `obsidian` to `obsidian-test-mocks/obsidian`. Every project that loads the plugin from `dist/build/main.js` first checks that build: it refuses to start when the build is missing or older than the source, because a plugin's `test:integration*` scripts call Vitest directly and never build, and a stale bundle would otherwise be tested and read as a defect.
 
+Integration projects run files serially because their files share a harness-owned vault. The configuration preserves `fileParallelism: false` even when `VITEST_MAX_WORKERS` sets a larger worker cap, while unit projects retain their worker cap. Custom projects spread from `context.desktop` or `context.android` inherit the same protection; keep the returned configuration's `plugins` when composing it with another Vite configuration.
+
 Set `OBSIDIAN_VERSION` to pin the desktop project to a specific Obsidian (for example `OBSIDIAN_VERSION=catalyst-latest`). When it is unset, no version is pinned and the installed Obsidian runs as it is.
 
 Customize through the two hooks: `editContext` edits the standard projects in place, and `customProjects` appends projects the base does not know about:
