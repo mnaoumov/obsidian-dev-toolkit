@@ -2,6 +2,8 @@ import {
   DEFAULT_VITEST_TEST_EXCLUDE,
   defineLibraryVitestConfig
 } from '@mnaoumov/typescript-dev-toolkit/test-runners/vitest-config';
+// eslint-disable-next-line import-x/no-nodejs-modules -- Vitest configuration runs in Node and reads the bulk worker budget.
+import process from 'node:process';
 
 const ESLINT_TYPECHECK_TEST_FILES = 'src/linters/eslint-rules/*.test.ts';
 const INTEGRATION_TEST_FILES = 'src/**/*.integration.test.ts';
@@ -30,7 +32,7 @@ const SHARED_SERVER = {
   }
 };
 
-export default defineLibraryVitestConfig({
+const config = defineLibraryVitestConfig({
   projects: [
     {
       resolve: SHARED_RESOLVE,
@@ -122,3 +124,13 @@ export default defineLibraryVitestConfig({
     }
   ]
 });
+
+const vitestConfig = {
+  ...config,
+  test: {
+    ...config.test,
+    ...process.env['BULK_CORES'] !== undefined && { maxWorkers: Number(process.env['BULK_CORES']) }
+  }
+};
+
+export default vitestConfig;

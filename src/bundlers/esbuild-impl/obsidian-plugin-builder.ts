@@ -50,6 +50,7 @@ import {
   getSassPluginOptionsList
 } from './feature-options.ts';
 import { fixSourceMapsPlugin } from './fix-source-maps-plugin.ts';
+import { ignoreListSourceMapPlugin } from './ignore-list-source-map-plugin.ts';
 import { preprocessPlugin } from './preprocess-plugin.ts';
 import { renameCssPlugin } from './rename-css-plugin.ts';
 
@@ -84,6 +85,14 @@ export interface BuildObsidianPluginParams extends ObsidianPluginDeploymentOptio
   readonly customizeEsbuildOptions?: (options: EsbuildOptions) => void;
 
   /**
+   * Additional source-path patterns DevTools skips when attributing console messages.
+   * Shared debug and monkey-around wrappers are always included. Pass `false` to disable ignore maps.
+   *
+   * @default `[]`
+   */
+  readonly ignoreListSources?: false | readonly RegExp[];
+
+  /**
    * A build mode, either `Development` or `Production`
    */
   readonly mode: BuildMode;
@@ -102,6 +111,14 @@ export interface BuildOptions extends ObsidianPluginDeploymentOptions, ObsidianP
    * Customizes the `esbuild` options.
    */
   readonly customizeEsbuildOptions?: (options: EsbuildOptions) => void;
+
+  /**
+   * Additional source-path patterns DevTools skips when attributing console messages.
+   * Shared debug and monkey-around wrappers are always included. Pass `false` to disable ignore maps.
+   *
+   * @default `[]`
+   */
+  readonly ignoreListSources?: false | readonly RegExp[];
 }
 
 /**
@@ -187,6 +204,7 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
       fixEsmPlugin(),
       fixSourceMapsPlugin({ distPaths: [distPath, cssPath], isProductionBuild, pluginName }),
       ...params.customEsbuildPlugins ?? [],
+      ...params.ignoreListSources === false ? [] : [ignoreListSourceMapPlugin(params.ignoreListSources)],
       copyToObsidianPluginsFolderPlugin({ distFolder, isProductionBuild, obsidianConfigFolder, pluginName, reload })
     ],
     sourcemap: !isProductionBuild && 'inline',
