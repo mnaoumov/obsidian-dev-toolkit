@@ -69,7 +69,7 @@ interface PluginExports {
   readonly default?: unknown;
 }
 
-type PluginLoadFunction = (require: (moduleId: string) => unknown, module: LoadedModule, exports: unknown) => void;
+type PluginLoadFunction = (require: (moduleId: string) => unknown, $module: LoadedModule, exports: unknown) => void;
 
 /**
  * What each feature fixture's `render` command returns once built and loaded, or a check of it.

@@ -81,8 +81,8 @@ function patchObsidianRequire(): void {
     }
   ) as RequirePatched;
 
-  function extractDefault(module: Partial<EsmModule> | undefined): unknown {
-    return module && module.__esModule && 'default' in module ? module.default : module;
+  function extractDefault($module: Partial<EsmModule> | undefined): unknown {
+    return $module && $module.__esModule && 'default' in $module ? $module.default : $module;
   }
 
   const OBSIDIAN_BUILT_IN_MODULE_NAMES = new Set([
@@ -133,9 +133,9 @@ function patchObsidianRequire(): void {
         return process;
       }
     } else {
-      const module = originalRequire?.(id) as (Partial<EsmModule> | undefined);
-      if (module) {
-        return extractDefault(module);
+      const $module = originalRequire?.(id) as (Partial<EsmModule> | undefined);
+      if ($module) {
+        return extractDefault($module);
       }
     }
 

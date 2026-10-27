@@ -260,15 +260,15 @@ const TAILWIND_POSTCSS_PLUGIN_NAME = '@tailwindcss/postcss';
  * Appends a source map to a module's code as an inline `sourceMappingURL` comment, which is how a bundler that
  * reads a loaded file's own source map takes it.
  *
- * @param module - The module.
+ * @param $module - The module.
  * @returns The code, with the source map inlined when there is one.
  */
-export function appendInlineSourceMap(module: TransformedModule): string {
-  if (!module.map) {
-    return module.code;
+export function appendInlineSourceMap($module: TransformedModule): string {
+  if (!$module.map) {
+    return $module.code;
   }
-  const base64 = Buffer.from(JSON.stringify(module.map), 'utf-8').toString('base64');
-  return `${module.code}\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64}\n`;
+  const base64 = Buffer.from(JSON.stringify($module.map), 'utf-8').toString('base64');
+  return `${$module.code}\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64}\n`;
 }
 
 /**

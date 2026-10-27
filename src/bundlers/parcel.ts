@@ -208,12 +208,12 @@ export async function buildObsidianPluginWithParcel(params: BuildObsidianPluginW
     }
   }
 
-  await bundler.watch((error, event) => {
+  await bundler.watch((error, $event) => {
     if (error) {
       console.error(formatParcelError(error));
       return;
     }
-    handleWatchEvent(event, buildContext);
+    handleWatchEvent($event, buildContext);
   });
   return CliTaskResult.DoNotExit();
 }
@@ -600,16 +600,16 @@ function getSiblingModuleUrl(baseName: string): string {
   return new URL(`${baseName}${extname(new URL(import.meta.url).pathname)}`, import.meta.url).href;
 }
 
-function handleWatchEvent(event: BuildEvent | undefined, buildContext: ObsidianPluginBuildContext): void {
-  if (event?.type === 'buildFailure') {
-    console.error(event.diagnostics.map((diagnostic) => diagnostic.message).join('\n'));
+function handleWatchEvent($event: BuildEvent | undefined, buildContext: ObsidianPluginBuildContext): void {
+  if ($event?.type === 'buildFailure') {
+    console.error($event.diagnostics.map((diagnostic) => diagnostic.message).join('\n'));
     return;
   }
-  if (event?.type !== 'buildSuccess') {
+  if ($event?.type !== 'buildSuccess') {
     return;
   }
 
-  console.warn(`Rebuilt with parcel in ${String(event.buildTime)} ms.`);
+  console.warn(`Rebuilt with parcel in ${String($event.buildTime)} ms.`);
   invokeAsyncSafely(() => deployToObsidianPluginsFolder(buildContext));
 }
 /* v8 ignore stop */

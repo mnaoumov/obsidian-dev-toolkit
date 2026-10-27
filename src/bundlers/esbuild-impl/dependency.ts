@@ -114,8 +114,8 @@ function canSkipFromBundling(moduleName: string): boolean {
   }
 
   try {
-    const module = esmRequire(moduleName) as ModuleWithDefaultExport;
-    return !module.default;
+    const $module = esmRequire(moduleName) as ModuleWithDefaultExport;
+    return !$module.default;
   } catch {
     return false;
   }
