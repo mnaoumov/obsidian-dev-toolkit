@@ -12,9 +12,11 @@ npm install --save-dev @mnaoumov/obsidian-dev-toolkit
 
 The guides and the API reference are at <https://mnaoumov.dev/obsidian-dev-toolkit/>.
 
+esbuild builds include source-map ignore lists for shared debug and patching wrappers, so DevTools can link console messages to their callers. Extend the defaults with `ignoreListSources` or disable them with `ignoreListSources: false`; see the [bundler guide](https://mnaoumov.dev/obsidian-dev-toolkit/guides/bundlers/#esbuild).
+
 ## Where it fits
 
-It is one of five packages that replace [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils): [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-test-toolkit`](https://github.com/mnaoumov/typescript-test-toolkit), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) and [`@mnaoumov/obsidian-dev-toolkit`](https://github.com/mnaoumov/obsidian-dev-toolkit). It depends on [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), and takes [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) 3.x or 4.x as a peer dependency, so a plugin and its tooling share one copy. It moved here from that repository with its history.
+It is one of five packages that replace [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils): [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-test-toolkit`](https://github.com/mnaoumov/typescript-test-toolkit), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) and [`@mnaoumov/obsidian-dev-toolkit`](https://github.com/mnaoumov/obsidian-dev-toolkit). It depends on [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), and takes [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) 6.x as a peer dependency, so a plugin and its tooling share one copy. It moved here from that repository with its history.
 
 ## License
 

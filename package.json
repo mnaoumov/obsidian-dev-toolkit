@@ -18,10 +18,6 @@
   "license": "MIT",
   "author": "Michael Naumov",
   "type": "module",
-  "bin": {
-    "archive-demo-vault": "bin/archive-demo-vault.mjs",
-    "generate-coverage-badge": "bin/generate-coverage-badge.mjs"
-  },
   "exports": {
     ".": {
       "import": {
@@ -208,6 +204,10 @@
       "types": "./types/*.d.ts"
     }
   },
+  "bin": {
+    "archive-demo-vault": "bin/archive-demo-vault.mjs",
+    "generate-coverage-badge": "bin/generate-coverage-badge.mjs"
+  },
   "files": [
     "**/package.json",
     "bin/",
@@ -257,8 +257,20 @@
     "test:watch": "jiti scripts/test-watch.ts",
     "version": "jiti scripts/version.ts"
   },
+  "overrides": {
+    "@puppeteer/browsers": "^3.2.2",
+    "@vitest/coverage-v8": "$@vitest/coverage-v8",
+    "deepmerge-ts": "^8.0.2",
+    "eslint": "$eslint",
+    "eslint-plugin-import": "npm:eslint-plugin-import-x@^4.17.1",
+    "fflate": "$fflate",
+    "js-yaml": "4.3.2",
+    "smol-toml": "^1.8.0",
+    "typescript": "$typescript"
+  },
   "dependencies": {
     "@eslint/json": "^2.1.0",
+    "@jridgewell/sourcemap-codec": "^1.6.0",
     "@mnaoumov/typescript-dev-toolkit": "^3.7.2",
     "@mnaoumov/typescript-lib": "^1.0.0",
     "@mnaoumov/typescript-test-toolkit": "^1.0.0",
@@ -435,16 +447,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "overrides": {
-    "@puppeteer/browsers": "^3.2.2",
-    "@vitest/coverage-v8": "$@vitest/coverage-v8",
-    "deepmerge-ts": "^8.0.2",
-    "eslint": "$eslint",
-    "eslint-plugin-import": "npm:eslint-plugin-import-x@^4.17.1",
-    "fflate": "$fflate",
-    "js-yaml": "4.3.2",
-    "smol-toml": "^1.8.0",
-    "typescript": "$typescript"
   }
 }

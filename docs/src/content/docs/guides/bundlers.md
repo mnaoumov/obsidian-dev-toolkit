@@ -28,6 +28,16 @@ await wrapCliTask(() => build());
 
 The default, documented on the [Commands page](/obsidian-dev-toolkit/guides/cli-commands/#build-production-version). It type-checks with `build:compile` first and handles TypeScript, Sass and Svelte itself.
 
+esbuild builds ignore-list the shared `typescript-lib` debug logger, `monkey-around`, and `obsidian-lib`'s `MonkeyAroundComponent` in their source maps. DevTools can then skip these wrapper frames when choosing a console message's source link. Development builds retain their full source maps; production builds include a compact inline map covering only ignored regions, leaving your own code linked to the generated bundle. The trailing `/* nosourcemap */` marker keeps Obsidian from removing the inline map when debug mode is off. DevTools must have source maps and ignore listing enabled.
+
+Pass additional regular expressions through `ignoreListSources` on `build()`, `dev()` or `buildObsidianPlugin()`. They match source paths with forward slashes and extend the shared defaults. Pass `ignoreListSources: false` to disable this feature. Explicitly configured external source maps remain external and retain their full mappings.
+
+```typescript
+import { build } from '@mnaoumov/obsidian-dev-toolkit/bundlers/esbuild';
+
+await build({ ignoreListSources: [/\/src\/console-wrapper\.ts$/, /^webpack:\/\/eruda\//] });
+```
+
 ## vite
 
 ```bash
