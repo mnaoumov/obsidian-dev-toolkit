@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 7.0.0
+
+- feat!: reject bare keyword bindings in shared lint configuration
+
 ## 6.0.0
 
 - feat!: enforce readonly interface members in shared lint configuration
