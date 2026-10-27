@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 6.0.0
+
+- feat!: enforce readonly interface members in shared lint configuration
+- fix(deps): patch vulnerable transitive dependencies
+
 ## 5.3.1
 
 - fix(deps): accept typescript-lib 2 in development tooling
