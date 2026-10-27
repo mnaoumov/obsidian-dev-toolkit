@@ -265,6 +265,8 @@
     "eslint-plugin-import": "npm:eslint-plugin-import-x@^4.17.1",
     "fflate": "$fflate",
     "js-yaml": "4.3.2",
+    "katex": "^0.18.2",
+    "moment": "^2.31.0",
     "smol-toml": "^1.8.0",
     "typescript": "$typescript"
   },

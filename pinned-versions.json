@@ -1,0 +1,14 @@
+{
+  "katex": {
+    "section": "overrides",
+    "why": "https://github.com/advisories/GHSA-238p-pmpm-9mq7 affects KaTeX before 0.18.2. micromark-extension-math 3.1.0 still requests ^0.16.0; retain the patched override until upstream admits it.",
+    "check": "npm view micromark-extension-math@latest dependencies.katex",
+    "expect": "^0.16.0"
+  },
+  "moment": {
+    "section": "overrides",
+    "why": "https://github.com/advisories/GHSA-4p3w-j4w9-5jqw affects Moment before 2.31.0. eslint-plugin-obsidianmd installs obsidian 1.12.3, which pins Moment 2.29.4; retain the patched override until that chain updates.",
+    "check": "npm view eslint-plugin-obsidianmd@latest dependencies.obsidian",
+    "expect": "1.12.3"
+  }
+}
