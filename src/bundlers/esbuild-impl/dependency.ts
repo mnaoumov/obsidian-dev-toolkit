@@ -51,7 +51,7 @@ interface ExtractDependenciesToBundlePluginParams {
 }
 
 interface ModuleWithDefaultExport {
-  default: unknown;
+  readonly default: unknown;
 }
 
 /**

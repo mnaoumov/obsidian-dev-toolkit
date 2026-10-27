@@ -53,27 +53,27 @@ export interface SourceMap {
   /**
   The source indices DevTools skips.
    */
-  ignoreList?: number[];
+  readonly ignoreList?: number[];
   /**
   VLQ-encoded generated-to-original mappings.
    */
-  mappings: string;
+  readonly mappings: string;
   /**
   Original symbol names referenced by the mappings.
    */
-  names?: string[];
+  readonly names?: string[];
   /**
   Original source paths.
    */
-  sources: string[];
+  readonly sources: string[];
   /**
   Original source text, when retained by a full map.
    */
-  sourcesContent?: (null | string)[];
+  readonly sourcesContent?: (null | string)[];
   /**
   The source-map format version.
    */
-  version: number;
+  readonly version: number;
 }
 
 type MappingSegment = [number, number, number, number] | [number];

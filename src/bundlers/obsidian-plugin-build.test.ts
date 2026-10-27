@@ -38,7 +38,9 @@ import {
 } from './obsidian-plugin-build.ts';
 
 interface MockState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests change the package metadata returned by the mock.
   packageName: string | undefined;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Tests change the project root returned by the mock.
   rootFolder: null | string;
 }
 

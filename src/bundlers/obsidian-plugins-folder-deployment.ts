@@ -128,8 +128,11 @@ interface InstallAndEnableHotReloadParams {
 Module-level mutable state, held in one object so each mutation names it explicitly.
  */
 interface ModuleState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Cached on launch and cleared when the owned instance closes.
   devInstanceTransportPromise: Promise<ObsidianTransport> | undefined;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Set when the owned instance cleanup handler is registered.
   isDevInstanceCleanupRegistered: boolean;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Set when the owned instance is disposed.
   isDevInstanceDisposed: boolean;
 }
 

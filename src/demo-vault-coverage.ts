@@ -440,6 +440,7 @@ export interface OpenDirectiveRegion {
    * Whether the region has covered a line breaking its rule, which is what stops it being reported as
    * pointless.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Updated as the scanner encounters content covered by this directive.
   isUsed: boolean;
 
   /**
@@ -457,6 +458,7 @@ export interface OpenWikilinkDirectiveRegion {
   /**
    * Whether the region has covered a wikilink, which is what stops it being reported as pointless.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Updated as the scanner encounters content covered by this directive.
   isUsed: boolean;
 
   /**
@@ -540,12 +542,12 @@ export interface WikilinkDirectiveScanState {
   /**
    * The region currently open, and whether it has covered a wikilink yet.
    */
-  openRegion: null | OpenDirectiveRegion;
+  readonly openRegion: null | OpenDirectiveRegion;
 
   /**
    * The line a `disable-next-line` was read on, while it still waits for the line it covers.
    */
-  pendingNextLineIndex: null | number;
+  readonly pendingNextLineIndex: null | number;
 
   /**
    * The directive mistakes found so far.
@@ -562,6 +564,7 @@ export interface WikilinkDirectiveScanState {
  * A `Try it` section being read, from its heading to the next heading of the same or a higher level.
  */
 interface TryItSection {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Updated when the scanner finds a code button in this section.
   hasCodeButton: boolean;
   readonly level: number;
   readonly lineIndex: number;

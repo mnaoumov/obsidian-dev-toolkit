@@ -43,7 +43,7 @@ export interface DesktopReleasesJson {
   /**
    * The latest Obsidian version available for desktop.
    */
-  latestVersion: string;
+  readonly latestVersion: string;
 }
 
 /**
@@ -53,11 +53,13 @@ export interface Manifest {
   /**
    * A minimum Obsidian version required for the plugin.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Updated in place by the manifest release editor.
   minAppVersion: string;
 
   /**
    * A version of the plugin.
    */
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Updated in place by the manifest release editor.
   version: string;
 }
 /**

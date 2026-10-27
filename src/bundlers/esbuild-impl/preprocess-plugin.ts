@@ -20,16 +20,16 @@ import type { pathToFileURL } from 'node:url';
 import { preprocessPlugin as genericPreprocessPlugin } from '@mnaoumov/typescript-dev-toolkit/bundlers/esbuild-impl/preprocess-plugin';
 
 interface EsmModule {
-  __esModule: boolean;
-  default: unknown;
+  readonly __esModule: boolean;
+  readonly default: unknown;
 }
 
 interface RequirePatched extends NodeJS.Require {
-  __isPatched: boolean;
+  readonly __isPatched: boolean;
 }
 
 interface UrlModule {
-  pathToFileURL: typeof pathToFileURL;
+  readonly pathToFileURL: typeof pathToFileURL;
 }
 
 /**
