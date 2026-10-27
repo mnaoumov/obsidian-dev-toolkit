@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.3.1
+
+- fix(deps): accept typescript-lib 2 in development tooling
+
 ## 5.3.0
 
 - feat(esbuild): add configurable source map ignore lists
