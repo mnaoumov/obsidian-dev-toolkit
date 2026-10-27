@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 5.3.0
+
+- feat(esbuild): add configurable source map ignore lists
+
 ## 5.2.0
 
 - feat(eslint): add the `obsidian-dev-toolkit/no-bare-code-element` rule, which reports a bare `code` element and points UI code to `appendCodeBlock`
