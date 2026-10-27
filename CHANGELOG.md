@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 7.0.1
+
+- fix(deps): accept obsidian-lib 7 as a required peer
+- fix(vitest): preserve serial projects under worker caps
+
 ## 7.0.0
 
 - feat!: reject bare keyword bindings in shared lint configuration
