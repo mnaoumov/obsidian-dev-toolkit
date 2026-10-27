@@ -37,14 +37,14 @@ export const OBSIDIAN_DEV_TOOLKIT_INTEGRATION_TEST_PLUGIN_ID = 'obsidian-dev-too
  * The flat library barrel the harness plugin publishes.
  */
 interface ObsidianLibModule {
-  __merged: object;
+  readonly __merged: object;
 }
 
 /**
  * The shape the harness plugin publishes on the renderer's `window`.
  */
 interface ObsidianLibModuleWindow {
-  __obsidianLibModule: ObsidianLibModule;
+  readonly __obsidianLibModule: ObsidianLibModule;
 }
 
 /**

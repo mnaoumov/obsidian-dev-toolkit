@@ -39,8 +39,9 @@ const ruleTester = new RuleTester({
 });
 
 interface MockBaseType {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Assigned after construction to create a circular mock type hierarchy.
   getBaseTypes?: () => MockBaseType[] | undefined;
-  getSymbol?: () => MockSymbol | undefined;
+  readonly getSymbol?: () => MockSymbol | undefined;
 }
 
 interface MockRuleContextResult {
@@ -49,7 +50,7 @@ interface MockRuleContextResult {
 }
 
 interface MockSymbol {
-  getName: () => string;
+  readonly getName: () => string;
 }
 
 /**

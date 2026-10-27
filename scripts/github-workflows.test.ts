@@ -39,35 +39,35 @@ interface StepResult {
 }
 
 interface Workflow {
-  jobs: Record<string, WorkflowJob>;
-  on: WorkflowTriggers;
+  readonly jobs: Record<string, WorkflowJob>;
+  readonly on: WorkflowTriggers;
 }
 
 interface WorkflowCall {
-  inputs: Record<string, WorkflowInput>;
+  readonly inputs: Record<string, WorkflowInput>;
 }
 
 interface WorkflowInput {
-  default: boolean | string;
-  description: string;
-  type: 'boolean' | 'string';
+  readonly default: boolean | string;
+  readonly description: string;
+  readonly type: 'boolean' | 'string';
 }
 
 interface WorkflowJob {
-  steps: WorkflowStep[];
+  readonly steps: WorkflowStep[];
 }
 
 interface WorkflowStep {
-  env?: Record<string, string>;
-  if?: string;
-  name: string;
-  run?: string;
-  uses?: string;
-  with?: Record<string, string>;
+  readonly env?: Record<string, string>;
+  readonly if?: string;
+  readonly name: string;
+  readonly run?: string;
+  readonly uses?: string;
+  readonly with?: Record<string, string>;
 }
 
 interface WorkflowTriggers {
-  workflow_call: WorkflowCall;
+  readonly workflow_call: WorkflowCall;
 }
 
 const WORKFLOWS_FOLDER = resolve(import.meta.dirname, '../.github/workflows');

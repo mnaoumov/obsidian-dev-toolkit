@@ -10,6 +10,7 @@ import type * as obsidianLib from '@mnaoumov/obsidian-lib';
 
 declare global {
   interface Window {
+    // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Installed on plugin load and deleted on unload.
     __obsidianLibModule?: typeof obsidianLib;
   }
 }

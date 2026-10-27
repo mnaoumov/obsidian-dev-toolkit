@@ -53,11 +53,11 @@ interface FixtureCommand {
 
 interface FixturePlugin {
   readonly commands: FixtureCommand[];
-  onload: () => Promise<void>;
+  readonly onload: () => Promise<void>;
 }
 
 interface LoadedModule {
-  exports: unknown;
+  readonly exports: unknown;
 }
 
 interface LoadedPlugin {

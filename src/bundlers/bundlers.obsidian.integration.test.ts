@@ -42,8 +42,9 @@ import {
 } from '../../scripts/helpers/bundler-fixture.ts';
 
 interface FixtureManifest {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Each fixture build receives its own plugin id before installation.
   id: string;
-  name: string;
+  readonly name: string;
 }
 
 // HotReload's marker is a development build's own file, not one Obsidian reads.

@@ -211,7 +211,7 @@ export type TransformSolidParams = TransformModuleParams;
 export type TransformSvelteParams = TransformModuleParams;
 
 interface BabelCoreLike {
-  transformAsync: (code: string, options: BabelTransformOptions) => Promise<BabelResultLike | null>;
+  readonly transformAsync: (code: string, options: BabelTransformOptions) => Promise<BabelResultLike | null>;
 }
 
 interface BabelResultLike {
@@ -233,8 +233,8 @@ interface SvelteCompileResultLike {
 }
 
 interface SvelteCompilerLike {
-  compile: (source: string, options: SvelteCompileOptionsLike) => SvelteCompileResultLike;
-  compileModule: (source: string, options: SvelteModuleCompileOptionsLike) => SvelteCompileResultLike;
+  readonly compile: (source: string, options: SvelteCompileOptionsLike) => SvelteCompileResultLike;
+  readonly compileModule: (source: string, options: SvelteModuleCompileOptionsLike) => SvelteCompileResultLike;
 }
 
 interface SvelteModuleCompileOptionsLike {

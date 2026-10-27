@@ -41,6 +41,7 @@ const WRAPPER = '../../node_modules/@mnaoumov/typescript-lib/src/debug.ts';
 const OWN_SOURCE = '../../src/plugin.ts';
 
 interface CapturedHooks {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- The plugin setup captures this callback for the test to invoke.
   onEnd?: (result: BuildResult) => Promise<void> | void;
 }
 

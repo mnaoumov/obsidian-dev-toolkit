@@ -115,17 +115,17 @@ export interface WdioObsidianCapability {
   /**
    * Always `obsidian`, which is what routes the capability to the service.
    */
-  'browserName': 'obsidian';
+  readonly 'browserName': 'obsidian';
 
   /**
    * The Obsidian app version.
    */
-  'browserVersion': string;
+  readonly 'browserVersion': string;
 
   /**
    * The service's own options for this capability.
    */
-  'wdio:obsidianOptions': WdioObsidianCapabilityOptions;
+  readonly 'wdio:obsidianOptions': WdioObsidianCapabilityOptions;
 }
 
 /**
@@ -157,53 +157,53 @@ export interface WdioObsidianConfig {
    * Where Obsidian versions are downloaded.
    */
   // eslint-disable-next-line unicorn/name-replacements -- WebdriverIO's own option name.
-  cacheDir: string;
+  readonly cacheDir: string;
 
   /**
    * One capability per Obsidian version.
    */
-  capabilities: WdioObsidianCapability[];
+  readonly capabilities: WdioObsidianCapability[];
 
   /**
    * The test framework.
    */
-  framework: 'mocha';
+  readonly framework: 'mocha';
 
   /**
    * WebdriverIO's log level.
    */
-  logLevel: 'debug' | 'error' | 'info' | 'silent' | 'trace' | 'warn';
+  readonly logLevel: 'debug' | 'error' | 'info' | 'silent' | 'trace' | 'warn';
 
   /**
    * How many Obsidian instances run in parallel.
    */
-  maxInstances?: number;
+  readonly maxInstances?: number;
 
   /**
    * Mocha's options.
    */
   // eslint-disable-next-line unicorn/name-replacements -- WebdriverIO's own option name.
-  mochaOpts: WdioObsidianMochaOptions;
+  readonly mochaOpts: WdioObsidianMochaOptions;
 
   /**
    * The reporters. `obsidian` is the spec reporter, naming the Obsidian version instead of Chromium's.
    */
-  reporters: string[];
+  readonly reporters: string[];
 
   /**
    * Where the specs run.
    */
-  runner: 'local';
+  readonly runner: 'local';
 
   /**
    * The services. `obsidian` is `wdio-obsidian-service`.
    */
-  services: string[];
+  readonly services: string[];
 
   /**
    * The spec files.
    */
-  specs: string[];
+  readonly specs: string[];
 }
 
 /**

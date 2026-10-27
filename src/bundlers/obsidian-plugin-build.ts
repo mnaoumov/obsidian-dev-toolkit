@@ -198,7 +198,7 @@ export interface ResolveObsidianPluginBuildContextParams extends ObsidianPluginD
 }
 
 interface ObsidianPluginBuilderEnv {
-  OBSIDIAN_CONFIG_FOLDER: string;
+  readonly OBSIDIAN_CONFIG_FOLDER: string;
 }
 
 /**

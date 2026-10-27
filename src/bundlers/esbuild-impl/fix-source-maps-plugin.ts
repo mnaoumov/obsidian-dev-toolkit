@@ -69,6 +69,7 @@ interface FixSourceMapParams {
 }
 
 interface SourceMap {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Source paths are rewritten in place before the map is serialized.
   sources: string[];
 }
 

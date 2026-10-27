@@ -76,7 +76,7 @@ export interface FeaturePluginContext {
    *
    * @param id - The file's path.
    */
-  addWatchFile: (id: string) => void;
+  readonly addWatchFile: (id: string) => void;
 
   /**
    * Emits an asset into the bundle.
@@ -84,7 +84,7 @@ export interface FeaturePluginContext {
    * @param emittedFile - The asset to emit.
    * @returns The reference id of the emitted file.
    */
-  emitFile: (emittedFile: EmittedAsset) => string;
+  readonly emitFile: (emittedFile: EmittedAsset) => string;
 }
 
 /**

@@ -23,7 +23,7 @@ export interface AssetEmitter {
    * @param emittedFile - The asset to emit.
    * @returns The reference id of the emitted file.
    */
-  emitFile: (emittedFile: EmittedCssAsset) => string;
+  readonly emitFile: (emittedFile: EmittedCssAsset) => string;
 }
 
 /**

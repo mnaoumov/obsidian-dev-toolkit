@@ -94,7 +94,9 @@ export interface ObsidianPluginRollupOptions extends ObsidianPluginDeploymentOpt
  * rebuilds of a watch.
  */
 interface ObsidianPluginRollupState {
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Initialized by the build hook and reused across watch rebuilds.
   buildContext: ObsidianPluginBuildContext | undefined;
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Set after the first build cleans the distribution folder.
   isDistFolderCleaned: boolean;
 }
 

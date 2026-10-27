@@ -16,9 +16,9 @@ import {
 import { copyToObsidianPluginsFolderPlugin } from './copy-to-obsidian-plugins-folder-plugin.ts';
 
 interface EvalInObsidianCall {
-  shouldSkipPreflightChecks: boolean;
-  transport: unknown;
-  vaultPath: string;
+  readonly shouldSkipPreflightChecks: boolean;
+  readonly transport: unknown;
+  readonly vaultPath: string;
 }
 
 vi.mock('node:fs/promises', () => ({
