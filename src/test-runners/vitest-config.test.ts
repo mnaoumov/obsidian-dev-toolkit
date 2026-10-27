@@ -586,6 +586,54 @@ describe('defineObsidianPluginVitestConfig project isolation', () => {
     expect(await collectFileNamesByProject(makePluginConfig())).toEqual(EXPECTED_FILE_NAMES_BY_PROJECT);
   });
 
+  it.each(['configuration', 'cli', 'environment'])(
+    'should keep shared-vault projects serial with a worker cap from %s',
+    async (source) => {
+      vi.stubEnv('VITEST_MAX_WORKERS', source === 'environment' ? '2' : undefined);
+      const config = makePluginConfig();
+      config.test = { ...config.test, maxWorkers: 2 };
+      const vitest = await createVitest({
+        config: false,
+        ...source === 'cli' && { maxWorkers: 2 },
+        reporters: [],
+        root: fixtureRoot,
+        watch: false
+      }, config);
+
+      try {
+        expect(vitest.projects.find((project) => project.name === 'unit-tests')?.config.maxWorkers).toBe(2);
+        for (const project of vitest.projects) {
+          if (project.name !== 'unit-tests') {
+            expect(project.config.maxWorkers, project.name).toBe(1);
+          }
+        }
+      } finally {
+        await vitest.close();
+      }
+    }
+  );
+
+  it('should preserve the worker cap when a project explicitly enables parallel files', async () => {
+    vi.stubEnv('VITEST_MAX_WORKERS', '2');
+    const config = defineObsidianPluginVitestConfig({
+      editContext(context) {
+        context.noApp.fileParallelism = true;
+      }
+    });
+    const vitest = await createVitest({
+      config: false,
+      project: ['integration-tests:no-app'],
+      reporters: [],
+      root: fixtureRoot,
+      watch: false
+    }, config);
+    try {
+      expect(vitest.projects.map((project) => project.config.maxWorkers)).toEqual([2]);
+    } finally {
+      await vitest.close();
+    }
+  });
+
   it.each(Object.keys(EXPECTED_FILE_NAMES_BY_PROJECT))(
     'should collect only its own files when the run is filtered to %s',
     async (projectName) => {

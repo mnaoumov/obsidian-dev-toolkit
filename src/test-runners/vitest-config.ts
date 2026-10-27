@@ -426,6 +426,18 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
    * its configuration the same way.
    */
   return {
+    plugins: [{
+      configureVitest({ project }): void {
+        // Vitest 5 applies VITEST_MAX_WORKERS after fileParallelism has limited the worker count.
+        // Restore that limit on the resolved project, including custom projects that share a vault.
+        // The runtime retains this input even though ResolvedConfig omits it from its type.
+        const projectConfig: Pick<ObsidianPluginVitestProjectConfig, 'fileParallelism'> & typeof project.config = project.config;
+        if (projectConfig.fileParallelism === false) {
+          projectConfig.maxWorkers = 1;
+        }
+      },
+      name: 'obsidian-dev-toolkit:serial-vitest-projects'
+    }],
     test: {
       coverage: {
         exclude: context.coverageExclude,
