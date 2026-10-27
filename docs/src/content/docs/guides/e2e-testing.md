@@ -5,6 +5,8 @@ description: Three ways to test a plugin inside a real Obsidian - obsidian-integ
 
 The toolkit supports three stacks that test a plugin inside a real Obsidian. All three stay supported, and a plugin can use more than one.
 
+For repeatable measurements on a large synthetic corpus, see [Performance vaults](/obsidian-dev-toolkit/guides/performance-vaults/): exact UTF-8 content sizing, pre-open setup and startup readiness polling.
+
 | Stack | Test style | What the toolkit provides |
 | --- | --- | --- |
 | [`obsidian-integration-testing`](https://github.com/mnaoumov/obsidian-integration-testing) | Vitest; a closure runs inside Obsidian with `evalInObsidian` | `defineObsidianPluginVitestConfig`, the desktop and Android projects, the harness plugin |

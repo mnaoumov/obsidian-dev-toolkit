@@ -33,6 +33,8 @@ It depends on `@mnaoumov/typescript-lib` and `@mnaoumov/typescript-dev-toolkit`,
 
 ## Commands
 
+The reusable performance corpus lives in `src/test-runners/performance-vault.ts`: exactly 37,000 notes and 110,000,000 UTF-8 content bytes by default, including configurable link, mention and paired deletion fixtures. `performance-vault-setup.ts` provides the pre-open populate hooks; `performance-vault-scan.ts` polls from Node for the exact expected file count, a known cache entry and zero metadata tasks across consecutive samples. Both import the optional harness only at call time, so they remain safe on generated barrels. The guide is `docs/src/content/docs/guides/performance-vaults.md`.
+
 Every script is a thin entry point under `scripts/`, run with `jiti`, over the shared tooling in `@mnaoumov/typescript-dev-toolkit` (and `@mnaoumov/obsidian-dev-toolkit` for an Obsidian package).
 
 - `npm run gate` — **the branch gate: run it before committing.** It is the same code `npm run version` runs as its release preflight: the lockfile check, `format:check`, `spellcheck`, `lint:md`, `build`, `lint`, `find-overexposed`, `test:coverage`. `npm run gate -- --no-build` skips the build when the output is current. CI (`.github/workflows/ci.yml`) runs the whole gate.
