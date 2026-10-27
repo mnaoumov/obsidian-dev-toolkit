@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 7.1.0
+
+- feat(test-runners): add deterministic performance vault tooling
+
 ## 7.0.1
 
 - fix(deps): accept obsidian-lib 7 as a required peer
