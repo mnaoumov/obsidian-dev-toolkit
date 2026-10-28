@@ -15,7 +15,26 @@ const files = generatePerformanceVault({
 });
 ```
 
-The result is deterministic, including insertion order and directory layout. It reads no environment variables and writes no files. `cyrillicShare` selects the fraction of **filler notes** containing Cyrillic prose, rounded down; it is neither a byte ratio nor a fraction of all characters. Filler notes repeat ordinary prose, with spaces absorbing the final byte remainder without splitting a Unicode character. This is a reproducible synthetic workload; its repeated vocabulary does not model the term distribution of a personal vault.
+The result is deterministic, including insertion order and directory layout. It reads no environment variables and writes no files. `cyrillicShare` selects the fraction of **filler notes** containing Cyrillic prose, rounded down; it is neither a byte ratio nor a fraction of all characters. By default (`prose: 'repeated'`) filler notes repeat one ordinary sentence per language, with spaces absorbing the final byte remainder without splitting a Unicode character. That suits metadata-cache scans, but its few dozen distinct words do not model the term distribution of a personal vault, so a full-text or trigram index over it can measure neither index size nor query selectivity. Use `prose: 'varied'` for those.
+
+## Varied prose
+
+```typescript
+import {
+  generatePerformanceVault,
+  PERFORMANCE_VAULT_PLANTED_TERMS
+} from '@mnaoumov/obsidian-dev-toolkit/test-runners/performance-vault';
+
+const files = generatePerformanceVault({ prose: 'varied', proseSeed: 1 });
+```
+
+With `prose: 'varied'`, each filler note is a run of sentences of 6 to 17 words drawn from a synthetic vocabulary of `PERFORMANCE_VAULT_VOCABULARY_SIZE` (20,000) words per language, English for Latin notes and Ukrainian-looking words for Cyrillic ones. Word ranks follow Zipf's law (the word of rank `r` is drawn with weight `1 / r`), and frequent words are shorter, as in natural language: one syllable for the 9 most frequent, up to four for the long tail. At the default size the corpus holds all 40,000 vocabulary words. Note count, byte total, paths, fixtures and `cyrillicShare` behave exactly as with repeated prose, and spaces still absorb each note's byte remainder.
+
+Everything is derived from `proseSeed` (a nonnegative safe integer, default 1): the same seed yields the same corpus on every platform, and another seed yields another vocabulary and other notes. The seed does not affect repeated prose, and the default corpus is byte-for-byte the one 7.1.0 generated.
+
+`PERFORMANCE_VAULT_PLANTED_TERMS` lists four rare terms with known document frequencies: filler note `i` (in path order) contains, once, each term whose `interval` divides `i`, so a term occurs in exactly `Math.ceil(fillerCount / interval)` notes. The intervals are 10, 100, 1,000 and 10,000 (`zq10x`, `zq100x`, `zq1000x`, `zq10000x`); at the default size, with 33,948 filler notes, that is 3,395, 340, 34 and 4 notes. No vocabulary word contains `q` or a digit, so nothing else matches them. The planted terms follow the first word of a note. Scenario notes keep their fixed prose in both modes.
+
+## Scenarios
 
 The default scenarios preserve the `Advanced Metadata Cache` performance suites' paths:
 
