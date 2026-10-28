@@ -231,6 +231,8 @@ registerDemoVaultCoverageSuite({
 
 It asserts that every reflected member is demonstrated somewhere in the notes, that no note references a member that no longer exists (rename drift), that `.obsidian/app.json` commits none of the [settings this package injects](#the-appjson-settings-this-package-owns), **and** that the notes follow the authoring rules above.
 
+A note the vault's `.gitignore` drops is not read at all, because a clone does not have it: a scratch note that a button creates on first use would otherwise fail the reachability check on every checkout where the button has run, and pass in CI. A note git tracks is read even when an ignore pattern matches it, and outside a git work tree every note is read.
+
 The authoring checks are always on — a note that breaks the convention is broken for real readers, so there is no flag to turn them off. The optional `authoring` member only tunes them:
 
 ```ts
