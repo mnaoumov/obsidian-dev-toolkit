@@ -6,6 +6,7 @@
   "words": [
     "AAEC",
     "adm",
+    "aeiou",
     "agnostically",
     "animationend",
     "AQID",
@@ -19,6 +20,7 @@
     "backlink",
     "Backlinks",
     "basenames",
+    "bcdfghjklmnprstvwy",
     "Bfile",
     "bimap",
     "binaryop",
@@ -256,6 +258,7 @@
     "XYCDE",
     "XYZZZ",
     "yarnrc",
+    "Zipf",
     "Zippable",
     "Zname"
   ],
