@@ -90,6 +90,7 @@ import {
 } from '@mnaoumov/typescript-lib/path';
 import { getMandatoryNamedGroup } from '@mnaoumov/typescript-lib/reg-exp';
 import { ensureNonNullable } from '@mnaoumov/typescript-lib/type-guards';
+import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   readdirSync,
@@ -607,12 +608,14 @@ export class DemoVaultCoverageChecker {
    * Reads and caches every demo note individually — the per-note view the authoring checks work on, as
    * opposed to the concatenated {@link DemoVaultCoverageChecker.readCorpus}.
    *
-   * @returns Every `*.md` note in the demo vault, excluded ones included.
+   * @returns Every `*.md` note in the demo vault that git does not ignore, excluded ones included.
    */
   public collectNotes(): DemoVaultNote[] {
-    this.cachedNotes ??= this.collectMarkdownFiles(this.demoVaultFolder).map((file) => ({
-      content: readFileSync(file, 'utf-8'),
-      relativePath: relative(this.demoVaultFolder, file)
+    this.cachedNotes ??= this.dropGitIgnoredNotes(
+      this.collectMarkdownFiles(this.demoVaultFolder).map((file) => relative(this.demoVaultFolder, file))
+    ).map((relativePath) => ({
+      content: readFileSync(join(this.demoVaultFolder, relativePath), 'utf-8'),
+      relativePath
     }));
     return this.cachedNotes;
   }
@@ -874,6 +877,24 @@ export class DemoVaultCoverageChecker {
       }
     }
     return result;
+  }
+
+  // A note the vault's `.gitignore` drops, such as a scratch note a button creates on first use, is not part
+  // of the vault a clone gets, so no check may count it: it would fail on the checkouts that ran the button
+  // and pass in CI. `git check-ignore` exits 0 when it printed ignored paths, 1 when none is ignored, and 128
+  // outside a work tree; anything but 0, a missing `git` included, drops nothing. A tracked note is never
+  // reported, even when a pattern matches it.
+  private dropGitIgnoredNotes(relativePaths: string[]): string[] {
+    const result = spawnSync('git', ['check-ignore', '--stdin', '-z'], {
+      cwd: this.demoVaultFolder,
+      encoding: 'utf-8',
+      input: relativePaths.join('\0')
+    });
+    if (result.status !== 0) {
+      return relativePaths;
+    }
+    const ignoredPaths = new Set(result.stdout.split('\0'));
+    return relativePaths.filter((relativePath) => !ignoredPaths.has(relativePath));
   }
 }
 

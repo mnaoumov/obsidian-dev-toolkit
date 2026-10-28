@@ -3,6 +3,7 @@ import {
   join,
   toPosixPath
 } from '@mnaoumov/typescript-lib/path';
+import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
   mkdtempSync,
@@ -904,6 +905,23 @@ Everything below is a link the walk must not follow.
     const checker = new DemoVaultCoverageChecker({ rootFolder: root });
     expect(checker.findUnreachableNotes({ startNote: 'Missing.md' }))
       .toEqual([START_NOTE_PATH, 'nested/More.md', 'Surface.md']);
+  });
+
+  it('skips a note the vault\'s .gitignore drops, but keeps a tracked one a pattern matches', () => {
+    execFileSync('git', ['init', '--quiet'], { cwd: root });
+    writeFixtureFile(root, 'demo-vault/.gitignore', 'Scratch*.md\nTracked.md\n');
+    writeFixtureFile(root, 'demo-vault/Scratch note.md', '# Scratch note\n\nCreated by a button on first use.\n');
+    writeFixtureFile(root, 'demo-vault/Tracked.md', '# Tracked\n\nCommitted before the pattern was added.\n');
+    execFileSync('git', ['-c', 'core.autocrlf=false', 'add', '--force', 'demo-vault/Tracked.md'], { cwd: root });
+    const checker = new DemoVaultCoverageChecker({ rootFolder: root });
+    expect(checker.findUnreachableNotes({ startNote: START_NOTE_PATH })).toEqual(['Tracked.md']);
+    expect(checker.collectDemoNoteRelativePaths()).not.toContain('Scratch note.md');
+  });
+
+  it('keeps every note in a work tree that ignores none of them', () => {
+    execFileSync('git', ['init', '--quiet'], { cwd: root });
+    const checker = new DemoVaultCoverageChecker({ rootFolder: root });
+    expect(checker.collectDemoNoteRelativePaths()).toEqual([START_NOTE_PATH, 'nested/More.md', 'README.md', 'Surface.md']);
   });
 
   it('excludes the vault\'s own readme by default, and any note named explicitly', () => {
