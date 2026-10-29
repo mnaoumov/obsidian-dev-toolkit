@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 7.4.0
+
+- feat(eslint-config): skip prefer-dedent inside evalInObsidian callbacks
+
 ## 7.3.0
 
 - fix(deps): accept @mnaoumov/obsidian-lib 9 and 10 as the peer
