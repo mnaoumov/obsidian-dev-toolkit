@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 7.2.0
+
+- chore(test): forward CLI arguments from the test scripts and templates to vitest
+- fix(demo-vault-coverage): skip notes the demo vault's .gitignore drops
+- feat(test-runners): varied Zipf-distributed prose for the performance vault
+
 ## 7.1.1
 
 - fix(deps): accept obsidian-lib 8 as a required peer
