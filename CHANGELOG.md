@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 7.3.0
+
+- fix(deps): accept @mnaoumov/obsidian-lib 9 and 10 as the peer
+- feat(test-runners): rare-token tail for varied performance-vault prose
+
 ## 7.2.0
 
 - chore(test): forward CLI arguments from the test scripts and templates to vitest
