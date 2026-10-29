@@ -39,7 +39,7 @@ Every script is a thin entry point under `scripts/`, run with `jiti`, over the s
 
 - `npm run gate` — **the branch gate: run it before committing.** It is the same code `npm run version` runs as its release preflight: the lockfile check, `format:check`, `spellcheck`, `lint:md`, `build`, `lint`, `find-overexposed`, `test:coverage`. `npm run gate -- --no-build` skips the build when the output is current. CI (`.github/workflows/ci.yml`) runs the whole gate.
 - `npm run build` — every `build:*` step this package defines, in order (`scripts/build.ts`).
-- `npm test` / `npm run test:coverage` / `npm run test:watch` — the unit tests; `test:coverage` holds all four thresholds at 100%.
+- `npm test` / `npm run test:coverage` / `npm run test:watch` — the unit tests; `test:coverage` holds all four thresholds at 100%. Arguments after `--` reach vitest, so `npm test -- src/foo.test.ts` runs that one file.
 - `npm run test:integration` — builds the fixture plugin with every bundler adapter and loads each result as Obsidian would (`npm run gate '--' --integration` includes it).
 - `npm run test:integration:obsidian` — loads the same builds in a real desktop Obsidian through `obsidian-integration-testing`; local only, since CI has no Obsidian.
 - `npm run test:integration:obsidian:android` — the same suite in Obsidian Mobile on the `obsidian_test` AVD, through the Appium transport (project `obsidian-android-integration-tests`; the harness starts Appium and the emulator). Local only, and one Android run at a time on the machine.
