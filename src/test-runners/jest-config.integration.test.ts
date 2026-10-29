@@ -1,4 +1,5 @@
 import { test } from '@mnaoumov/typescript-dev-toolkit/test-runners/auto';
+import dedent from 'dedent';
 import {
   mkdirSync,
   mkdtempSync,
@@ -68,19 +69,18 @@ beforeAll(() => {
   );
   writeFixtureFile(
     'src/heading.test.ts',
-    [
-      'import { expect, it } from \'@jest/globals\';',
-      '',
-      'import { renderHeading } from \'./heading.ts\';',
-      '',
-      'it(\'renders through the mocks\', () => {',
-      '  const heading = renderHeading(document.body, \'Hello\');',
-      '  expect(heading.tagName).toBe(\'H1\');',
-      '  expect(document.body.textContent).toContain(\'Hello\');',
-      '  expect(app).toBeDefined();',
-      '});',
-      ''
-    ].join('\n')
+    dedent`
+      import { expect, it } from '@jest/globals';
+
+      import { renderHeading } from './heading.ts';
+
+      it('renders through the mocks', () => {
+        const heading = renderHeading(document.body, 'Hello');
+        expect(heading.tagName).toBe('H1');
+        expect(document.body.textContent).toContain('Hello');
+        expect(app).toBeDefined();
+      });\n
+    `
   );
   // Must never run: integration tests belong to obsidian-integration-testing.
   writeFixtureFile('src/vault.integration.test.ts', 'throw new Error(\'jest ran an integration test\');\n');

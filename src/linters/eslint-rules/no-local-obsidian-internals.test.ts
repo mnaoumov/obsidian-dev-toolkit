@@ -1,5 +1,6 @@
 import { toRuleTesterModule } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/rule-tester-helper';
 import { RuleTester } from '@typescript-eslint/rule-tester';
+import dedent from 'dedent';
 import {
   afterAll,
   describe,
@@ -168,16 +169,16 @@ ruleTester.run('no-local-obsidian-internals', toRuleTesterModule(noLocalObsidian
       name: 'a custom-event `on` overload'
     },
     {
-      code: [
-        'declare module \'obsidian\' {',
-        '  interface Workspace {',
-        '    off(name: \'a\' | \'b\', callback: () => void): void;',
-        '    trigger(name: \'a\'): void;',
-        '    tryTrigger(name: \'a\', args: unknown[]): void;',
-        '    \'on\'(name: \'a\'): EventRef;',
-        '  }',
-        '}'
-      ].join('\n'),
+      code: dedent`
+        declare module 'obsidian' {
+          interface Workspace {
+            off(name: 'a' | 'b', callback: () => void): void;
+            trigger(name: 'a'): void;
+            tryTrigger(name: 'a', args: unknown[]): void;
+            'on'(name: 'a'): EventRef;
+          }
+        }
+      `,
       name: 'every custom-event method, with a union of string literals'
     },
     {

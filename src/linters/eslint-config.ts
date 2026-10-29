@@ -278,6 +278,11 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
         'obsidian-dev-toolkit/no-over-cap-wait-in-eval-in-obsidian': 'error',
         'obsidian-dev-toolkit/require-component-suffix': 'error',
         /*
+         * An `evalInObsidian` / `pollInObsidian` callback is serialized and run inside Obsidian, where the
+         * module's imports are not in scope, so a `dedent` template there throws `dedent is not defined`.
+         */
+        'typescript-dev-toolkit/prefer-dedent': ['error', { ignoreInsideCallsTo: ['evalInObsidian', 'pollInObsidian'] }],
+        /*
          * Obsidian's `Component` has its own `removeChild(component)` for the component lifecycle, unrelated
          * to `Node#removeChild`. The rule matches on the method name alone, so every report here is a
          * component being unloaded, and following the advice calls a `remove()` that does not exist -- which
