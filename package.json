@@ -273,7 +273,7 @@
   "dependencies": {
     "@eslint/json": "^2.1.0",
     "@jridgewell/sourcemap-codec": "^1.6.0",
-    "@mnaoumov/typescript-dev-toolkit": "^5.1.0",
+    "@mnaoumov/typescript-dev-toolkit": "^5.2.0",
     "@mnaoumov/typescript-lib": "^1.0.0 || ^2.0.0",
     "@mnaoumov/typescript-test-toolkit": "^1.0.3",
     "@types/babel__core": "^7.20.5",
@@ -326,6 +326,7 @@
     "cspell": "^10.3.3",
     "css-loader": "^7.1.5",
     "czg": "^1.14.0",
+    "dedent": "^1.7.2",
     "dprint": "^0.57.4",
     "esbuild-loader": "^4.5.0",
     "husky": "^9.1.7",

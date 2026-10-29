@@ -1,5 +1,6 @@
 import type { ResolvePathFromRootSafeParams } from '@mnaoumov/typescript-dev-toolkit/root';
 
+import dedent from 'dedent';
 import {
   mkdir,
   mkdtemp,
@@ -36,25 +37,25 @@ vi.mock('@mnaoumov/typescript-dev-toolkit/root', () => ({
   resolvePathFromRootSafe: ({ path }: ResolvePathFromRootSafeParams): string => isAbsolute(path) ? path : join(rootFolder.current, path)
 }));
 
-const LCOV = [
-  'TN:',
-  'SF:src/a.ts',
-  'FNF:4',
-  'FNH:3',
-  'LF:10',
-  'LH:9',
-  'BRF:4',
-  'BRH:2',
-  'end_of_record',
-  'SF:src/b.ts',
-  'FNF:1',
-  'FNH:1',
-  'LF:10',
-  'LH:10',
-  'BRF:0',
-  'BRH:0',
-  'end_of_record'
-].join('\r\n');
+const LCOV = dedent`
+  TN:\r
+  SF:src/a.ts\r
+  FNF:4\r
+  FNH:3\r
+  LF:10\r
+  LH:9\r
+  BRF:4\r
+  BRH:2\r
+  end_of_record\r
+  SF:src/b.ts\r
+  FNF:1\r
+  FNH:1\r
+  LF:10\r
+  LH:10\r
+  BRF:0\r
+  BRH:0\r
+  end_of_record
+`;
 
 describe('parseLcovTotals', () => {
   it('should sum the counts of every file', () => {

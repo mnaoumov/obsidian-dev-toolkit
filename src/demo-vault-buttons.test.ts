@@ -1,3 +1,4 @@
+import dedent from 'dedent';
 import {
   mkdirSync,
   mkdtempSync,
@@ -32,7 +33,14 @@ import {
 let demoVaultPath: string;
 
 function button(caption: string): string {
-  return ['```code-button', '---', `caption: ${caption}`, '---', 'noop();', '```'].join('\n');
+  return dedent`
+    \`\`\`code-button
+    ---
+    caption: ${caption}
+    ---
+    noop();
+    \`\`\`
+  `;
 }
 
 function writeNote(name: string, content: string): void {
@@ -281,7 +289,12 @@ describe('countRenderedButtons', () => {
   });
 
   it('does not close a fence on a marker line carrying an info string', () => {
-    const source = ['```code-button', '```js', 'noop();', '```'].join('\n');
+    const source = dedent`
+      \`\`\`code-button
+      \`\`\`js
+      noop();
+      \`\`\`
+    `;
 
     expect(countRenderedButtons(source)).toBe(1);
   });
@@ -291,32 +304,69 @@ describe('countRenderedButtons', () => {
   });
 
   it('ignores a code-button fence carrying legacy arguments, which renders an error banner and no button', () => {
-    expect(countRenderedButtons(['```code-button "Run" raw', 'noop();', '```'].join('\n'))).toBe(0);
+    expect(countRenderedButtons(dedent`
+      \`\`\`code-button "Run" raw
+      noop();
+      \`\`\`
+    `)).toBe(0);
   });
 
   it('ignores an isRaw fence, which renders no button element', () => {
-    const raw = ['```code-button', '---', 'isRaw: true', '---', 'noop();', '```'].join('\n');
+    const raw = dedent`
+      \`\`\`code-button
+      ---
+      isRaw: true
+      ---
+      noop();
+      \`\`\`
+    `;
 
     expect(countRenderedButtons([raw, button('Real')].join('\n\n'))).toBe(1);
   });
 
   it('counts a fence whose isRaw is false', () => {
-    expect(countRenderedButtons(['```code-button', '---', 'isRaw: false', '---', 'noop();', '```'].join('\n'))).toBe(1);
+    expect(countRenderedButtons(dedent`
+      \`\`\`code-button
+      ---
+      isRaw: false
+      ---
+      noop();
+      \`\`\`
+    `)).toBe(1);
   });
 
   it('reads isRaw from the config block only, not from the code demonstrating it', () => {
-    const source = ['```code-button', '---', 'caption: Demo', '---', 'isRaw: true', '```'].join('\n');
+    const source = dedent`
+      \`\`\`code-button
+      ---
+      caption: Demo
+      ---
+      isRaw: true
+      \`\`\`
+    `;
 
     expect(countRenderedButtons(source)).toBe(1);
   });
 
   it('counts a fence whose body opens with no config block, or an unterminated one', () => {
-    expect(countRenderedButtons(['```code-button', 'isRaw: true', '```'].join('\n'))).toBe(1);
-    expect(countRenderedButtons(['```code-button', '---', 'isRaw: true', '```'].join('\n'))).toBe(1);
+    expect(countRenderedButtons(dedent`
+      \`\`\`code-button
+      isRaw: true
+      \`\`\`
+    `)).toBe(1);
+    expect(countRenderedButtons(dedent`
+      \`\`\`code-button
+      ---
+      isRaw: true
+      \`\`\`
+    `)).toBe(1);
   });
 
   it('counts a fence left open at the end of the note, which CommonMark runs to the end and still renders', () => {
-    expect(countRenderedButtons(['```code-button', 'noop();'].join('\n'))).toBe(1);
+    expect(countRenderedButtons(dedent`
+      \`\`\`code-button
+      noop();
+    `)).toBe(1);
   });
 
   it('reads CRLF line endings', () => {
@@ -387,11 +437,22 @@ describe('listRenderedButtonCaptions', () => {
 
   it('gives a fence naming no caption CodeScript Toolkit\'s default, which is what its button shows', () => {
     expect(listRenderedButtonCaptions(fence('isRaw: false'))).toEqual(['(no caption)']);
-    expect(listRenderedButtonCaptions(['```code-button', 'noop();', '```'].join('\n'))).toEqual(['(no caption)']);
+    expect(listRenderedButtonCaptions(dedent`
+      \`\`\`code-button
+      noop();
+      \`\`\`
+    `)).toEqual(['(no caption)']);
   });
 
   it('reads the caption from the config block only, not from the code demonstrating it', () => {
-    const source = ['```code-button', '---', 'isRaw: false', '---', 'caption: In the code', '```'].join('\n');
+    const source = dedent`
+      \`\`\`code-button
+      ---
+      isRaw: false
+      ---
+      caption: In the code
+      \`\`\`
+    `;
 
     expect(listRenderedButtonCaptions(source)).toEqual(['(no caption)']);
   });
