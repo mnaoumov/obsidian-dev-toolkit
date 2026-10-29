@@ -15,6 +15,18 @@ import {
 
 const SMALL_OPTIONS = { deletionCount: 2, linkerCount: 3, mentionCount: 4, mentionInterval: 2, noteCount: 20, totalBytes: 10_000 };
 
+// Case-folded character trigrams across whole notes, spaces included, as a trigram index reads them.
+function countTrigrams(files: Record<string, string>): number {
+  const trigrams = new Set<string>();
+  for (const text of Object.values(files)) {
+    const folded = text.toLowerCase();
+    for (let index = 2; index < folded.length; index++) {
+      trigrams.add(folded.slice(index - 2, index + 1));
+    }
+  }
+  return trigrams.size;
+}
+
 function fingerprint(files: Record<string, string>): string {
   const hash = createHash('sha256');
   for (const [path, text] of Object.entries(files)) {
@@ -45,12 +57,29 @@ describe('generatePerformanceVault', () => {
     expect(fingerprint(generatePerformanceVault())).toBe(first);
     // The corpus 7.1.0 shipped: the default must not drift, or measurements stop being comparable across versions.
     expect(first).toBe('8508851ffe3dc4557493811af93c4b812b3878d72e64cb20b8b2bd5b14dea5f1');
-    expect(fingerprint(generatePerformanceVault({ prose: 'repeated', proseSeed: 42 }))).toBe(first);
+    expect(fingerprint(generatePerformanceVault({ prose: 'repeated', proseSeed: 42, rareTokenShare: 0.5 }))).toBe(first);
+  });
+
+  it('reproduces the varied corpus of 7.2.0 when rare tokens are off', () => {
+    expect(fingerprint(generatePerformanceVault({ ...SMALL_OPTIONS, prose: 'varied', rareTokenShare: 0 })))
+      .toBe('c654249f9ccd8653f0ae904c99c288a1c6ec1fd4c668cbe158a92c5a0a6bbff6');
+  });
+
+  it('adds a long tail of rare trigrams through id-like tokens and frequency-weighted words', () => {
+    const options = { ...SMALL_OPTIONS, noteCount: 2000, prose: 'varied', totalBytes: 1_000_000 } as const;
+    const withoutTail = countTrigrams(generatePerformanceVault({ ...options, rareTokenShare: 0 }));
+    const files = generatePerformanceVault(options);
+    expect(countTrigrams(files)).toBeGreaterThan(withoutTail * 2);
+    const tokens = Object.entries(files).filter(([path]) => path.startsWith('big/')).flatMap(([, text]) => text.split(/[\s.]+/u));
+    expect(tokens.some((token) => /^\d[\da-f]{6,11}$/u.test(token))).toBe(true);
+    expect(tokens.some((token) => /^\d{4}-\d{2}-\d{2}$/u.test(token))).toBe(true);
+    expect(tokens.some((token) => /^[\da-z]+(?:[-_][\da-z]+)+$/u.test(token))).toBe(true);
+    expect(tokens.filter((token) => token.includes('q')).every((token) => /^zq\d+x$/u.test(token))).toBe(true);
   });
 
   it('generates varied prose with realistic term diversity', () => {
     // Large enough to plant every term and draw most of both vocabularies, small enough for an instrumented run.
-    const options = { ...SMALL_OPTIONS, noteCount: 12_000, prose: 'varied', totalBytes: 3_000_000 } as const;
+    const options = { ...SMALL_OPTIONS, noteCount: 12_000, prose: 'varied', rareTokenShare: 0, totalBytes: 3_000_000 } as const;
     const files = generatePerformanceVault(options);
     expect(fingerprint(generatePerformanceVault(options))).toBe(fingerprint(files));
     const filler = Object.entries(files).filter(([path]) => path.startsWith('big/'));
@@ -91,7 +120,8 @@ describe('generatePerformanceVault', () => {
     const files = generatePerformanceVault({ ...SMALL_OPTIONS, cyrillicShare, prose: 'varied' });
     const filler = Object.entries(files).filter(([path]) => path.startsWith('big/'));
     for (const [, text] of filler) {
-      const words = text.replaceAll(/zq\d+x/gu, '').match(/\p{L}+/gu) ?? [];
+      // Planted terms and id-like tokens (each holds a digit, `-` or `_`) are ASCII in either language.
+      const words = text.split(/[\s.]+/u).filter((token) => token !== '' && !/[\d_-]/u.test(token));
       expect(words.length).toBeGreaterThan(0);
       expect(words.every((word) => /\p{Script=Cyrillic}/u.test(word) === (cyrillicShare === 1))).toBe(true);
     }
@@ -129,7 +159,10 @@ describe('generatePerformanceVault', () => {
     { cyrillicShare: NaN },
     { prose: 'random' as PerformanceVaultProse },
     { proseSeed: -1 },
-    { proseSeed: 0.5 }
+    { proseSeed: 0.5 },
+    { rareTokenShare: -0.1 },
+    { rareTokenShare: 1.1 },
+    { rareTokenShare: NaN }
   ])('rejects invalid corpus dimensions %j', (options) => {
     expect(() => generatePerformanceVault({ ...SMALL_OPTIONS, ...options })).toThrow(RangeError);
   });
