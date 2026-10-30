@@ -347,7 +347,7 @@
     "rollup-plugin-esbuild": "^6.2.1",
     "satori": "^0.33.5",
     "satteri": "^0.10.5",
-    "solid-js": "^1.9.17",
+    "solid-js": "^1.9.18",
     "svelte": "^5.57.2",
     "tailwindcss": "^4.3.3",
     "ts-jest": "^29.4.15",
