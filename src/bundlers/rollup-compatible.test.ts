@@ -19,25 +19,25 @@ import {
 
 describe('combineExternal', () => {
   it('keeps Obsidian\'s modules external with no external option of the consumer\'s', () => {
-    const external = combineExternal(undefined);
-    expect(external('obsidian', undefined, false)).toBe(true);
-    expect(external('node:fs', undefined, false)).toBe(true);
-    expect(external('fflate', undefined, false)).toBe(false);
+    const isExternal = combineExternal(undefined);
+    expect(isExternal('obsidian', undefined, false)).toBe(true);
+    expect(isExternal('node:fs', undefined, false)).toBe(true);
+    expect(isExternal('fflate', undefined, false)).toBe(false);
   });
 
   it('keeps the consumer\'s function form', () => {
-    const external = combineExternal((source) => source === 'my-external' || undefined);
-    expect(external('my-external', undefined, false)).toBe(true);
-    expect(external('fflate', undefined, false)).toBe(false);
+    const isExternal = combineExternal((source) => source === 'my-external' || undefined);
+    expect(isExternal('my-external', undefined, false)).toBe(true);
+    expect(isExternal('fflate', undefined, false)).toBe(false);
   });
 
   it('keeps the consumer\'s string and RegExp forms', () => {
     expect(combineExternal('my-external')('my-external', undefined, false)).toBe(true);
     expect(combineExternal(/^virtual:/u)('virtual:thing', undefined, false)).toBe(true);
-    const external = combineExternal(['a', /^b/u]);
-    expect(external('a', undefined, false)).toBe(true);
-    expect(external('bee', undefined, false)).toBe(true);
-    expect(external('c', undefined, false)).toBe(false);
+    const isExternal = combineExternal(['a', /^b/u]);
+    expect(isExternal('a', undefined, false)).toBe(true);
+    expect(isExternal('bee', undefined, false)).toBe(true);
+    expect(isExternal('c', undefined, false)).toBe(false);
   });
 });
 

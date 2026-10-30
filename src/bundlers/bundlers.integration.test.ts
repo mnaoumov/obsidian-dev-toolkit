@@ -69,8 +69,6 @@ interface PluginExports {
   readonly default?: unknown;
 }
 
-type PluginLoadFunction = (require: (moduleId: string) => unknown, $module: LoadedModule, exports: unknown) => void;
-
 /**
  * What each feature fixture's `render` command returns once built and loaded, or a check of it.
  */
@@ -197,6 +195,7 @@ function loadPlugin(mainJs: string, context: Context = createContext()): LoadedP
     throw new Error(`The bundle required '${moduleId}', which an installed plugin cannot reach.`);
   }
 
+  type PluginLoadFunction = (require: (moduleId: string) => unknown, $module: LoadedModule, exports: unknown) => void;
   const loadedModule: LoadedModule = { exports: {} };
   // The esbuild banner reads `app.isMobile` to tell desktop from mobile, and Obsidian defines `activeWindow`.
   runInContext('globalThis.app = { isMobile: false }; globalThis.activeWindow = globalThis;', context);

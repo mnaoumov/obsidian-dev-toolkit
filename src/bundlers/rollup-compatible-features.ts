@@ -191,7 +191,7 @@ export function createRollupCompatibleFeaturePlugin(params: CreateRollupCompatib
   return {
     load: {
       async handler(id): Promise<null | string> {
-        return !features.wasm || getFeatureFileKind(id) !== 'wasm' ? null : getWasmModuleCode(await readFile(id));
+        return features.wasm && getFeatureFileKind(id) === 'wasm' ? getWasmModuleCode(await readFile(id)) : null;
       },
       order: 'pre'
     },

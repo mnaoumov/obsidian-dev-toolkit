@@ -16,8 +16,6 @@ import {
   obsidianPluginVite
 } from './vite.ts';
 
-type ExternalFunction = (source: string, importer: string | undefined, isResolved: boolean) => unknown;
-
 const PRODUCTION_CONTEXT: ObsidianPluginBuildContext = {
   distFolder: '/project/dist/build',
   entryPoint: '/project/src/main.ts',
@@ -37,6 +35,8 @@ const DEVELOPMENT_CONTEXT: ObsidianPluginBuildContext = {
 const POSTCSS_PLUGIN = { postcssPlugin: 'marker' };
 
 describe('vite', () => {
+  type ExternalFunction = (source: string, importer: string | undefined, isResolved: boolean) => unknown;
+
   it('contributes nothing without features', () => {
     expect(getViteFeatureConfig({ features: {}, isProductionBuild: true, postcssConfig: undefined, userConfig: {} })).toEqual({});
   });
@@ -104,6 +104,7 @@ describe('vite', () => {
         assetsInlineLimit: 0,
         lib,
         minify: 'terser',
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- Checks that the deprecated alias a consumer may still use is honored.
         rollupOptions: { external: ['my-external'], output: { banner: '/* mine */', inlineDynamicImports: false } },
         sourcemap: true
       }
