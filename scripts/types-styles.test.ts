@@ -17,10 +17,9 @@ import type pcssClassNames from './fixtures/card.module.pcss';
 import type sassClassNames from './fixtures/card.module.sass';
 import type scssClassNames from './fixtures/card.module.scss';
 
-type ClassNames = Readonly<Record<string, string>>;
-
 describe('types/styles', () => {
   it('types a CSS module default import as its class names', () => {
+    type ClassNames = Readonly<Record<string, string>>;
     expectTypeOf<typeof cssClassNames>().toEqualTypeOf<ClassNames>();
     expectTypeOf<typeof pcssClassNames>().toEqualTypeOf<ClassNames>();
     expectTypeOf<typeof sassClassNames>().toEqualTypeOf<ClassNames>();

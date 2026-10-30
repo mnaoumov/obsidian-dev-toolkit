@@ -371,9 +371,9 @@ function compileSnippets(params: CompileSnippetsParams): DocsSnippetProblem[] {
 
   const host = createCompilerHost(compilerOptions, true);
   const originalGetSourceFile = host.getSourceFile.bind(host);
-  const originalFileExists = host.fileExists.bind(host);
+  const checkOriginalFileExists = host.fileExists.bind(host);
   const originalReadFile = host.readFile.bind(host);
-  host.fileExists = (fileName): boolean => virtualFiles.has(normalizePath(fileName)) || originalFileExists(fileName);
+  host.fileExists = (fileName): boolean => virtualFiles.has(normalizePath(fileName)) || checkOriginalFileExists(fileName);
   host.readFile = (fileName): string | undefined => virtualFiles.get(normalizePath(fileName))?.code ?? originalReadFile(fileName);
   host.getSourceFile = (fileName, languageVersionOrOptions, onError, shouldCreateNewSourceFile): SourceFile | undefined => {
     const virtualFile = virtualFiles.get(normalizePath(fileName));

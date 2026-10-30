@@ -76,8 +76,6 @@ export interface SourceMap {
   readonly version: number;
 }
 
-type MappingSegment = [number, number, number, number] | [number];
-
 interface RewriteBundleParams {
   readonly content: string;
   readonly distPath: string;
@@ -97,7 +95,7 @@ export function addIgnoreList(sourceMap: SourceMap, isSourceIgnored: (source: st
   const ignoreList = [
     ...new Set([
       ...sourceMap.ignoreList ?? [],
-      ...sourceMap.sources.flatMap((source, index) => isSourceIgnored(source) ? [index] : [])
+      ...sourceMap.sources.flatMap((source, index) => isSourceIgnored(source) ? index : [])
     ])
   ];
   return { ...sourceMap, ignoreList };
@@ -125,6 +123,7 @@ export function createIgnoreListOnlySourceMap(sourceMap: SourceMap, getListedSou
   let previousTarget = UNMAPPED;
 
   const newLines = decode(sourceMap.mappings).map((segments) => {
+    type MappingSegment = [number, number, number, number] | [number];
     const newSegments: MappingSegment[] = [];
     for (const segment of segments) {
       const [generatedColumn, sourceIndex, sourceLine = 0, sourceColumn = 0] = segment;

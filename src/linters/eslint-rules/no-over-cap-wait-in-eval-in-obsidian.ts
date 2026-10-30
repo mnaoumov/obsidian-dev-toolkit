@@ -853,7 +853,7 @@ function readClockName(node: TSESTree.Node): null | string {
 
   const objectNode = calleeNode.object as TSESTree.Node;
   const propertyNode = calleeNode.property as TSESTree.Node;
-  return !isIdentifier(objectNode) || !isIdentifier(propertyNode) || propertyNode.name !== NOW_METHOD_NAME || !CLOCK_OBJECT_NAMES.has(objectNode.name) ? null : objectNode.name;
+  return isIdentifier(objectNode) && isIdentifier(propertyNode) && propertyNode.name === NOW_METHOD_NAME && CLOCK_OBJECT_NAMES.has(objectNode.name) ? objectNode.name : null;
 }
 
 /**
@@ -937,7 +937,7 @@ function readDeadlineGuardInMilliseconds(node: TSESTree.Node, closure: EvalClosu
   }
 
   const boundNode = readBoundExpression(deadlineNode, closure, context);
-  return !boundNode || !isBinaryExpression(boundNode) || boundNode.operator !== '+' || (readClockName(boundNode.left) !== clockName) ? null : resolveNumber(boundNode.right, closure, context);
+  return boundNode && isBinaryExpression(boundNode) && boundNode.operator === '+' && (readClockName(boundNode.left) === clockName) ? resolveNumber(boundNode.right, closure, context) : null;
 }
 
 /**
@@ -1201,7 +1201,7 @@ function readLoopStepSize(
   }
 
   const targetNode = updateNode.left as TSESTree.Node;
-  return !isIdentifier(targetNode) || targetNode.name !== counterNode.name ? null : resolveNumber(updateNode.right, closure, context);
+  return isIdentifier(targetNode) && targetNode.name === counterNode.name ? resolveNumber(updateNode.right, closure, context) : null;
 }
 
 /**

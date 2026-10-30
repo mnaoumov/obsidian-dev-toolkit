@@ -14,8 +14,6 @@ import {
   obsidianPluginRollup
 } from './rollup.ts';
 
-type ExternalFunction = (source: string, importer: string | undefined, isResolved: boolean) => unknown;
-
 const PRODUCTION_CONTEXT: ObsidianPluginBuildContext = {
   distFolder: '/project/dist/build',
   entryPoint: '/project/src/main.ts',
@@ -49,6 +47,7 @@ describe('rollup', () => {
   });
 
   it('fills in the input and keeps Obsidian\'s modules external', () => {
+    type ExternalFunction = (source: string, importer: string | undefined, isResolved: boolean) => unknown;
     const inputOptions = applyRollupInputDefaults({ buildContext: PRODUCTION_CONTEXT, inputOptions: {} });
     expect(inputOptions.input).toBe('/project/src/main.ts');
     expect((inputOptions.external as ExternalFunction)('obsidian', undefined, false)).toBe(true);

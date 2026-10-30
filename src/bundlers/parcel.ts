@@ -245,7 +245,7 @@ export async function dev(options?: BuildOptions): Promise<CliTaskResult> {
  * @returns The files, by file name.
  */
 export function getParcelConfigFiles(params: GetParcelConfigFilesParams): ParcelConfigFiles {
-  const { consumerParcelrcPath, features = {} } = params;
+  const { consumerParcelrcPath = '@parcel/config-default', features = {} } = params;
   const featureTransformer = `./${FEATURES_FILE_NAME}`;
   const transformers: Record<string, string[]> = {};
   if (features.framework === 'svelte') {
@@ -269,7 +269,7 @@ export function getParcelConfigFiles(params: GetParcelConfigFilesParams): Parcel
   ];
 
   const parcelrc = {
-    extends: consumerParcelrcPath ?? '@parcel/config-default',
+    extends: consumerParcelrcPath,
     namers: [`./${NAMER_FILE_NAME}`, '...'],
     optimizers: {
       '*.js': [`./${PRE_MINIFY_FILE_NAME}`, '...', `./${OPTIMIZER_FILE_NAME}`]
