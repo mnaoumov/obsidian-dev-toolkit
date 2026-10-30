@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 8.0.0
+
+- build(deps)!: float typescript-dev-toolkit to ^6
+- docs: add issue-filing instructions for AI agents
+- chore: add issue forms
+- fix(deps): raise solid-js past two advisories, record deepmerge
+- build(deps): override re2js to ^2.9.1 for GHSA-gg6h-894w-4m9c
+
 ## 7.4.0
 
 - feat(eslint-config): skip prefer-dedent inside evalInObsidian callbacks
