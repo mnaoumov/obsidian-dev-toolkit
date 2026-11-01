@@ -35,6 +35,34 @@ Compiles the development version of your plugin into the `dist/dev` folder and k
 
 On the first rebuild it launches a dedicated Obsidian instance on that vault and, through it, installs the [Hot Reload] plugin from the official community store if it is not already installed, enables it if it is disabled, and enables your plugin, so [Hot Reload] refreshes your plugin on every rebuild.
 
+## Deploy to an Android Device
+
+```sh
+npx deploy-to-device --vault=/sdcard/Documents/MyVault
+```
+
+Pushes a build to Obsidian Mobile on an Android phone connected over `adb`, to try it by hand on the phone. It copies every file of `dist/build` into the vault's `.obsidian/plugins/<plugin-id>/` folder on the device, adds the plugin to the vault's enabled plugins, and restarts Obsidian on that vault, so the new build is the one running. Obsidian Mobile has no command line and runs no [Hot Reload], so a restart is how the build is reloaded there; the enabled plugins are edited while Obsidian is stopped, so it cannot write its own list over the edit.
+
+It needs `adb` on `PATH` (the Android SDK platform tools) and a phone with USB debugging on. The vault must be one Obsidian has opened on the phone, in shared storage: a vault in Obsidian's app-private storage is out of `adb`'s reach. Community plugins must be turned on in that vault, or Obsidian loads none of them.
+
+| Flag | Effect |
+| --- | --- |
+| `--vault=<folder>` | The vault folder on the device. Falls back to the `OBSIDIAN_DEVICE_VAULT_PATH` environment variable. Required. |
+| `--device=<id>` | The device to deploy to, as `adb devices` lists it. Without it, the one attached device is used, and the command fails when there are none or several. |
+| `--dist=<folder>` | The build folder, relative to the project root, e.g. `dist/dev`. Defaults to `dist/build`. |
+| `--app-id=<id>` | The Android application id of Obsidian. Defaults to `md.obsidian`. |
+| `--no-restart` | Pushes the build only. It runs once Obsidian is restarted by hand, and a new plugin is not enabled. |
+
+The same is the `deployToDevice` function (`@mnaoumov/obsidian-dev-toolkit/device-deployment`), for a script that builds and deploys in one step:
+
+```typescript
+import { build } from '@mnaoumov/obsidian-dev-toolkit/bundlers/esbuild';
+import { deployToDevice } from '@mnaoumov/obsidian-dev-toolkit/device-deployment';
+
+await build();
+await deployToDevice({ deviceVaultPath: '/sdcard/Documents/MyVault' });
+```
+
 ## Lint, Lint Markdown and Format
 
 ```typescript
