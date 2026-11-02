@@ -2,7 +2,10 @@ import type { EditJsonParams } from '@mnaoumov/typescript-dev-toolkit/json';
 import type { ResolvePathFromRootSafeParams } from '@mnaoumov/typescript-dev-toolkit/root';
 import type { UpdateVersionOptions as GenericUpdateVersionOptions } from '@mnaoumov/typescript-dev-toolkit/version';
 
-import { noopAsync } from '@mnaoumov/typescript-lib/function';
+import {
+  noop,
+  noopAsync
+} from '@mnaoumov/typescript-lib/function';
 import { assertNonNullable } from '@mnaoumov/typescript-lib/type-guards';
 import {
   afterEach,
@@ -27,7 +30,8 @@ const {
   mockReaddirPosix,
   mockResolvePathFromRootSafe,
   mockRm,
-  mockUpdateVersionGeneric
+  mockUpdateVersionGeneric,
+  mockValidatePluginRelease
 } = vi.hoisted(() => ({
   mockArchivePluginDemoVault: vi.fn(),
   mockCp: vi.fn(),
@@ -36,11 +40,17 @@ const {
   mockReaddirPosix: vi.fn<(path: string) => Promise<string[]>>(),
   mockResolvePathFromRootSafe: vi.fn<(params: ResolvePathFromRootSafeParams) => string>(),
   mockRm: vi.fn(),
-  mockUpdateVersionGeneric: vi.fn<(versionUpdateType?: string, options?: GenericUpdateVersionOptions) => Promise<void>>()
+  mockUpdateVersionGeneric: vi.fn<(versionUpdateType?: string, options?: GenericUpdateVersionOptions) => Promise<void>>(),
+  mockValidatePluginRelease: vi.fn()
 }));
 
 vi.mock('./demo-vault.ts', () => ({
   archivePluginDemoVault: mockArchivePluginDemoVault
+}));
+
+vi.mock('./plugin-release-checks.ts', async (importOriginal) => ({
+  ...await importOriginal<typeof import('./plugin-release-checks.ts')>(),
+  validatePluginRelease: mockValidatePluginRelease
 }));
 
 vi.mock('@mnaoumov/typescript-dev-toolkit/fs', () => ({
@@ -76,6 +86,7 @@ const DESKTOP_RELEASES_JSON_URL = 'https://raw.githubusercontent.com/obsidianmd/
 beforeEach(() => {
   vi.resetAllMocks();
   mockArchivePluginDemoVault.mockResolvedValue(null);
+  mockValidatePluginRelease.mockResolvedValue([]);
   mockCp.mockResolvedValue(undefined);
   mockEditJson.mockResolvedValue(undefined);
   mockExistsSync.mockReturnValue(false);
@@ -144,6 +155,7 @@ describe('parseVersionArguments', () => {
       shouldEditChangelog: true,
       shouldRelease: true,
       shouldRunChecks: true,
+      shouldRunReleaseChecks: true,
       shouldVerifyCommit: true
     });
   });
@@ -159,7 +171,8 @@ describe('parseVersionArguments', () => {
       '--no-commit-verification',
       '--no-demo-vault',
       '--no-issue-closing',
-      '--no-release'
+      '--no-release',
+      '--no-release-checks'
     ]);
     expect(versionUpdateType).toBe('patch');
     expect(options).toEqual({
@@ -171,6 +184,7 @@ describe('parseVersionArguments', () => {
       shouldEditChangelog: false,
       shouldRelease: false,
       shouldRunChecks: false,
+      shouldRunReleaseChecks: false,
       shouldVerifyCommit: false
     });
   });
@@ -182,6 +196,42 @@ describe('parseVersionArguments', () => {
 });
 
 describe('updateVersion', () => {
+  describe('community directory checks', () => {
+    it('should check the manifest before the release and the tag and assets after the bump', async () => {
+      stubDesktopReleasesFeed({ latestVersion: '1.9.0' });
+      await updateVersionInExtraFiles('1.2.3');
+      expect(mockValidatePluginRelease).toHaveBeenNthCalledWith(1, { shouldCheckAssets: false, shouldCheckVersion: false });
+      expect(mockValidatePluginRelease).toHaveBeenNthCalledWith(2, { shouldRequireAssets: true, tag: '1.2.3' });
+    });
+
+    it('should check manifest-beta.json, and no tag or assets, for a pre-release', async () => {
+      await updateVersionInExtraFiles('1.2.3-beta.1');
+      expect(mockValidatePluginRelease).toHaveBeenNthCalledWith(2, { manifestFile: 'manifest-beta.json', shouldCheckAssets: false });
+    });
+
+    it('should warn on warnings and stop on errors', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(noop);
+      try {
+        mockValidatePluginRelease.mockResolvedValue([{ level: 'warning', message: 'w', ruleId: 'r' }]);
+        await updateVersion('patch');
+        expect(warn).toHaveBeenCalledWith('warning: w (r)');
+        expect(mockUpdateVersionGeneric).toHaveBeenCalledTimes(1);
+
+        mockValidatePluginRelease.mockResolvedValue([{ level: 'error', message: 'e', ruleId: 'r' }]);
+        await expect(updateVersion('patch')).rejects.toThrow('The community directory checks failed before the release. Fix these, or pass --no-release-checks to release anyway:\nerror: e (r)');
+        expect(mockUpdateVersionGeneric).toHaveBeenCalledTimes(1);
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('should skip the checks when told to', async () => {
+      stubDesktopReleasesFeed({ latestVersion: '1.9.0' });
+      await updateVersionInExtraFiles('1.2.3', { shouldRunReleaseChecks: false });
+      expect(mockValidatePluginRelease).not.toHaveBeenCalled();
+    });
+  });
+
   it('should forward the generic options to the generic release and keep the plugin options to itself', async () => {
     const genericOptions = await captureGenericOptions('minor', {
       minAppVersion: '1.9.0',
