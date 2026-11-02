@@ -1,6 +1,6 @@
 ---
 title: Commands
-description: The Obsidian plugin builder, the development build with hot reload, the plugin release, and the Obsidian-aware lint and format commands.
+description: The Obsidian plugin builder, the development build with hot reload, the plugin release, the community directory check, and the Obsidian-aware lint and format commands.
 ---
 
 `@mnaoumov/obsidian-dev-toolkit` adds the commands only an Obsidian plugin needs to the generic ones of `@mnaoumov/typescript-dev-toolkit`. Each is a function, identified by its import subpath, that a script in your `scripts/` folder calls:
@@ -63,6 +63,30 @@ await build();
 await deployToDevice({ deviceVaultPath: '/sdcard/Documents/MyVault' });
 ```
 
+## Check Against the Community Directory
+
+```sh
+npx check-plugin --scanner
+```
+
+Checks the plugin the way the community directory does, so a finding that would get a submission rejected or a release delisted shows up on your own machine first. Without flags it checks `manifest.json`, `versions.json` and, when `dist/build` exists, the release assets in it. It exits `1` on any error and prints warnings without failing.
+
+The manifest, `versions.json` and asset rules are those of [`obsidianmd/obsidian-workflows`](https://github.com/obsidianmd/obsidian-workflows), the action the directory team points to as matching its scanner, with its rule ids and its `strict: true` severities: an ID or name holding `obsidian` or `plugin`, a description over 250 characters or naming Obsidian, a placeholder or email in `author`, a non-HTTPS URL, a version that is not semver, `main.js` or `manifest.json` missing from the release. On top of these are the submission bot's own rules: an ID of lowercase letters, digits, dashes and underscores only, and a release tag equal to `manifest.json`'s `version`, with no `v` prefix, since that tag is how the directory finds the release. As in the action, an ID the directory already lists for the plugin's repository is exempt from the banned-word rule, since a listed ID can never change; the directory's `community-plugins.json` is read only when that rule fires.
+
+`--scanner` also runs the scanner's own ESLint and Stylelint rulesets, by running `obsidianmd/obsidian-workflows` itself on your machine: its bundled action is downloaded once into `node_modules/.cache`, then run in its pull-request mode with the scanner lint and `strict` on and the build off. So the answer is the scanner's, not a copy of its rules that could drift. The action installs the scanner's linters into a temporary folder on each run, which takes a few minutes, and needs network access. A finding it reports that your own `npm run lint` does not, such as an `eslint-disable` comment naming a rule from a plugin the scanner does not load, is a finding the directory reports too.
+
+| Flag | Effect |
+| --- | --- |
+| `--tag=<tag>` | Checks this release tag against `manifest.json`. In GitHub Actions it defaults to the pushed tag (`GITHUB_REF`). |
+| `--dist=<folder>` | The folder holding the release assets, relative to the project root. Defaults to `dist/build`. |
+| `--require-assets` | Fails when the asset folder does not exist, instead of skipping the asset checks. |
+| `--scanner` | Also runs the scanner's ESLint and Stylelint rulesets, through `obsidianmd/obsidian-workflows`. |
+| `--scanner-version=<tag>` | The `obsidianmd/obsidian-workflows` release to run. Defaults to the one this package was tested with. |
+| `--no-strict` | Reports the scanner's policy findings as warnings, as the action does without `strict`. |
+| `--repository=<owner/repo>` | The plugin's repository, for the scanner's `authorUrl` check. In GitHub Actions it defaults to `GITHUB_REPOSITORY`. |
+
+[Version Management](#version-management) runs the same manifest, tag and asset checks by itself, and stops the release on an error before it is tagged. The checks are also the `validatePluginRelease` function (`@mnaoumov/obsidian-dev-toolkit/plugin-release-checks`), and the scanner run is `runScannerCheck` (`@mnaoumov/obsidian-dev-toolkit/plugin-scanner-check`).
+
 ## Lint, Lint Markdown and Format
 
 ```typescript
@@ -90,6 +114,7 @@ Releases the plugin. It is the [generic release](https://mnaoumov.dev/typescript
 - **Pre-releases.** A pre-release version (`prepatch`, `preminor`, `premajor` or `prerelease`, which number it `x.y.z-beta.n`, or an explicit `x.y.z-suffix`) goes to a `manifest-beta.json` copied from `manifest.json`, and `manifest.json` and `versions.json` are left alone, so the release installs through [BRAT](https://community.obsidian.md/plugins/obsidian42-brat) without reaching users of the stable release. The next stable release deletes `manifest-beta.json`.
 - **The release assets.** The updated manifest is copied into `dist/build`, and every file in `dist/build` is attached to the GitHub release, instead of the `npm pack` tarball a library attaches.
 - **The demo vault.** A plugin with a `demo-vault/` folder gets it archived and attached to the release. See [Demo Vault](/obsidian-dev-toolkit/guides/demo-vault/).
+- **The community directory checks.** `manifest.json` and `versions.json` are checked before anything runs, and the tag and the assets in `dist/build` once the version is bumped, before the release commit, with the rules of [Check Against the Community Directory](#check-against-the-community-directory). An error stops the release before it is tagged; a pre-release skips the tag check.
 
 For the script to be able to publish releases in your repository, your GitHub token needs `Read and write permissions` in `Settings > Actions > General`.
 
@@ -108,13 +133,14 @@ const { options, versionUpdateType } = parseVersionArguments($arguments);
 await wrapCliTask(() => updateVersion(versionUpdateType, options));
 ```
 
-It accepts every flag of the generic release, plus two of the plugin's own. When invoking via `npm run`, separate the flags with `--`, e.g. `npm run version -- patch --no-changelog-editing`:
+It accepts every flag of the generic release, plus three of the plugin's own. When invoking via `npm run`, separate the flags with `--`, e.g. `npm run version -- patch --no-changelog-editing`:
 
 | Flag | Effect |
 | --- | --- |
 | `--min-app-version=<x.y.z>` | Writes this `minAppVersion` into `manifest.json` and the new `versions.json` entry, instead of the latest Obsidian desktop version, which is then not fetched. |
 | `--no-demo-vault` | Skips archiving the demo vault for this release. |
+| `--no-release-checks` | Skips the community directory checks. |
 
-The same two are the `minAppVersion` and `shouldArchiveDemoVault` options of `updateVersion`.
+The same three are the `minAppVersion`, `shouldArchiveDemoVault` and `shouldRunReleaseChecks` options of `updateVersion`.
 
 [Hot Reload]: https://community.obsidian.md/plugins/hot-reload

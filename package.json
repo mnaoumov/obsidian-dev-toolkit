@@ -206,6 +206,7 @@
   },
   "bin": {
     "archive-demo-vault": "bin/archive-demo-vault.mjs",
+    "check-plugin": "bin/check-plugin.mjs",
     "deploy-to-device": "bin/deploy-to-device.mjs",
     "generate-coverage-badge": "bin/generate-coverage-badge.mjs"
   },

@@ -5,6 +5,10 @@
  * plugin has — `manifest.json` (and `manifest-beta.json` for a pre-release) and `versions.json` bumped with the
  * plugin's `minAppVersion`, the updated manifest copied into `dist/build`, the demo vault archived as a release
  * asset, and the files in `dist/build` attached to the GitHub release instead of an `npm pack` tarball.
+ *
+ * It is guarded by the community directory's checks (`plugin-release-checks.ts`): `manifest.json` and `versions.json`
+ * before anything runs, and the tag and the assets in `dist/build` once the version is bumped, before the release
+ * commit, so a release the directory would reject or delist stops before it is tagged.
  */
 
 import type {
@@ -30,8 +34,15 @@ import {
 } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 
+import type { ValidatePluginReleaseOptions } from './plugin-release-checks.ts';
+
 import { archivePluginDemoVault } from './demo-vault.ts';
 import { ObsidianPluginRepoPaths } from './obsidian-plugin-repo-paths.ts';
+import {
+  formatPluginCheckFindings,
+  hasPluginCheckErrors,
+  validatePluginRelease
+} from './plugin-release-checks.ts';
 
 /**
  * Type representing the structure of Obsidian's `desktop-releases.json` feed.
@@ -95,6 +106,13 @@ export interface UpdateVersionOptions extends GenericUpdateVersionOptions {
    * @default `true`
    */
   readonly shouldArchiveDemoVault?: boolean;
+
+  /**
+   * Whether to run the community directory's manifest, tag and asset checks, and stop the release on an error.
+   *
+   * @default `true`
+   */
+  readonly shouldRunReleaseChecks?: boolean;
 }
 
 /**
@@ -125,6 +143,7 @@ export async function copyUpdatedManifest(): Promise<void> {
  * - `--min-app-version=<x.y.z>` — write this `minAppVersion` into the plugin's `manifest.json` and its new
  *   `versions.json` entry instead of tracking the latest Obsidian desktop version.
  * - `--no-demo-vault` — skip archiving the plugin's demo vault (`demo-vault/`) as a release artifact.
+ * - `--no-release-checks` — skip the community directory's manifest, tag and asset checks.
  *
  * @param $arguments - The command-line arguments to parse (typically `process.argv.slice(2)`).
  * @returns The {@link ParsedVersionArguments} containing the version update type and the options.
@@ -137,7 +156,8 @@ export function parseVersionArguments($arguments: string[]): ParsedVersionArgume
     options: {
       ...VERSION_ARGUMENT_OPTIONS,
       'min-app-version': { type: 'string' },
-      'no-demo-vault': { type: 'boolean' }
+      'no-demo-vault': { type: 'boolean' },
+      'no-release-checks': { type: 'boolean' }
     }
   });
 
@@ -145,7 +165,8 @@ export function parseVersionArguments($arguments: string[]): ParsedVersionArgume
     options: {
       ...toUpdateVersionOptions(values),
       minAppVersion: values['min-app-version'],
-      shouldArchiveDemoVault: !(values['no-demo-vault'] ?? false)
+      shouldArchiveDemoVault: !(values['no-demo-vault'] ?? false),
+      shouldRunReleaseChecks: !(values['no-release-checks'] ?? false)
     },
     versionUpdateType: positionals[0]
   };
@@ -163,8 +184,13 @@ export async function updateVersion(versionUpdateType?: string, options: UpdateV
     minAppVersion,
     prepareGitHubRelease,
     shouldArchiveDemoVault = true,
+    shouldRunReleaseChecks = true,
     ...genericOptions
   } = options;
+
+  if (shouldRunReleaseChecks) {
+    await assertPluginReleaseChecksPass('before the release', { shouldCheckAssets: false, shouldCheckVersion: false });
+  }
 
   await updateVersionGeneric(versionUpdateType, {
     ...genericOptions,
@@ -177,8 +203,38 @@ export async function updateVersion(versionUpdateType?: string, options: UpdateV
     },
     async updateVersionInExtraFiles(newVersion: string): Promise<void> {
       await updateVersionInFilesForPlugin(newVersion, minAppVersion);
+      if (shouldRunReleaseChecks) {
+        await assertPluginReleaseChecksPass(
+          `releasing ${newVersion}`,
+          isPreRelease(newVersion)
+            ? { manifestFile: ObsidianPluginRepoPaths.ManifestBetaJson, shouldCheckAssets: false }
+            : { shouldRequireAssets: true, tag: newVersion }
+        );
+      }
     }
   });
+}
+
+/**
+ * Runs the community directory's checks and throws on an error, printing every finding.
+ *
+ * @param stage - Where in the release the checks run, for the error message.
+ * @param options - The checks to run.
+ * @returns A {@link Promise} that resolves when no check reported an error.
+ */
+async function assertPluginReleaseChecksPass(stage: string, options: ValidatePluginReleaseOptions): Promise<void> {
+  const findings = await validatePluginRelease(options);
+  if (findings.length === 0) {
+    return;
+  }
+
+  const report = formatPluginCheckFindings(findings);
+  if (hasPluginCheckErrors(findings)) {
+    throw new Error(
+      `The community directory checks failed ${stage}. Fix these, or pass --no-release-checks to release anyway:\n${report}`
+    );
+  }
+  console.warn(report);
 }
 
 /**
