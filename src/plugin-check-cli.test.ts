@@ -52,8 +52,9 @@ describe('parseCheckPluginArguments', () => {
 
   it('should read process.env by default', () => {
     vi.stubEnv('GITHUB_REF', 'refs/tags/3.0.0');
+    vi.stubEnv('GITHUB_REPOSITORY', 'jane/tabs');
     try {
-      expect(parseCheckPluginArguments([]).releaseParams).toEqual({ tag: '3.0.0' });
+      expect(parseCheckPluginArguments([]).releaseParams).toEqual({ repository: 'jane/tabs', tag: '3.0.0' });
     } finally {
       vi.unstubAllEnvs();
     }
