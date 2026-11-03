@@ -5,7 +5,7 @@ description: Ship a curated vault with your plugin - archived into the GitHub re
 
 `@mnaoumov/obsidian-dev-toolkit` lets a plugin ship a **demo vault** — a curated Obsidian vault, committed to the plugin repo, that showcases the plugin — and lets users open it in one step. There are two cooperating parts:
 
-- **Release side** — at release time, the demo vault is packaged (with the freshly built plugin installed into it) and attached to the GitHub release as an archive.
+- **Release side** — at release time, the demo vault is packaged (with the freshly built plugin installed into it) and attached to the `GitHub` release as an archive.
 - **Runtime side** — an opt-in `Open demo vault` command downloads that archive and opens it as a vault in a new window.
 
 ## Release side: archiving the demo vault
@@ -43,15 +43,15 @@ Four Obsidian settings have to be the same in every demo vault, so this package 
 | Setting | Value | Why |
 | --- | --- | --- |
 | `defaultViewMode` | `"preview"` | A note opens as a reader sees it, not as raw markup — the vault is documentation first and an editing surface second. |
-| `livePreview` | `false` | Same reason; both are needed, and both are Obsidian-only (GitHub never reads `app.json`). |
-| `useMarkdownLinks` | `true` | Decides what Obsidian writes when a link is created inside the vault. At the default, every new link is a `[[wikilink]]` — which GitHub renders as literal brackets leading nowhere. |
+| `livePreview` | `false` | Same reason; both are needed, and both are Obsidian-only (`GitHub` never reads `app.json`). |
+| `useMarkdownLinks` | `true` | Decides what Obsidian writes when a link is created inside the vault. At the default, every new link is a `[[wikilink]]` — which `GitHub` renders as literal brackets leading nowhere. |
 | `newLinkFormat` | `"relative"` | Keeps a link resolving once the vault is extracted to an arbitrary folder. `"absolute"` would not. |
 
 They are injected into the **archived** vault, and a demo vault must **not commit any of them**: a committed copy is a second source of truth that nothing reconciles, and it is the copy that goes stale. The [demo-vault coverage suite](#keeping-the-vault-honest) fails a vault that commits one, and `archivePluginDemoVault` refuses to archive it — so the settings have exactly one owner. Everything else in `app.json` is the vault's own and is carried into the archive untouched.
 
 One consequence worth knowing: because the injection reaches only the archived copy, creating a link while authoring the vault in your own Obsidian still follows *your* settings, not these. The coverage suite's no-wikilink check is what catches that before it ships.
 
-These four settle the **Obsidian** reader and nothing else. GitHub never reads `app.json`; it renders every note as HTML whatever the file says. What serves the GitHub reader is the markdown itself — Markdown links rather than wikilinks, an `# H1` and prose opener, no `[Docs]` line — so a vault is not GitHub-ready by virtue of these shipping, and no setting under `.obsidian/` can fix a GitHub-rendering problem.
+These four settle the **Obsidian** reader and nothing else. `GitHub` never reads `app.json`; it renders every note as HTML whatever the file says. What serves the `GitHub` reader is the markdown itself — Markdown links rather than wikilinks, an `# H1` and prose opener, no `[Docs]` line — so a vault is not GitHub-ready by virtue of these shipping, and no setting under `.obsidian/` can fix a GitHub-rendering problem.
 
 ### Consumer setup
 
@@ -87,7 +87,7 @@ The settings it writes put `CodeScript Toolkit`'s module root at `_assets/CodeSc
 
 - **`startup.ts` must `export` an `invoke` function**, not run at top level. `CodeScript Toolkit` requires the module and calls `startupScript.invoke(app)`, so a direct-execution script that leans on a top-level global `app` throws `TypeError: this.startupScript.invoke is not a function` the moment the vault loads. An optional `export async function cleanup(app) {}` is called on unload. Use `invoke` to open the start note and do live-safe setup (binding a demo hotkey, say); anything that has to be in place *before* the plugin loads is written by the helper, not here.
 - **Put shared button code in `_assets/CodeScriptToolkit/demoSetup.ts`** so each note's `code-button` stays a one-liner — `require('/demoSetup.ts').installAndEnable(app, '<id>')` — instead of a block copy-pasted across notes. Third-party prerequisites install through `installCommunityPlugin` / `enableCommunityPlugin`; never commit someone else's plugin binary.
-- **Commit no `Invocables/` placeholder.** The helper creates the folder at runtime, so an empty directory or a `.gitkeep` in git is noise that has to be maintained.
+- **Commit no `Invocables/` placeholder.** The helper creates the folder at runtime, so an empty directory or a `.gitkeep` in `git` is noise that has to be maintained.
 
 ### Archiving without a release
 
@@ -131,7 +131,7 @@ new OpenDemoVaultCommandHandler({
 
 The command is **desktop only** — it hides itself on mobile (its `canExecute` gates on `Platform.isDesktopApp`, so no mobile notice is ever shown), and the desktop-only machinery is loaded lazily (only when the command runs on desktop), so registering the handler is safe on every platform. When invoked the command:
 
-1. Resolves the plugin's GitHub repository from Obsidian's community registry (see [`getCommunityPluginRepo`](#getcommunitypluginrepo)).
+1. Resolves the plugin's `GitHub` repository from Obsidian's community registry (see [`getCommunityPluginRepo`](#getcommunitypluginrepo)).
 2. Reads the latest release version. If the installed version is the latest (or newer), its demo vault opens directly; otherwise the user is offered a choice between the latest and the currently-installed version via a [Select Option](https://mnaoumov.dev/obsidian-lib/guides/modals/#select-option) dialog.
 3. Downloads the chosen release's `<plugin-id>-demo-vault.zip`. Only the **archive** is cached (under the OS temp directory, keyed by plugin id and version); every open extracts a **fresh** copy into its own folder, so a previous session's edits never leak into a new one. Extracted folders left over from earlier sessions are removed, best-effort, about a day after their last use.
 4. Opens the archive's own `<plugin-id>-demo-vault-<version>` folder as a vault in a new window — the same name a hand-unzipped archive produces, and what the vault switcher then shows.
@@ -142,11 +142,11 @@ If the plugin is not in the community registry, or no archive exists for the cho
 
 ### What registering the command costs your bundle
 
-Registering `OpenDemoVaultCommandHandler` puts the opener into your plugin's `main.js`, and with it a `require('node:fs')` and a `window.electron.ipcRenderer.sendSync('vault-open', …)` — extracting the archive writes files outside the vault, and opening a folder as a vault has no non-Electron API. The dynamic `import()` behind the command does **not** change that: an Obsidian plugin ships a single CJS `main.js`, esbuild has no code splitting to put a chunk behind, and `import()` defers evaluation rather than excluding the code.
+Registering `OpenDemoVaultCommandHandler` puts the opener into your plugin's `main.js`, and with it a `require('node:fs')` and a `window.electron.ipcRenderer.sendSync('vault-open', …)` — extracting the archive writes files outside the vault, and opening a folder as a vault has no non-Electron API. The dynamic `import()` behind the command does **not** change that: an Obsidian plugin ships a single CJS `main.js`, `esbuild` has no code splitting to put a chunk behind, and `import()` defers evaluation rather than excluding the code.
 
 So the Community directory's automated review reports two `Behavior` warnings — *Direct Filesystem Access* and *Electron IPC* — on any listing whose plugin registers this command. Both are accurate: settle them with the review's override, naming the demo-vault opener as the reason. If you would rather not carry them, do not register the handler; the archive is still attached to every release and users can download and open it by hand.
 
-Extraction itself is dependency-free — `extractZipArchive` reads the archive with Node's `zlib`, which esbuild already treats as external — so the feature costs a few KB rather than the ~34 KB an `adm-zip` on the runtime path used to add to every plugin built with this library.
+Extraction itself is dependency-free — `extractZipArchive` reads the archive with Node's `zlib`, which `esbuild` already treats as external — so the feature costs a few KB rather than the ~34 KB an `adm-zip` on the runtime path used to add to every plugin built with this library.
 
 ### The sandbox notice
 
@@ -156,7 +156,7 @@ The notice is raised by the **helper**, inside the demo vault, not by the `Open 
 
 ### `getCommunityPluginRepo`
 
-Resolves the `owner/name` GitHub repository of a community plugin from Obsidian's public `community-plugins.json` registry (the plugin manifest itself carries no repository). The registry is fetched once and cached.
+Resolves the `owner/name` `GitHub` repository of a community plugin from Obsidian's public `community-plugins.json` registry (the plugin manifest itself carries no repository). The registry is fetched once and cached.
 
 ```ts
 import { getCommunityPluginRepo } from '@mnaoumov/obsidian-lib/community-plugins';
@@ -166,12 +166,12 @@ const repo = await getCommunityPluginRepo('my-plugin'); // e.g. 'owner/my-plugin
 
 ## Authoring the notes
 
-The demo vault is not a set of samples sitting beside the documentation — it **is** the documentation, read either in Obsidian or straight from GitHub by someone who has not installed the plugin. That second reader is what the following rules protect, and the [coverage suite](#keeping-the-vault-honest) enforces them:
+The demo vault is not a set of samples sitting beside the documentation — it **is** the documentation, read either in Obsidian or straight from `GitHub` by someone who has not installed the plugin. That second reader is what the following rules protect, and the [coverage suite](#keeping-the-vault-honest) enforces them:
 
 1. **Every note opens with an `# H1`, then 1-3 sentences of what it does and why you would want it** — in behavior terms, not technical nouns. A note that goes from its title straight to a button teaches nothing to a reader who does not already know the feature.
-2. **Links between notes are `[Text](<./NN Name.md>)`, never `[[wikilinks]]`.** A wikilink renders as literal brackets on GitHub and leads nowhere. Angle brackets keep a name with spaces intact. Wikilinks shown *inside* a code fence or inline code are sample text and are fine. A note whose **subject** is the wikilink — an embed spelling the reader is being taught to type, a frontmatter property value that contrasts with a Markdown link, a fixture that must keep the wikilink a command is meant to leave alone, a link the reader clicks while it still resolves to nothing — says so itself, with the reason, in one of two forms modelled on ESLint's.
+2. **Links between notes are `[Text](<./NN Name.md>)`, never `[[wikilinks]]`.** A wikilink renders as literal brackets on `GitHub` and leads nowhere. Angle brackets keep a name with spaces intact. Wikilinks shown *inside* a code fence or inline code are sample text and are fine. A note whose **subject** is the wikilink — an embed spelling the reader is being taught to type, a frontmatter property value that contrasts with a Markdown link, a fixture that must keep the wikilink a command is meant to leave alone, a link the reader clicks while it still resolves to nothing — says so itself, with the reason, in one of two forms modelled on `ESLint`'s.
 
-   Per line or per region, as an HTML comment (invisible in Obsidian *and* on GitHub — the spelling already used for `markdownlint-disable-next-line`):
+   Per line or per region, as an HTML comment (invisible in Obsidian *and* on `GitHub` — the spelling already used for `markdownlint-disable-next-line`):
 
    ```markdown
    <!-- obsidian-dev-toolkit-disable-next-line demo-vault-validation/no-wikilinks -- Clicking a link to a note that does not exist yet IS the feature. -->
@@ -231,7 +231,7 @@ registerDemoVaultCoverageSuite({
 
 It asserts that every reflected member is demonstrated somewhere in the notes, that no note references a member that no longer exists (rename drift), that `.obsidian/app.json` commits none of the [settings this package injects](#the-appjson-settings-this-package-owns), **and** that the notes follow the authoring rules above.
 
-A note the vault's `.gitignore` drops is not read at all, because a clone does not have it: a scratch note that a button creates on first use would otherwise fail the reachability check on every checkout where the button has run, and pass in CI. A note git tracks is read even when an ignore pattern matches it, and outside a git work tree every note is read.
+A note the vault's `.gitignore` drops is not read at all, because a clone does not have it: a scratch note that a button creates on first use would otherwise fail the reachability check on every checkout where the button has run, and pass in CI. A note `git` tracks is read even when an ignore pattern matches it, and outside a `git` work tree every note is read.
 
 The authoring checks are always on — a note that breaks the convention is broken for real readers, so there is no flag to turn them off. The optional `authoring` member only tunes them:
 
@@ -414,7 +414,7 @@ Two quirks of Obsidian's reading view shape the suite, and both explain assertio
 
 The shared script runners are demo-vault-aware, so nothing here needs the shared scripts patched.
 
-- **markdownlint** lints the vault like the rest of your documentation — do **not** add a scoped `demo-vault/.markdownlint-cli2.jsonc`. Such a file used to be needed to switch off `MD041` (notes that opened with a `[Docs]` link instead of a heading) and `MD052` (notes navigated by wikilinks); the coverage suite now forbids both outright, so the suppressions suppress nothing. Keep the file only where a note legitimately carries a wikilink outside a fence, only for `MD052`, and write the reason in it. The vault's own `README.md` is exempt from the coverage suite but not from markdownlint, so it still needs an `# H1`.
-- **cspell** — add demo-specific words (plugin ids and the like) to the repo's `cspell.json` `words`.
-- **eslint, `tsc` and dprint** should leave `demo-vault/_assets` alone: the demo scripts show unusual module and `require` styles on purpose, and a formatter that "fixes" them breaks the lesson. Exclude the vault in eslint (`ignores: ['demo-vault/**']`), keep it out of the `tsconfig` `include`, and add `demo-vault` to `excludes` in the project's `dprint.json`. The shared eslint config does not do this for you.
+- **`markdownlint`** lints the vault like the rest of your documentation — do **not** add a scoped `demo-vault/.markdownlint-cli2.jsonc`. Such a file used to be needed to switch off `MD041` (notes that opened with a `[Docs]` link instead of a heading) and `MD052` (notes navigated by wikilinks); the coverage suite now forbids both outright, so the suppressions suppress nothing. Keep the file only where a note legitimately carries a wikilink outside a fence, only for `MD052`, and write the reason in it. The vault's own `README.md` is exempt from the coverage suite but not from `markdownlint`, so it still needs an `# H1`.
+- **`cspell`** — add demo-specific words (plugin ids and the like) to the repo's `cspell.json` `words`.
+- **`eslint`, `tsc` and `dprint`** should leave `demo-vault/_assets` alone: the demo scripts show unusual module and `require` styles on purpose, and a formatter that "fixes" them breaks the lesson. Exclude the vault in `eslint` (`ignores: ['demo-vault/**']`), keep it out of the `tsconfig` `include`, and add `demo-vault` to `excludes` in the project's `dprint.json`. The shared `eslint` config does not do this for you.
 - **Link checking does cover the notes.** A broken link in a demo note is a real broken link — fix it rather than excluding the vault.

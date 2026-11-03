@@ -9,13 +9,13 @@ For repeatable measurements on a large synthetic corpus, see [Performance vaults
 
 | Stack | Test style | What the toolkit provides |
 | --- | --- | --- |
-| [`obsidian-integration-testing`](https://github.com/mnaoumov/obsidian-integration-testing) | Vitest; a closure runs inside Obsidian with `evalInObsidian` | `defineObsidianPluginVitestConfig`, the desktop and Android projects, the harness plugin |
-| [`wdio-obsidian-service`](https://github.com/jesse-r-s-hines/wdio-obsidian-service) | WebdriverIO with mocha; the test drives the UI from outside | `defineWdioObsidianConfig`, `testEndToEndWithWdioObsidian` |
+| [`obsidian-integration-testing`](https://github.com/mnaoumov/obsidian-integration-testing) | `Vitest`; a closure runs inside Obsidian with `evalInObsidian` | `defineObsidianPluginVitestConfig`, the desktop and Android projects, the harness plugin |
+| [`wdio-obsidian-service`](https://github.com/jesse-r-s-hines/wdio-obsidian-service) | `WebdriverIO` with mocha; the test drives the UI from outside | `defineWdioObsidianConfig`, `testEndToEndWithWdioObsidian` |
 | [`obsidian-test`](https://github.com/b-camphart/obsidian-test) | `node:test`; the test is bundled into the plugin and runs inside Obsidian | `testEndToEndWithObsidianTest` |
 
 ## Which one to use
 
-**Start with `obsidian-integration-testing`.** It is what the [testing guide](/obsidian-dev-toolkit/guides/testing/) sets up, it runs on desktop and on Android from the same test file, its tests are Vitest tests like the unit tests, and every `@mnaoumov/obsidian-lib` helper is reachable inside a test.
+**Start with `obsidian-integration-testing`.** It is what the [testing guide](/obsidian-dev-toolkit/guides/testing/) sets up, it runs on desktop and on Android from the same test file, its tests are `Vitest` tests like the unit tests, and every `@mnaoumov/obsidian-lib` helper is reachable inside a test.
 
 Add **`wdio-obsidian-service`** when you need to test several Obsidian versions in one run. It downloads each version into a cache, so `appVersions: ['earliest', 'latest']` tests your `minAppVersion` and the current release side by side, on any machine and in CI, without Obsidian being installed. Its tests also drive the real UI through WebDriver.
 
@@ -44,7 +44,7 @@ export const config: WebdriverIO.Config = defineWdioObsidianConfig({ appVersions
 - **The specs are `e2e/**/*.spec.ts`.** `specs` changes them.
 - **Each entry of `appVersions` is one capability**, so each version runs the whole suite. It defaults to `['latest']`. `earliest` is the `minAppVersion` of `manifest.json`, and `latest-beta` needs an Obsidian Insiders account (`OBSIDIAN_EMAIL` and `OBSIDIAN_PASSWORD`). So does `earliest` when `minAppVersion` names a version that was only ever a beta, such as `1.5.0`: set it to a public release.
 - **Obsidian versions are downloaded into `.obsidian-cache/`**, which belongs in `.gitignore`. `cacheFolder` changes it.
-- mocha gets a 60 s per-test timeout (`testTimeoutInMilliseconds`), since Obsidian starts once per spec file. `installerVersion` and `maxInstances` pass through to the service and WebdriverIO.
+- mocha gets a 60 s per-test timeout (`testTimeoutInMilliseconds`), since Obsidian starts once per spec file. `installerVersion` and `maxInstances` pass through to the service and `WebdriverIO`.
 
 The result is plain data, so anything else is changed by spreading it: `{ ...defineWdioObsidianConfig(), logLevel: 'info' }`.
 
@@ -64,7 +64,7 @@ describe('my plugin', () => {
 });
 ```
 
-The `test:e2e` script builds the plugin and runs WebdriverIO:
+The `test:e2e` script builds the plugin and runs `WebdriverIO`:
 
 ```typescript
 // scripts/test-e2e.ts
@@ -113,7 +113,7 @@ await wrapCliTask(() => testEndToEndWithObsidianTest());
 
 `obsidian-test` bundles the plugin together with the test files, installs it into a temporary vault, launches Obsidian and reports the results. It replays its cached results when nothing changed, and `shouldUseCache: false` runs the tests anyway.
 
-**The runner restricts the test files to `./e2e/**/*.spec.ts`.** `obsidian-test`'s own default matches every `*.test.ts` too, which would bundle the plugin's Vitest unit tests into Obsidian. `testPattern` changes the glob.
+**The runner restricts the test files to `./e2e/**/*.spec.ts`.** `obsidian-test`'s own default matches every `*.test.ts` too, which would bundle the plugin's `Vitest` unit tests into Obsidian. `testPattern` changes the glob.
 
 It launches Obsidian with the `obsidian` command. When that is not on `PATH`, name the executable with `obsidianCommand`. Do not point `vaultPath` at the demo vault: `obsidian-test` installs the plugin into the vault it is given.
 

@@ -35,7 +35,7 @@ The [Obsidian Lib](https://mnaoumov.dev/obsidian-lib/) site documents the runtim
 
 ## Your first build script
 
-The toolkit's commands are functions you wrap in your own `scripts/`, one entry point per npm script:
+The toolkit's commands are functions you wrap in your own `scripts/`, one entry point per `npm` script:
 
 ```typescript
 // scripts/build.ts
@@ -66,10 +66,35 @@ You do not have to write the script and config files by hand. Ready-made templat
 
 The `commitlint-config`, `markdownlint-cli2-config`, `nano-staged-config` and `vitest-config` templates work as they are. `eslint-config` is a baseline you adapt to your plugin.
 
+## Tool names in Markdown
+
+The shared `obsidianMarkdownlintCli2Config` enables `tool-name-as-code`: commands, tools, libraries, frameworks, shells and services named in prose must be code spans. For example, write “build with `esbuild`” and “publish through `GitHub Actions`”. `npm run lint:md:fix` wraps bare names automatically.
+
+The exported `TOOL_NAMES` list in `@mnaoumov/obsidian-dev-toolkit/linters/tool-names` is the single source of spellings. Matching is case-sensitive: `Solid` is a framework, while “a solid default” stays prose. The longest name wins, so `GitHub Actions` becomes one code span. Code, headings, block quotes, quoted text, links and images, HTML, front matter, URLs, handles, paths and longer package names are left alone. Multi-word names split across lines are not matched.
+
+Extend or narrow the rule in your `scripts/markdownlint-cli2-config.ts`:
+
+```typescript
+import { obsidianMarkdownlintCli2Config } from '@mnaoumov/obsidian-dev-toolkit/linters/markdownlint-cli2-config';
+
+export const config = {
+  ...obsidianMarkdownlintCli2Config,
+  config: {
+    ...obsidianMarkdownlintCli2Config.config,
+    'tool-name-as-code': {
+      additionalToolNames: ['Custom Tool'],
+      excludedToolNames: ['husky']
+    }
+  }
+};
+```
+
+An exclusion wins over both the shared list and additions. For a one-off quotation or ambiguous name, use a standard `markdownlint` suppression with its reason.
+
 ## Where to go next
 
 - [Commands](/obsidian-dev-toolkit/guides/cli-commands/): the plugin builder, the development build with hot reload, and the plugin release.
 - [Demo Vault](/obsidian-dev-toolkit/guides/demo-vault/): ship a curated vault with every release.
-- [Testing](/obsidian-dev-toolkit/guides/testing/): the plugin's Vitest projects, its test setup, and the integration-test harness.
+- [Testing](/obsidian-dev-toolkit/guides/testing/): the plugin's `Vitest` projects, its test setup, and the integration-test harness.
 - [API reference](/obsidian-dev-toolkit/api/): the complete API, generated from the package's TSDoc.
 - [TypeScript Dev Toolkit](https://mnaoumov.dev/typescript-dev-toolkit/): the generic commands the toolkit builds on (format, lint, spellcheck, the branch gate).

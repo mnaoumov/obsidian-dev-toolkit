@@ -3,7 +3,7 @@ title: Debugging plugins
 description: Attach VS Code to Obsidian and bind TypeScript breakpoints to esbuild development source maps.
 ---
 
-Debug your plugin in the Obsidian renderer, where its code and the DOM run. VS Code's built-in browser debugger can attach to that renderer; you do not need the retired Debugger for Chrome extension. This guide updates the workflow from [How to debug Obsidian plugins (2022)](https://mnaoumov.wordpress.com/2022/05/10/how-to-debug-obsidian-plugins/) for the toolkit's current esbuild output.
+Debug your plugin in the Obsidian renderer, where its code and the DOM run. VS Code's built-in browser debugger can attach to that renderer; you do not need the retired Debugger for Chrome extension. This guide updates the workflow from [How to debug Obsidian plugins (2022)](https://mnaoumov.wordpress.com/2022/05/10/how-to-debug-obsidian-plugins/) for the toolkit's current `esbuild` output.
 
 ## Generate the attach configuration
 
@@ -13,7 +13,7 @@ Open the plugin's project root in VS Code, with `package.json` and `src/` direct
 npx generate-debug-config
 ```
 
-It creates `.vscode/launch.json`, reading `name` from `package.json`. It refuses to overwrite an existing file, including a JSON-with-comments file. If you already have configurations, add the configuration below to their `configurations` array yourself, replacing `my-plugin-package` with your npm package name. A scoped name such as `@example/my-plugin` goes in full, including the slash. The manifest's `id` and display `name` are different values and are not the source-map prefix.
+It creates `.vscode/launch.json`, reading `name` from `package.json`. It refuses to overwrite an existing file, including a JSON-with-comments file. If you already have configurations, add the configuration below to their `configurations` array yourself, replacing `my-plugin-package` with your `npm` package name. A scoped name such as `@example/my-plugin` goes in full, including the slash. The manifest's `id` and display `name` are different values and are not the source-map prefix.
 
 ```json
 {
@@ -72,9 +72,9 @@ To debug `onload()`, attach first, set the breakpoint and then disable and enabl
 
 ## Why the source paths matter
 
-The esbuild adapter embeds source content and mappings in `main.js`, rewrites each source to `app://obsidian.md/plugin:<package name>/<project-relative path>`, and appends `/* nosourcemap */` so Obsidian preserves the inline map. The generated override maps that URL back to `${workspaceFolder}/<project-relative path>`. For example, `app://obsidian.md/plugin:my-plugin-package/src/main.ts` resolves to your local `src/main.ts`. This works when the build's project root and the VS Code workspace root are the same directory.
+The `esbuild` adapter embeds source content and mappings in `main.js`, rewrites each source to `app://obsidian.md/plugin:<package name>/<project-relative path>`, and appends `/* nosourcemap */` so Obsidian preserves the inline map. The generated override maps that URL back to `${workspaceFolder}/<project-relative path>`. For example, `app://obsidian.md/plugin:my-plugin-package/src/main.ts` resolves to your local `src/main.ts`. This works when the build's project root and the VS Code workspace root are the same directory.
 
-The generator targets this esbuild convention. Other [bundler adapters](/obsidian-dev-toolkit/guides/bundlers/) produce development maps too, but may emit different source URLs; inspect their map's `sources` and adapt `sourceMapPathOverrides` before expecting local breakpoints to bind. Custom entry points outside the project root and multi-root workspaces also need mappings to their actual local files.
+The generator targets this `esbuild` convention. Other [bundler adapters](/obsidian-dev-toolkit/guides/bundlers/) produce development maps too, but may emit different source URLs; inspect their map's `sources` and adapt `sourceMapPathOverrides` before expecting local breakpoints to bind. Custom entry points outside the project root and multi-root workspaces also need mappings to their actual local files.
 
 ## Diagnose unbound breakpoints
 
