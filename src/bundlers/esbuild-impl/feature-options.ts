@@ -16,6 +16,7 @@ import { readFile } from 'node:fs/promises';
 
 import type { ObsidianPluginFeatureOptions } from '../obsidian-plugin-features.ts';
 
+import { bundleInlineWorker } from '../inline-worker.ts';
 import {
   getFrameworkDefines,
   getJsxImportSource,
@@ -92,9 +93,10 @@ export function getEsbuildFeatureBuildOptions(params: GetEsbuildFeatureBuildOpti
  */
 export async function getEsbuildFeaturePlugins(params: GetEsbuildFeaturePluginsParams): Promise<Plugin[]> {
   const { features, isProductionBuild } = params;
+  const plugins: Plugin[] = features.workers ? [inlineWorkerEsbuildPlugin()] : [];
   switch (features.framework) {
     case 'solid': {
-      return [solidEsbuildPlugin(isProductionBuild)];
+      return [...plugins, solidEsbuildPlugin(isProductionBuild)];
     }
     case 'vue': {
       const unpluginVue = await importOptionalPeer<UnpluginVueEsbuildModule>({
@@ -102,10 +104,10 @@ export async function getEsbuildFeaturePlugins(params: GetEsbuildFeaturePluginsP
         packageName: 'unplugin-vue',
         specifier: 'unplugin-vue/esbuild'
       });
-      return [unpluginVue.default({ isProduction: isProductionBuild })];
+      return [...plugins, unpluginVue.default({ isProduction: isProductionBuild })];
     }
     default: {
-      return [];
+      return plugins;
     }
   }
 }
@@ -132,6 +134,23 @@ export function getSassPluginOptionsList(params: GetSassPluginOptionsListParams)
   };
 
   return styles.cssModules ? [{ ...baseOptions, filter: CSS_MODULE_FILTER, type: 'local-css' }, baseOptions] : [baseOptions];
+}
+
+function inlineWorkerEsbuildPlugin(): Plugin {
+  return {
+    name: 'obsidian-plugin-inline-worker',
+    setup(build): void {
+      build.onResolve({ filter: /\.worker\.[jt]s\?worker-source$/i }, async (arguments_) => {
+        // eslint-disable-next-line unicorn/name-replacements -- `resolveDir` is esbuild's option name.
+        const result = await build.resolve(arguments_.path.replace(/\?worker-source$/iu, ''), { kind: arguments_.kind, resolveDir: arguments_.resolveDir });
+        return { ...result, namespace: 'obsidian-inline-worker' };
+      });
+      build.onLoad({ filter: /./, namespace: 'obsidian-inline-worker' }, async ({ path }) => {
+        const result = await bundleInlineWorker(path);
+        return { contents: result.code, loader: 'js', watchFiles: [...result.dependencies] };
+      });
+    }
+  };
 }
 
 /* v8 ignore start -- An esbuild plugin; exercised by the bundler integration test against a real esbuild build. */

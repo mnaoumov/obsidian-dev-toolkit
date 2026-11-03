@@ -12,6 +12,7 @@ import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts
 import type { SourceMapLike } from './obsidian-plugin-transforms.ts';
 
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
+import { bundleInlineWorker } from './inline-worker.ts';
 import {
   getFeatureFileKind,
   getFrameworkDefines,
@@ -102,6 +103,11 @@ export interface RollupCompatibleFeaturePlugin {
   readonly name: string;
 
   /**
+   * Resolves an explicit worker-source import through the project's ordinary module resolver.
+   */
+  readonly resolveId: FeaturePluginHook<(this: WorkerResolveContext, source: string, importer?: string) => Promise<null | string>>;
+
+  /**
    * Compiles a module the features transform, then replaces the compile-time constants.
    */
   readonly transform: FeaturePluginHook<(this: FeaturePluginContext, code: string, id: string) => Promise<null | TransformResultLike>>;
@@ -126,6 +132,10 @@ interface FeaturePluginHook<Handler> {
   readonly order: 'pre';
 }
 
+interface ResolvedWorkerModule {
+  readonly id: string;
+}
+
 /**
  * A transform hook's result.
  */
@@ -136,6 +146,17 @@ interface TransformResultLike {
 
 interface UnpluginVueModule {
   readonly default: (options?: object) => unknown;
+}
+
+/**
+ * The resolver supplied by rollup and vite.
+ */
+interface WorkerResolveContext {
+  readonly resolve: (source: string, importer: string | undefined, options: WorkerResolveOptions) => Promise<null | ResolvedWorkerModule>;
+}
+
+interface WorkerResolveOptions {
+  readonly skipSelf: boolean;
 }
 
 /**
@@ -191,11 +212,28 @@ export function createRollupCompatibleFeaturePlugin(params: CreateRollupCompatib
   return {
     load: {
       async handler(id): Promise<null | string> {
+        if (features.workers && id.endsWith('?worker-source')) {
+          const result = await bundleInlineWorker(id.slice(0, -'?worker-source'.length));
+          for (const dependency of result.dependencies) {
+            this.addWatchFile(dependency);
+          }
+          return result.code;
+        }
         return features.wasm && getFeatureFileKind(id) === 'wasm' ? getWasmModuleCode(await readFile(id)) : null;
       },
       order: 'pre'
     },
     name: 'obsidian-plugin-features',
+    resolveId: {
+      async handler(source, importer): Promise<null | string> {
+        if (!features.workers || !/\.worker\.[jt]s\?worker-source$/iu.test(source)) {
+          return null;
+        }
+        const resolved = await this.resolve(source.replace(/\?worker-source$/iu, ''), importer, { skipSelf: true });
+        return resolved ? `${resolved.id}?worker-source` : null;
+      },
+      order: 'pre'
+    },
     transform: {
       async handler(code, id): Promise<null | TransformResultLike> {
         const transformed = await transformFeatureFile(this, code, id);

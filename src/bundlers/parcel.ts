@@ -258,6 +258,9 @@ export function getParcelConfigFiles(params: GetParcelConfigFilesParams): Parcel
   if (features.wasm) {
     transformers['*.wasm'] = [featureTransformer];
   }
+  if (features.workers) {
+    transformers['*.worker.{js,ts}'] = [featureTransformer, '...'];
+  }
   if (isPostcssNeeded(features.styles)) {
     transformers['*.{css,pcss}'] = [featureTransformer, '@parcel/transformer-css'];
   }
@@ -287,6 +290,8 @@ const { Transformer } = require('@parcel/plugin');
 
 const FEATURES_MODULE_URL = ${JSON.stringify(getSiblingModuleUrl('obsidian-plugin-features'))};
 const TRANSFORMS_MODULE_URL = ${JSON.stringify(getSiblingModuleUrl('obsidian-plugin-transforms'))};
+const WORKERS_MODULE_URL = ${JSON.stringify(getSiblingModuleUrl('inline-worker'))};
+const WORKERS = ${JSON.stringify(features.workers ?? false)};
 const FRAMEWORK = ${JSON.stringify(features.framework ?? null)};
 const STYLES = ${JSON.stringify(features.styles ?? {})};
 
@@ -298,6 +303,19 @@ module.exports = new Transformer({
     const isProductionBuild = options.mode === 'production';
     const defines = getFrameworkDefines({ framework: FRAMEWORK ?? undefined, isProductionBuild });
     switch (getFeatureFileKind(filePath)) {
+      case 'worker': {
+        if (!WORKERS || !asset.query.has('worker-source')) {
+          break;
+        }
+        const { bundleInlineWorker } = await import(WORKERS_MODULE_URL);
+        const result = await bundleInlineWorker(filePath);
+        asset.setCode(result.code);
+        for (const dependency of result.dependencies) {
+          asset.invalidateOnFileChange(dependency);
+        }
+        asset.type = 'js';
+        break;
+      }
       case 'jsx': {
         const code = await asset.getCode();
         const jsxImportSource = getJsxImportSource(FRAMEWORK ?? undefined);

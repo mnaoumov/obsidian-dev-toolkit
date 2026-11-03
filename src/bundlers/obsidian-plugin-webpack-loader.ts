@@ -20,6 +20,7 @@ import type {
 } from './obsidian-plugin-features.ts';
 import type { SourceMapLike } from './obsidian-plugin-transforms.ts';
 
+import { bundleInlineWorker } from './inline-worker.ts';
 import {
   getWasmModuleCode,
   transformCss,
@@ -109,6 +110,13 @@ async function transformModule(context: LoaderContext<ObsidianPluginWebpackLoade
     }
     case 'wasm': {
       return { code: getWasmModuleCode(source) };
+    }
+    case 'worker': {
+      const result = await bundleInlineWorker(filePath);
+      for (const dependency of result.dependencies) {
+        context.addDependency(dependency);
+      }
+      return result;
     }
     default: {
       throw new Error(`Unknown loader kind: ${String(kind)}`);

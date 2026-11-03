@@ -143,7 +143,7 @@ A dependency that exposes its modules only through the `exports` field needs par
 
 ## Build features
 
-Every adapter takes the same three options beside its own: `build({ framework: 'react' })` for esbuild and parcel, `obsidianPluginVite({ framework: 'react' })`, `obsidianPluginRollup({ framework: 'react' })` and `new ObsidianPluginWebpackPlugin({ framework: 'react' })` for the others. Each is off unless set, and each needs a package or two that the toolkit does not install for you, because a plugin without the feature should not pay for it. The toolkit loads those packages from your project, so a missing one fails the build with the exact `npm install` command. Switching bundler keeps the options and the packages, since every adapter compiles a feature with the same code.
+Every adapter takes the same feature options beside its own: `build({ framework: 'react' })` for esbuild and parcel, `obsidianPluginVite({ framework: 'react' })`, `obsidianPluginRollup({ framework: 'react' })` and `new ObsidianPluginWebpackPlugin({ framework: 'react' })` for the others. Each is off unless set, and each needs a package or two that the toolkit does not install for you, because a plugin without the feature should not pay for it. The toolkit loads those packages from your project, so a missing one fails the build with the exact `npm install` command. Switching bundler keeps the options and the packages, since every adapter compiles a feature with the same code.
 
 | Option | What it does | Install |
 | --- | --- | --- |
@@ -158,6 +158,32 @@ Every adapter takes the same three options beside its own: `build({ framework: '
 | `wasm: true` | `import bytes from './module.wasm'` gives the module's bytes, inlined into `main.js` | nothing |
 
 Any `framework` also defines `process.env.NODE_ENV` as `"production"` or `"development"`, and for Vue its three feature flags, so a production plugin bundles the framework's production build. Obsidian's renderer has no `process.env.NODE_ENV` of its own, and a library build (vite's, parcel's) leaves it alone.
+
+### Inline browser workers
+
+Set `workers: true` on any adapter, then import a `*.worker.ts` or `*.worker.js` file with the `?worker-source` suffix. The import is a string containing the worker and its bundled dependencies. Add `@mnaoumov/obsidian-dev-toolkit/types/workers` to `compilerOptions.types` for the import declaration. The worker is bundled for the browser with `esbuild`, independently of the plugin's UI framework transforms; it cannot import Obsidian or Node modules. WASM imports inside the worker are inlined as bytes automatically. Changes to bundled worker dependencies trigger a rebuild in watch mode.
+
+<!-- snippet-check: skip The worker entry is a file supplied by the consuming plugin. -->
+
+```ts
+import type { Plugin } from 'obsidian';
+
+import source from './compute.worker.ts?worker-source';
+
+export function startWorker(plugin: Plugin): Worker {
+  const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+  const worker = new Worker(url);
+  plugin.register(() => {
+    worker.terminate();
+    URL.revokeObjectURL(url);
+  });
+  return worker;
+}
+```
+
+The build embeds readable JavaScript source inside `main.js`, without base64-encoding executable code or emitting a worker file that the plugin installer would omit. The caller owns the worker and its Blob URL: terminate the worker and revoke the URL on unload, and release them earlier when the work finishes. A worker runs in its own global scope and receives data through messages; it has no access to the vault, the DOM or the plugin's variables. Put CPU-heavy pure computation there and pass the inputs from the plugin.
+
+Use `wasm: true` for WASM imported by the plugin itself: `import bytes from './module.wasm'` returns a `Uint8Array` for `WebAssembly.instantiate(bytes)`, without an additional installed file. Binary data still increases `main.js` size; inlining is packaging, not compression. Large optional datasets should be downloaded with explicit consent and integrity verification instead of added to every plugin install.
 
 ### tsconfig presets
 
