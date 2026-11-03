@@ -12,7 +12,7 @@
 
 ## 8.0.0
 
-- build(deps)!: float typescript-dev-toolkit to ^6
+- build(deps)!: float `typescript-dev-toolkit` to ^6
 - docs: add issue-filing instructions for AI agents
 - chore: add issue forms
 - fix(deps): raise solid-js past two advisories, record deepmerge
@@ -29,13 +29,13 @@
 
 ## 7.2.0
 
-- chore(test): forward CLI arguments from the test scripts and templates to vitest
+- chore(test): forward CLI arguments from the test scripts and templates to `vitest`
 - fix(demo-vault-coverage): skip notes the demo vault's .gitignore drops
 - feat(test-runners): varied Zipf-distributed prose for the performance vault
 
 ## 7.1.1
 
-- fix(deps): accept obsidian-lib 8 as a required peer
+- fix(deps): accept `obsidian-lib` 8 as a required peer
 
 ## 7.1.0
 
@@ -43,8 +43,8 @@
 
 ## 7.0.1
 
-- fix(deps): accept obsidian-lib 7 as a required peer
-- fix(vitest): preserve serial projects under worker caps
+- fix(deps): accept `obsidian-lib` 7 as a required peer
+- fix(`vitest`): preserve serial projects under worker caps
 
 ## 7.0.0
 
@@ -57,50 +57,50 @@
 
 ## 5.3.1
 
-- fix(deps): accept typescript-lib 2 in development tooling
+- fix(deps): accept `typescript-lib` 2 in development tooling
 
 ## 5.3.0
 
-- feat(esbuild): add configurable source map ignore lists
+- feat(`esbuild`): add configurable source map ignore lists
 
 ## 5.2.0
 
-- feat(eslint): add the `obsidian-dev-toolkit/no-bare-code-element` rule, which reports a bare `code` element and points UI code to `appendCodeBlock`
+- feat(`eslint`): add the `obsidian-dev-toolkit/no-bare-code-element` rule, which reports a bare `code` element and points UI code to `appendCodeBlock`
 
 ## 5.1.1
 
-- fix(deps): let the optional @babel/core peer admit Babel 8
+- fix(deps): let the optional @babel/core peer admit `Babel` 8
 
 ## 5.1.0
 
 - feat(linters): let the plugin-name rules exclude a name
-- docs: name obsidian-lib where comments said dev-utils
+- docs: name `obsidian-lib` where comments said dev-utils
 
 ## 5.0.2
 
-- fix(deps): bundle the demo-vault helper from obsidian-lib 6.0.2
+- fix(deps): bundle the demo-vault helper from `obsidian-lib` 6.0.2
 
 ## 5.0.1
 
-- fix(deps): bundle the demo-vault helper from obsidian-lib 6.0.1
+- fix(deps): bundle the demo-vault helper from `obsidian-lib` 6.0.1
 
 ## 5.0.0
 
-- feat!: move to obsidian-lib 6 and rename the harness global to __obsidianLibModule
+- feat!: move to `obsidian-lib` 6 and rename the harness global to __obsidianLibModule
 
 ## 4.0.0
 
-- feat(demo-vault-coverage)!: spell the validation directives and key as obsidian-dev-toolkit
+- feat(demo-vault-coverage)!: spell the validation directives and key as `obsidian-dev-toolkit`
 - feat(demo-vault-buttons): report a button that never rendered apart from one that never reported
-- chore(dprint): rely on the format runner to exclude Claude Code's tool-local settings
+- chore(`dprint`): rely on the format runner to exclude Claude Code's tool-local settings
 - chore(build): drop the duplicate build:compile:typescript script
-- fix(dprint): exclude Claude Code's tool-local settings from formatting
+- fix(`dprint`): exclude Claude Code's tool-local settings from formatting
 
 ## 3.7.0
 
 - build(deps): accept @mnaoumov/obsidian-lib 5.0.0 as a peer and build with it
 - docs(linters): record why plugin-name-as-code reports inline quotations
-- docs: check guide snippets and retired obsidian-dev-utils references
+- docs: check guide snippets and retired `obsidian-dev-utils` references
 
 ## 3.6.0
 
@@ -114,7 +114,7 @@
 
 - fix(vitest-config): keep unit-test workers alive on Node 24
 - build(deps): bump @mnaoumov/typescript-dev-toolkit to ^3.6.3
-- docs: use the approved obsidian-dev-toolkit logo and favicon
+- docs: use the approved `obsidian-dev-toolkit` logo and favicon
 
 ## 3.4.1
 
@@ -129,18 +129,18 @@
 - feat(demo-vault-coverage): check that every Try it section has a code button
 - test(bundlers): give the framework compile tests a cold-load timeout
 - feat(build): keep the vitest- and harness-bound modules off the barrels
-- test(scripts): stop the bash workflow cases timing out under a loaded gate
+- test(scripts): stop the `bash` workflow cases timing out under a loaded gate
 
 ## 3.2.1
 
-- fix(linters): load the ESLint layer without obsidian-integration-testing
+- fix(linters): load the `ESLint` layer without `obsidian-integration-testing`
 - test(bundlers): load every bundler adapter's build on Obsidian Mobile
-- build: validate the published dependencies with typescript-dev-toolkit's validateDependencies
+- build: validate the published dependencies with `typescript-dev-toolkit`'s validateDependencies
 - docs(e2e-testing): link obsidian-test#7 and document OBSIDIAN_CONFIG_PATH
 - build: pass the tsconfig and types exports to generateLibraryExports as additionalExports
 - fix(bundlers): resolve parcel packages with browser conditions and tree-shake the bundle
 - fix(build): load the CommonJS build of dist/lib under plain Node
-- fix(bundlers): load obsidian-integration-testing only when the hot-reload deployment runs
+- fix(bundlers): load `obsidian-integration-testing` only when the hot-reload deployment runs
 - build(docs): set the repository homepage to the docs site on each Pages build
 
 ## 3.2.0
@@ -150,39 +150,39 @@
 
 ## 3.1.0
 
-- fix(deps): take obsidian-lib 3.x or 4.x as a peer dependency, so a plugin gets one copy
+- fix(deps): take `obsidian-lib` 3.x or 4.x as a peer dependency, so a plugin gets one copy
 
 ## 3.0.0
 
 - docs(ci): pin the reusable workflows to 3.0.0, the release that first ships them
-- fix(deps): install typescript-dev-toolkit for consumers, and check every published import is installed
+- fix(deps): install `typescript-dev-toolkit` for consumers, and check every published import is installed
 - feat(ci): ship reusable plugin CI, release and attestation workflows, and a coverage badge
 - feat: support wdio-obsidian and obsidian-test e2e, and Obsidian CLI reload
-- feat(bundlers): build frameworks, PostCSS, Tailwind, CSS modules and wasm with every bundler
-- feat(bundlers): build Obsidian plugins with vite, rollup, webpack and parcel
-- build(deps)!: take typescript-dev-toolkit 3.0.0, which keeps only nine @stylistic rules
+- feat(bundlers): build frameworks, `PostCSS`, `Tailwind`, CSS modules and wasm with every bundler
+- feat(bundlers): build Obsidian plugins with `vite`, rollup, `webpack` and parcel
+- build(deps)!: take `typescript-dev-toolkit` 3.0.0, which keeps only nine @stylistic rules
 - docs(site): show the package logo as the home page hero image
 - docs(readme): link the documentation site
 - build(deps): take @mnaoumov/typescript-dev-toolkit 2.2.0 so the docs site passes its link check
 
 ## 2.1.0
 
-- build(dprint): stop dprint and @stylistic/jsx-quotes fighting over JSX attribute quotes
+- build(`dprint`): stop `dprint` and @stylistic/jsx-quotes fighting over JSX attribute quotes
 - docs: add this package's documentation site
-- build: take commitlintConfig from typescript-dev-toolkit 2.1.0
+- build: take commitlintConfig from `typescript-dev-toolkit` 2.1.0
 
 ## 2.0.0
 
 - build: drop the workspace-era sibling includes from tsconfig.types.json
-- feat(eslint)!: register the Obsidian rules under the obsidian-dev-toolkit namespace
+- feat(`eslint`)!: register the Obsidian rules under the `obsidian-dev-toolkit` namespace
 
 ## 1.1.0
 
 - feat(linters): report locally declared Obsidian internals as an error
-- feat(linters): add the require-plugin-api-contract-schemas ESLint rule, registered off
+- feat(linters): add the require-plugin-api-contract-schemas `ESLint` rule, registered off
 - docs: mark plugin names as code in comments
 - feat(linters): merge the plugin-name-as-code rules
-- feat(eslint): merge the no-local-obsidian-internals rule
+- feat(`eslint`): merge the no-local-obsidian-internals rule
 - fix(demo-vault-coverage): report notes in the same order on every platform
 - build: add the npm-resolved lockfile
 

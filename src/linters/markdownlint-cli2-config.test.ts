@@ -12,6 +12,7 @@ import {
   PLUGIN_NAME_AS_CODE_RULE_NAME,
   pluginNameAsCodeRule
 } from './markdownlint-rules/plugin-name-as-code.ts';
+import { toolNameAsCodeRule } from './markdownlint-rules/tool-name-as-code.ts';
 
 describe('obsidianMarkdownlintCli2Config', () => {
   afterEach(() => {
@@ -25,14 +26,14 @@ describe('obsidianMarkdownlintCli2Config', () => {
   });
 
   it('should register the plugin-name rule, switched on', () => {
-    expect(obsidianMarkdownlintCli2Config.customRules).toEqual([...obsidianDevUtilsConfig.customRules ?? [], pluginNameAsCodeRule]);
+    expect(obsidianMarkdownlintCli2Config.customRules).toEqual([...obsidianDevUtilsConfig.customRules ?? [], pluginNameAsCodeRule, toolNameAsCodeRule]);
     expect(obsidianMarkdownlintCli2Config.config?.[PLUGIN_NAME_AS_CODE_RULE_NAME]).toBe(true);
   });
 
-  it('should register the plugin-name rule alone when the generic configuration has no custom rules', async () => {
+  it('should register both name rules when the generic configuration has no custom rules', async () => {
     vi.resetModules();
     vi.doMock('@mnaoumov/typescript-dev-toolkit/linters/markdownlint-cli2-config', () => ({ obsidianDevUtilsConfig: { config: {} } }));
     const { obsidianMarkdownlintCli2Config: config } = await import('./markdownlint-cli2-config.ts');
-    expect(config.customRules).toHaveLength(1);
+    expect(config.customRules).toHaveLength(2);
   });
 });

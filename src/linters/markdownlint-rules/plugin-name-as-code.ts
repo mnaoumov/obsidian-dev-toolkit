@@ -28,15 +28,13 @@
  * Not attempted: a multi-word name broken across two lines of one paragraph.
  */
 
-import type {
-  MicromarkToken,
-  Rule
-} from 'markdownlint';
+import type { Rule } from 'markdownlint';
 
 import process from 'node:process';
 
 import type { PluginNameRuleOptions } from '../plugin-names.ts';
 
+import { getMarkdownProseRanges } from '../markdown-prose.ts';
 import {
   findPluginNameMatches,
   getPluginNames
@@ -48,25 +46,6 @@ import {
 export const PLUGIN_NAME_AS_CODE_RULE_NAME = 'plugin-name-as-code';
 
 /**
- * The token types whose whole subtree is skipped.
- */
-const EXCLUDED_TOKEN_TYPES = new Set([
-  'atxHeading',
-  'blockQuote',
-  'definition',
-  'htmlFlow',
-  'image',
-  'link',
-  'setextHeading'
-]);
-
-/**
- * The prefix of the token types markdownlint appends for a shortcut, collapsed or full reference with no definition.
- * They repeat text the tree already holds, so reading them would report a name twice.
- */
-const UNDEFINED_REFERENCE_TOKEN_TYPE_PREFIX = 'undefinedReference';
-
-/**
  * The line spans micromark reads as plain text whose plugin names are not prose: an Obsidian wikilink, an inline
  * `<code>` element, a URL.
  */
@@ -75,14 +54,6 @@ const EXCLUDED_LINE_PATTERNS: readonly RegExp[] = [
   /<code\b[^>]*>[\s\S]*?<\/code>/gi,
   /\b[a-z][\w+.-]*:\/\/\S+/gi
 ];
-
-/**
- * A column range of one line, 1-based, end exclusive.
- */
-interface ColumnRange {
-  readonly end: number;
-  readonly start: number;
-}
 
 /**
  * A markdownlint rule requiring a plugin name in markdown to be marked as code.
@@ -97,8 +68,7 @@ export const pluginNameAsCodeRule: Rule = {
       cwd: process.cwd(),
       excludedPluginNames: options.excludedPluginNames
     });
-    const proseRangesByLine = new Map<number, ColumnRange[]>();
-    collectProseRanges(params.parsers.micromark.tokens, proseRangesByLine);
+    const proseRangesByLine = getMarkdownProseRanges(params.parsers.micromark.tokens);
 
     for (const [index, line] of params.lines.entries()) {
       const lineNumber = index + 1;
@@ -107,10 +77,9 @@ export const pluginNameAsCodeRule: Rule = {
         continue;
       }
 
-      const mergedRanges = mergeRanges(ranges);
       for (const match of findPluginNameMatches(line, pluginNames, EXCLUDED_LINE_PATTERNS)) {
         const column = match.index + 1;
-        const isInProse = mergedRanges.some((range) => range.start <= column && column + match.name.length <= range.end);
+        const isInProse = ranges.some((range) => range.start <= column && column + match.name.length <= range.end);
         if (!isInProse) {
           continue;
         }
@@ -132,45 +101,3 @@ export const pluginNameAsCodeRule: Rule = {
   parser: 'micromark',
   tags: ['code']
 };
-
-/**
- * Collects the column ranges of the prose `data` tokens, line by line, skipping the excluded subtrees.
- *
- * @param tokens - The tokens to walk.
- * @param proseRangesByLine - The ranges collected so far, keyed by line number.
- */
-function collectProseRanges(tokens: readonly MicromarkToken[], proseRangesByLine: Map<number, ColumnRange[]>): void {
-  for (const token of tokens) {
-    if (EXCLUDED_TOKEN_TYPES.has(token.type) || token.type.startsWith(UNDEFINED_REFERENCE_TOKEN_TYPE_PREFIX)) {
-      continue;
-    }
-
-    if (token.type === 'data') {
-      const ranges = proseRangesByLine.get(token.startLine) ?? [];
-      ranges.push({ end: token.endColumn, start: token.startColumn });
-      proseRangesByLine.set(token.startLine, ranges);
-      continue;
-    }
-
-    collectProseRanges(token.children, proseRangesByLine);
-  }
-}
-
-/**
- * Merges ranges that touch or overlap, so a name micromark splits across adjacent `data` tokens is still inside one.
- *
- * @param ranges - The ranges of one line.
- * @returns The merged ranges.
- */
-function mergeRanges(ranges: readonly ColumnRange[]): ColumnRange[] {
-  const merged: ColumnRange[] = [];
-  for (const range of [...ranges].sort((a, b) => a.start - b.start)) {
-    const last = merged.at(-1);
-    if (last && range.start <= last.end) {
-      merged[merged.length - 1] = { end: Math.max(last.end, range.end), start: last.start };
-    } else {
-      merged.push(range);
-    }
-  }
-  return merged;
-}

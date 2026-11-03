@@ -3,12 +3,12 @@ title: CI and Release
 description: Reusable GitHub workflows for a plugin's CI, its release from a tag and the attestation of its release assets, and a coverage badge with no external service.
 ---
 
-The toolkit ships three reusable GitHub workflows, so a plugin repository carries a few lines that call them instead of the steps themselves. Each is an ordinary [reusable workflow](https://docs.github.com/en/actions/sharing-automations/reusing-workflows): the calling workflow owns the triggers and the permissions, and the toolkit owns the steps.
+The toolkit ships three reusable `GitHub` workflows, so a plugin repository carries a few lines that call them instead of the steps themselves. Each is an ordinary [reusable workflow](https://docs.github.com/en/actions/sharing-automations/reusing-workflows): the calling workflow owns the triggers and the permissions, and the toolkit owns the steps.
 
 | Workflow | What it does | Trigger it from |
 | --- | --- | --- |
 | `obsidian-plugin-ci.yml` | Installs the dependencies and runs the gate; optionally publishes a coverage badge. | `push` and `pull_request` |
-| `obsidian-plugin-release.yml` | Checks the tag, builds the plugin, archives the demo vault, publishes the GitHub release and attests its assets. | `push` of a tag |
+| `obsidian-plugin-release.yml` | Checks the tag, builds the plugin, archives the demo vault, publishes the `GitHub` release and attests its assets. | `push` of a tag |
 | `obsidian-plugin-attest-release-assets.yml` | Attests the assets of a release made elsewhere, such as by `npm run version`. | `release: published` |
 
 Each call pins the workflow to a release tag of the toolkit, which is the version number with no `v`. The workflows ship from 3.0.0 on. Pin the same version as the toolkit in your `package.json`, so the commands the workflows run (`generate-coverage-badge`, `archive-demo-vault`) are the ones installed. [Dependabot's `github-actions` ecosystem](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) updates the pin along with your other actions.
@@ -19,7 +19,7 @@ Each call pins the workflow to a release tag of the toolkit, which is the versio
 
 | Input | Default | Meaning |
 | --- | --- | --- |
-| `package-manager` | `npm` | `npm`, `pnpm`, `yarn` or `bun`. pnpm is set up with `pnpm/action-setup`, which reads the version from the `packageManager` field of `package.json`; Yarn is set up through Corepack; Bun with `oven-sh/setup-bun`. |
+| `package-manager` | `npm` | `npm`, `pnpm`, `yarn` or `bun`. `pnpm` is set up with `pnpm/action-setup`, which reads the version from the `packageManager` field of `package.json`; Yarn is set up through Corepack; Bun with `oven-sh/setup-bun`. |
 | `node-version` | empty | The Node.js version. When it is empty, the version comes from `node-version-file`. |
 | `node-version-file` | `.nvmrc` | The file naming the Node.js version. When it does not exist either, the latest LTS is used. |
 | `install-command` | empty | The install command. When it is empty, the package manager's frozen install is used: `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable` (Yarn Berry, detected by `.yarnrc.yml`) or `yarn install --frozen-lockfile`, or `bun install --frozen-lockfile`. |
@@ -86,7 +86,7 @@ The job then does the following, in order:
 1. **Checks the tag.** Obsidian finds a release by the version in the plugin's manifest, so a tag that is not that version is a release that never reaches anyone. The job fails unless the tag is the `version` of `manifest.json`. For a tag with a `-` in it, it compares against `manifest-beta.json` when the plugin has one.
 2. **Builds the plugin** with `build-command`, into `dist/build`.
 3. **Archives the demo vault** when the plugin has a `demo-vault/` folder, with the toolkit's `archive-demo-vault` command, so the release carries the same archive `npm run version` attaches. See [Demo Vault](/obsidian-dev-toolkit/guides/demo-vault/).
-4. **Publishes the release.** Every file in `dist/build` is attached: `main.js`, `manifest.json`, `styles.css` and the demo vault archive. An empty file is left out with a warning, because GitHub refuses a 0-byte asset and rolls the whole release back. A tag with a `-` in it makes a pre-release. When the release exists already, its assets are replaced.
+4. **Publishes the release.** Every file in `dist/build` is attached: `main.js`, `manifest.json`, `styles.css` and the demo vault archive. An empty file is left out with a warning, because `GitHub` refuses a 0-byte asset and rolls the whole release back. A tag with a `-` in it makes a pre-release. When the release exists already, its assets are replaced.
 5. **Attests the assets' build provenance** with `actions/attest`, so anyone can check them with `gh attestation verify <file> --repo <owner>/<repo>`.
 
 | Input | Default | Meaning |

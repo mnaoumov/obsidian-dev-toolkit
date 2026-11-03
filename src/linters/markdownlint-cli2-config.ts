@@ -13,6 +13,10 @@ import {
   PLUGIN_NAME_AS_CODE_RULE_NAME,
   pluginNameAsCodeRule
 } from './markdownlint-rules/plugin-name-as-code.ts';
+import {
+  TOOL_NAME_AS_CODE_RULE_NAME,
+  toolNameAsCodeRule
+} from './markdownlint-rules/tool-name-as-code.ts';
 
 /**
  * The markdownlint-cli2 configuration of an Obsidian plugin.
@@ -25,10 +29,12 @@ export const obsidianMarkdownlintCli2Config: MarkdownlintCli2ConfigSchema = {
     // shared list lacks overrides this one key with `{ additionalPluginNames: [...] }` in its own
     // `scripts/markdownlint-cli2-config.ts`, and one whose own name is an ordinary word with
     // `{ excludedPluginNames: [...] }`. `npm run lint:md:fix` fixes what it reports.
-    [PLUGIN_NAME_AS_CODE_RULE_NAME]: true
+    [PLUGIN_NAME_AS_CODE_RULE_NAME]: true,
+    [TOOL_NAME_AS_CODE_RULE_NAME]: true
   },
   customRules: [
     ...obsidianDevUtilsConfig.customRules ?? [],
-    pluginNameAsCodeRule
+    pluginNameAsCodeRule,
+    toolNameAsCodeRule
   ]
 };

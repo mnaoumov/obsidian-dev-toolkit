@@ -1,6 +1,6 @@
 # @mnaoumov/obsidian-dev-toolkit
 
-Tooling for Obsidian plugins: the plugin builder for esbuild, with adapters for vite, rollup, webpack and parcel and built-in support for React, Preact, Solid, Svelte, Vue, PostCSS, Tailwind, CSS modules and WebAssembly, the shared ESLint and Vitest configurations, demo vaults, the plugin release script, the per-test setup for plugin tests, and the consumer templates. It continues the tooling half of `obsidian-dev-utils`. Install it as a dev dependency.
+Tooling for Obsidian plugins: the plugin builder for `esbuild`, with adapters for `vite`, rollup, `webpack` and parcel and built-in support for `React`, `Preact`, `Solid`, `Svelte`, `Vue`, `PostCSS`, `Tailwind`, CSS modules and `WebAssembly`, the shared `ESLint` and `Vitest` configurations, demo vaults, the plugin release script, the per-test setup for plugin tests, and the consumer templates. It continues the tooling half of `obsidian-dev-utils`. Install it as a dev dependency.
 
 ## Installation
 
@@ -12,9 +12,9 @@ npm install --save-dev @mnaoumov/obsidian-dev-toolkit
 
 The guides and the API reference are at <https://mnaoumov.dev/obsidian-dev-toolkit/>.
 
-Run `npx generate-debug-config` in your plugin project to create a VS Code renderer attach configuration matching the esbuild development source maps. See [Debugging plugins](docs/src/content/docs/guides/debugging.md) for starting Obsidian, binding TypeScript breakpoints and diagnosing source paths.
+Run `npx generate-debug-config` in your plugin project to create a VS Code renderer attach configuration matching the `esbuild` development source maps. See [Debugging plugins](docs/src/content/docs/guides/debugging.md) for starting Obsidian, binding TypeScript breakpoints and diagnosing source paths.
 
-esbuild builds include source-map ignore lists for shared debug and patching wrappers, so DevTools can link console messages to their callers. Extend the defaults with `ignoreListSources` or disable them with `ignoreListSources: false`; see the [bundler guide](https://mnaoumov.dev/obsidian-dev-toolkit/guides/bundlers/#esbuild).
+`esbuild` builds include source-map ignore lists for shared debug and patching wrappers, so DevTools can link console messages to their callers. Extend the defaults with `ignoreListSources` or disable them with `ignoreListSources: false`; see the [bundler guide](https://mnaoumov.dev/obsidian-dev-toolkit/guides/bundlers/#esbuild).
 
 ## Where it fits
 

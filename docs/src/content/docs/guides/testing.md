@@ -9,17 +9,17 @@ This guide covers what is specific to testing an Obsidian plugin. The generic ha
 
 An Obsidian plugin's tests take the setup endpoints of this package rather than the generic ones of `@mnaoumov/typescript-test-toolkit`:
 
-- **Vitest**: `@mnaoumov/obsidian-dev-toolkit/vitest-setup`
-- **Jest**: `@mnaoumov/obsidian-dev-toolkit/jest-setup`
+- **`Vitest`**: `@mnaoumov/obsidian-dev-toolkit/vitest-setup`
+- **`Jest`**: `@mnaoumov/obsidian-dev-toolkit/jest-setup`
 - **Any framework**: `setup` from `@mnaoumov/obsidian-dev-toolkit/setup`
 
 Each does everything the generic endpoint does, and before each test it also resets the state `@mnaoumov/obsidian-lib` keeps between calls: the `globalThis.__obsidianLib` bag (queues, registered handlers, the plugin-API registry) and the library context `ObsidianLibrary` holds. The Obsidian reset runs first, then the generic one. The endpoints live here rather than in the test toolkit because the test toolkit must not depend on `@mnaoumov/obsidian-lib`.
 
-The plugin Vitest configuration below already lists `@mnaoumov/obsidian-dev-toolkit/vitest-setup` in its `unit-tests` project, after `obsidian-test-mocks/vitest-setup`, and the [plugin Jest configuration](#plugin-jest-configuration) lists `@mnaoumov/obsidian-dev-toolkit/jest-setup` in `setupFilesAfterEnv` the same way, so a plugin built on either wires nothing by hand.
+The plugin `Vitest` configuration below already lists `@mnaoumov/obsidian-dev-toolkit/vitest-setup` in its `unit-tests` project, after `obsidian-test-mocks/vitest-setup`, and the [plugin Jest configuration](#plugin-jest-configuration) lists `@mnaoumov/obsidian-dev-toolkit/jest-setup` in `setupFilesAfterEnv` the same way, so a plugin built on either wires nothing by hand.
 
 ## Plugin vitest configuration
 
-An Obsidian plugin's Vitest setup is the same in every repo: a `unit-tests` project against mocked Obsidian, plus an `integration-tests:*` family against a real one. `defineObsidianPluginVitestConfig` owns that whole shape, so a plugin's config is one call:
+An Obsidian plugin's `Vitest` setup is the same in every repo: a `unit-tests` project against mocked Obsidian, plus an `integration-tests:*` family against a real one. `defineObsidianPluginVitestConfig` owns that whole shape, so a plugin's config is one call:
 
 ```typescript
 // scripts/vitest-config.ts
@@ -62,9 +62,9 @@ export const config = defineObsidianPluginVitestConfig({
 
 Set `context.desktopAfterLayoutReadyGlobalSetup = false` to leave the project out on purpose.
 
-`unit-tests` resolves `obsidian` to `obsidian-test-mocks/obsidian`. Every project that loads the plugin from `dist/build/main.js` first checks that build: it refuses to start when the build is missing or older than the source, because a plugin's `test:integration*` scripts call Vitest directly and never build, and a stale bundle would otherwise be tested and read as a defect.
+`unit-tests` resolves `obsidian` to `obsidian-test-mocks/obsidian`. Every project that loads the plugin from `dist/build/main.js` first checks that build: it refuses to start when the build is missing or older than the source, because a plugin's `test:integration*` scripts call `Vitest` directly and never build, and a stale bundle would otherwise be tested and read as a defect.
 
-Integration projects run files serially because their files share a harness-owned vault. The configuration preserves `fileParallelism: false` even when `VITEST_MAX_WORKERS` sets a larger worker cap, while unit projects retain their worker cap. Custom projects spread from `context.desktop` or `context.android` inherit the same protection; keep the returned configuration's `plugins` when composing it with another Vite configuration.
+Integration projects run files serially because their files share a harness-owned vault. The configuration preserves `fileParallelism: false` even when `VITEST_MAX_WORKERS` sets a larger worker cap, while unit projects retain their worker cap. Custom projects spread from `context.desktop` or `context.android` inherit the same protection; keep the returned configuration's `plugins` when composing it with another `Vite` configuration.
 
 Set `OBSIDIAN_VERSION` to pin the desktop project to a specific Obsidian (for example `OBSIDIAN_VERSION=catalyst-latest`). When it is unset, no version is pinned and the installed Obsidian runs as it is.
 
@@ -93,7 +93,7 @@ export const config = defineObsidianPluginVitestConfig({
 
 Everything the context exposes is live: the arrays and objects it hands you are the ones the final configuration is built from.
 
-**Every custom project must declare its own `include`**, and `defineObsidianPluginVitestConfig` throws if one does not. The root section deliberately declares no glob, so a project that declares none falls back to Vitest's own default, which matches *every* test file in the repo. The project would then run the unit suites under an Obsidian transport, the Android suites against the desktop one, and any screenshot-capture suite that opens a window and overwrites a checked-in PNG. That widening is silent: the project passes, slowly, having done all of it. Spreading a standard project (`...context.desktop`) and overriding its `include` is the shortest way to satisfy this.
+**Every custom project must declare its own `include`**, and `defineObsidianPluginVitestConfig` throws if one does not. The root section deliberately declares no glob, so a project that declares none falls back to `Vitest`'s own default, which matches *every* test file in the repo. The project would then run the unit suites under an Obsidian transport, the Android suites against the desktop one, and any screenshot-capture suite that opens a window and overwrites a checked-in PNG. That widening is silent: the project passes, slowly, having done all of it. Spreading a standard project (`...context.desktop`) and overriding its `include` is the shortest way to satisfy this.
 
 The `integration-tests:demo-vault` project above is the one [Clicking every button](/obsidian-dev-toolkit/guides/demo-vault/#clicking-every-button) needs. Declaring a project here is only half the job: `scripts/test-integration.ts` has to list it too, or nothing ever runs it.
 
@@ -119,10 +119,10 @@ A VM context also starts without some of Node's Web API globals. The setup endpo
 
 ## Plugin jest configuration
 
-A plugin that tests with Jest instead takes `defineObsidianPluginJestConfig`, the Jest counterpart of the `unit-tests` project above. It is `defineJestConfig` from `@mnaoumov/typescript-dev-toolkit/test-runners/jest-config` (ts-jest, ESM when `package.json` says `"type": "module"`, v8 coverage over `src/`) with the Obsidian layer on top:
+A plugin that tests with `Jest` instead takes `defineObsidianPluginJestConfig`, the `Jest` counterpart of the `unit-tests` project above. It is `defineJestConfig` from `@mnaoumov/typescript-dev-toolkit/test-runners/jest-config` (`ts-jest`, ESM when `package.json` says `"type": "module"`, v8 coverage over `src/`) with the Obsidian layer on top:
 
 - `testEnvironment: 'jsdom'`, because the mocks' setup writes to `Document.prototype`, `Element.prototype` and `window`;
-- `obsidian` mapped onto `obsidian-test-mocks/obsidian`, since the `obsidian` npm package carries types only;
+- `obsidian` mapped onto `obsidian-test-mocks/obsidian`, since the `obsidian` `npm` package carries types only;
 - `obsidian-test-mocks/jest-setup` and `@mnaoumov/obsidian-dev-toolkit/jest-setup` in `setupFilesAfterEnv`, in that order;
 - every `*.integration.test.ts` left out, because those run in a real Obsidian through `obsidian-integration-testing`.
 
@@ -139,9 +139,9 @@ export default defineObsidianPluginJestConfig({
 });
 ```
 
-Install the runner beside it: `npm install --save-dev jest ts-jest jest-environment-jsdom @jest/globals`. All four are optional peer dependencies of this package, so a Vitest plugin installs none of them. Jest 30 loads a `jest.config.ts` through Node's own type stripping, which is on by default from Node 22.18, and falls back to `ts-node` only when that fails.
+Install the runner beside it: `npm install --save-dev jest ts-jest jest-environment-jsdom @jest/globals`. All four are optional peer dependencies of this package, so a `Vitest` plugin installs none of them. `Jest` 30 loads a `jest.config.ts` through Node's own type stripping, which is on by default from Node 22.18, and falls back to `ts-node` only when that fails.
 
-The scripts call the runner from `@mnaoumov/typescript-dev-toolkit/test-runners/auto`, which picks Jest whenever a Jest configuration file exists and adds `--experimental-vm-modules` for an ESM package:
+The scripts call the runner from `@mnaoumov/typescript-dev-toolkit/test-runners/auto`, which picks `Jest` whenever a `Jest` configuration file exists and adds `--experimental-vm-modules` for an ESM package:
 
 ```typescript
 // scripts/test.ts

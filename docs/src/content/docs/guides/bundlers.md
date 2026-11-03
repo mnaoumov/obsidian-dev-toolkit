@@ -3,7 +3,7 @@ title: Bundlers
 description: Build an Obsidian plugin with esbuild, vite, rollup, webpack or parcel, each producing the same main.js, styles.css and manifest.json.
 ---
 
-An Obsidian plugin ships three files: `main.js`, `styles.css` and `manifest.json`. Obsidian loads `main.js` as CommonJS, reads the stylesheet from `styles.css` and from nothing else, and supplies `obsidian`, `electron` and the CodeMirror and Lezer packages itself. The toolkit builds that layout with whichever bundler a plugin prefers. esbuild is the default and needs nothing extra; vite, rollup, webpack and parcel each have an adapter, and each is an optional peer dependency, so a plugin built with esbuild installs none of them.
+An Obsidian plugin ships three files: `main.js`, `styles.css` and `manifest.json`. Obsidian loads `main.js` as CommonJS, reads the stylesheet from `styles.css` and from nothing else, and supplies `obsidian`, `electron` and the CodeMirror and Lezer packages itself. The toolkit builds that layout with whichever bundler a plugin prefers. `esbuild` is the default and needs nothing extra; `vite`, rollup, `webpack` and parcel each have an adapter, and each is an optional peer dependency, so a plugin built with `esbuild` installs none of them.
 
 Every adapter does the same things:
 
@@ -14,7 +14,7 @@ Every adapter does the same things:
 - heads `main.js` with the generated-file banner, after minification so the minifier does not strip it;
 - in a development build, writes an inline source map, deploys every rebuild into the vault named by `OBSIDIAN_CONFIG_FOLDER`, and [reloads it there](#reloading-a-development-build): by default by adding the `.hotreload` marker and enabling [Hot Reload] and the plugin, as the [development build](/obsidian-dev-toolkit/guides/cli-commands/#build-development-version) does.
 
-Each adapter fills in only what your own configuration leaves unset, so anything you configure wins. TypeScript stays your choice of the bundler's own plugin or loader. A UI framework, the stylesheet pipeline and WebAssembly are [build features](#build-features), one set of options every adapter takes the same way.
+Each adapter fills in only what your own configuration leaves unset, so anything you configure wins. TypeScript stays your choice of the bundler's own plugin or loader. A UI framework, the stylesheet pipeline and `WebAssembly` are [build features](#build-features), one set of options every adapter takes the same way.
 
 ## Runtime compatibility
 
@@ -24,7 +24,7 @@ This is a configurable policy, not a guarantee inferred from `minAppVersion`: de
 
 A syntax target cannot supply missing built-ins. Lint catches newer runtime features such as iterator helpers, `Set.union`, `Array.fromAsync` and `Promise.withResolvers`. Obsidian's `Array.findLastIndex` polyfill remains under `obsidianmd/no-unsupported-api`, which checks its `@since` version; `Array.findLast` and typed-array methods retain their runtime checks.
 
-The esbuild builder derives its `target` from this floor, and vite derives `build.target`, preserving explicit consumer targets. The webpack adapter applies the floor to generated runtime syntax through `target: ['node', runtimeFloor]`; configure the TypeScript or Babel loader's target as well. With rollup, configure your TypeScript plugin's `compilerOptions.target` from the same value. With parcel, configure the target's `engines` in `customizeParcelOptions` for your supported browsers; the ECMAScript edition alone does not determine a browser version. No adapter installs runtime polyfills.
+The `esbuild` builder derives its `target` from this floor, and `vite` derives `build.target`, preserving explicit consumer targets. The `webpack` adapter applies the floor to generated runtime syntax through `target: ['node', runtimeFloor]`; configure the TypeScript or `Babel` loader's target as well. With rollup, configure your TypeScript plugin's `compilerOptions.target` from the same value. With parcel, configure the target's `engines` in `customizeParcelOptions` for your supported browsers; the ECMAScript edition alone does not determine a browser version. No adapter installs runtime polyfills.
 
 ## esbuild
 
@@ -38,9 +38,9 @@ import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
 await wrapCliTask(() => build());
 ```
 
-The default, documented on the [Commands page](/obsidian-dev-toolkit/guides/cli-commands/#build-production-version). It type-checks with `build:compile` first and handles TypeScript, Sass and Svelte itself.
+The default, documented on the [Commands page](/obsidian-dev-toolkit/guides/cli-commands/#build-production-version). It type-checks with `build:compile` first and handles TypeScript, `Sass` and `Svelte` itself.
 
-esbuild builds ignore-list the shared `typescript-lib` debug logger, `monkey-around`, and `obsidian-lib`'s `MonkeyAroundComponent` in their source maps. DevTools can then skip these wrapper frames when choosing a console message's source link. Development builds retain their full source maps; production builds include a compact inline map covering only ignored regions, leaving your own code linked to the generated bundle. The trailing `/* nosourcemap */` marker keeps Obsidian from removing the inline map when debug mode is off. DevTools must have source maps and ignore listing enabled.
+`esbuild` builds ignore-list the shared `typescript-lib` debug logger, `monkey-around`, and `obsidian-lib`'s `MonkeyAroundComponent` in their source maps. DevTools can then skip these wrapper frames when choosing a console message's source link. Development builds retain their full source maps; production builds include a compact inline map covering only ignored regions, leaving your own code linked to the generated bundle. The trailing `/* nosourcemap */` marker keeps Obsidian from removing the inline map when debug mode is off. DevTools must have source maps and ignore listing enabled.
 
 Pass additional regular expressions through `ignoreListSources` on `build()`, `dev()` or `buildObsidianPlugin()`. They match source paths with forward slashes and extend the shared defaults. Pass `ignoreListSources: false` to disable this feature. Explicitly configured external source maps remain external and retain their full mappings.
 
@@ -66,7 +66,7 @@ export default defineConfig({
 });
 ```
 
-`vite build` is the production build and `vite build --watch` the development one; `--mode development` also makes a development build, and `obsidianPluginVite({ mode })` decides it outright. The plugin turns the build into a library build of `src/main.ts` (unless you set `build.lib`), sets `build.outDir`, puts every asset inline (`build.assetsInlineLimit`), minifies only in production, and turns off `build.emptyOutDir` because it empties the folder itself. It needs vite 8, which builds with rolldown.
+`vite build` is the production build and `vite build --watch` the development one; `--mode development` also makes a development build, and `obsidianPluginVite({ mode })` decides it outright. The plugin turns the build into a library build of `src/main.ts` (unless you set `build.lib`), sets `build.outDir`, puts every asset inline (`build.assetsInlineLimit`), minifies only in production, and turns off `build.emptyOutDir` because it empties the folder itself. It needs `vite` 8, which builds with rolldown.
 
 ## rollup
 
@@ -117,7 +117,7 @@ export default {
 
 `webpack` builds for production and `webpack --watch` (or `mode: 'development'`) for development; `new ObsidianPluginWebpackPlugin({ mode })` decides it outright. Unless you set them, the plugin fills in `entry`, `mode`, `output.path`, `output.filename`, a `commonjs2` library, `output.asyncChunks: false`, `target: ['node', 'es2022']` (using your `runtimeFloor` when supplied) with the browser's export conditions and never `node`, so a package hands over its browser build even when its `exports` lists `node` first, and `devtool`. It also puts license comments the minimizer extracted into `main.js.LICENSE.txt` back into `main.js`, since no Obsidian release ships that file.
 
-The TypeScript step in both examples is esbuild-based on purpose: `@rollup/plugin-typescript` and `ts-loader` call TypeScript's JavaScript API, which TypeScript 7 no longer has, so with the TypeScript npm installs today they fail before reading a file.
+The TypeScript step in both examples is esbuild-based on purpose: `@rollup/plugin-typescript` and `ts-loader` call TypeScript's JavaScript API, which TypeScript 7 no longer has, so with the TypeScript `npm` installs today they fail before reading a file.
 
 ## parcel
 
@@ -141,7 +141,7 @@ import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
 await wrapCliTask(() => dev());
 ```
 
-The same `build()` and `dev()` the esbuild builder has, running parcel through its JavaScript API: `build:compile` first when the project has it, since parcel strips types without checking them. Parcel takes no `external` list and no output file name, so the build writes a `.parcelrc` of its own into `.parcel-cache/obsidian-dev-toolkit/`, with a resolver that leaves Obsidian's modules external, a namer for `styles.css`, a transformer that keeps dynamic imports inside `main.js`, and an optimizer that adds the banner and lets parcel's runtime reach the `require` Obsidian passes in. The resolver resolves every other module the way parcel's default resolver does, but with the browser's export conditions and never `node`, so a package that lists its Node build first (Vue does) still hands over its browser build, which is smaller and loads on mobile. The build is scope-hoisted, so it is tree-shaken, and a production build wraps the bundle in a function before minifying it, so the minifier can rename its top-level bindings. That configuration extends your own `.parcelrc` when the project has one, so every transformer you configured still applies, and `@parcel/config-default` otherwise. `customizeParcelOptions` edits the options handed to parcel before the build runs.
+The same `build()` and `dev()` the `esbuild` builder has, running parcel through its JavaScript API: `build:compile` first when the project has it, since parcel strips types without checking them. `Parcel` takes no `external` list and no output file name, so the build writes a `.parcelrc` of its own into `.parcel-cache/obsidian-dev-toolkit/`, with a resolver that leaves Obsidian's modules external, a namer for `styles.css`, a transformer that keeps dynamic imports inside `main.js`, and an optimizer that adds the banner and lets parcel's runtime reach the `require` Obsidian passes in. The resolver resolves every other module the way parcel's default resolver does, but with the browser's export conditions and never `node`, so a package that lists its Node build first (`Vue` does) still hands over its browser build, which is smaller and loads on mobile. The build is scope-hoisted, so it is tree-shaken, and a production build wraps the bundle in a function before minifying it, so the minifier can rename its top-level bindings. That configuration extends your own `.parcelrc` when the project has one, so every transformer you configured still applies, and `@parcel/config-default` otherwise. `customizeParcelOptions` edits the options handed to parcel before the build runs.
 
 A dependency that exposes its modules only through the `exports` field needs parcel's package exports switched on, in `package.json`:
 
@@ -155,21 +155,21 @@ A dependency that exposes its modules only through the `exports` field needs par
 
 ## Build features
 
-Every adapter takes the same feature options beside its own: `build({ framework: 'react' })` for esbuild and parcel, `obsidianPluginVite({ framework: 'react' })`, `obsidianPluginRollup({ framework: 'react' })` and `new ObsidianPluginWebpackPlugin({ framework: 'react' })` for the others. Each is off unless set, and each needs a package or two that the toolkit does not install for you, because a plugin without the feature should not pay for it. The toolkit loads those packages from your project, so a missing one fails the build with the exact `npm install` command. Switching bundler keeps the options and the packages, since every adapter compiles a feature with the same code.
+Every adapter takes the same feature options beside its own: `build({ framework: 'react' })` for `esbuild` and parcel, `obsidianPluginVite({ framework: 'react' })`, `obsidianPluginRollup({ framework: 'react' })` and `new ObsidianPluginWebpackPlugin({ framework: 'react' })` for the others. Each is off unless set, and each needs a package or two that the toolkit does not install for you, because a plugin without the feature should not pay for it. The toolkit loads those packages from your project, so a missing one fails the build with the exact `npm install` command. Switching bundler keeps the options and the packages, since every adapter compiles a feature with the same code.
 
 | Option | What it does | Install |
 | --- | --- | --- |
-| `framework: 'react'` | JSX with React's automatic runtime | `react react-dom` |
-| `framework: 'preact'` | JSX with Preact's automatic runtime | `preact` |
+| `framework: 'react'` | JSX with `React`'s automatic runtime | `react react-dom` |
+| `framework: 'preact'` | JSX with `Preact`'s automatic runtime | `preact` |
 | `framework: 'solid'` | JSX compiled by `babel-preset-solid` | `solid-js @babel/core babel-preset-solid` |
 | `framework: 'svelte'` | `.svelte` components and `.svelte.ts` / `.svelte.js` modules, styles injected by the component | `svelte` |
 | `framework: 'vue'` | `.vue` single-file components, through `unplugin-vue` | `vue unplugin-vue`, and on parcel `@parcel/transformer-vue` |
-| `styles: { postcss: true }` | every stylesheet through your `postcss.config.*` | your PostCSS plugins |
-| `styles: { tailwind: true }` | every stylesheet through Tailwind CSS 4 | `tailwindcss @tailwindcss/postcss` |
+| `styles: { postcss: true }` | every stylesheet through your `postcss.config.*` | your `PostCSS` plugins |
+| `styles: { tailwind: true }` | every stylesheet through `Tailwind CSS` 4 | `tailwindcss @tailwindcss/postcss` |
 | `styles: { cssModules: true }` | `*.module.css` scoped, its import giving the scoped class names | nothing |
 | `wasm: true` | `import bytes from './module.wasm'` gives the module's bytes, inlined into `main.js` | nothing |
 
-Any `framework` also defines `process.env.NODE_ENV` as `"production"` or `"development"`, and for Vue its three feature flags, so a production plugin bundles the framework's production build. Obsidian's renderer has no `process.env.NODE_ENV` of its own, and a library build (vite's, parcel's) leaves it alone.
+Any `framework` also defines `process.env.NODE_ENV` as `"production"` or `"development"`, and for `Vue` its three feature flags, so a production plugin bundles the framework's production build. Obsidian's renderer has no `process.env.NODE_ENV` of its own, and a library build (`vite`'s, parcel's) leaves it alone.
 
 ### Inline browser workers
 
@@ -207,7 +207,7 @@ The JSX settings live in tsconfig presets the toolkit ships, so the type checker
 }
 ```
 
-There is one per framework: `react.json` and `preact.json` (`jsx: react-jsx` and the import source), `solid.json` (`jsx: preserve`, `jsxImportSource: solid-js`, since Babel compiles the JSX), `vue.json` (`jsx: preserve`, `jsxImportSource: vue`) and `svelte.json` (`isolatedModules` and `verbatimModuleSyntax`, which Svelte's TypeScript needs). On rollup and webpack this is also what compiles React and Preact JSX: `rollup-plugin-esbuild` and `esbuild-loader` read the preset.
+There is one per framework: `react.json` and `preact.json` (`jsx: react-jsx` and the import source), `solid.json` (`jsx: preserve`, `jsxImportSource: solid-js`, since `Babel` compiles the JSX), `vue.json` (`jsx: preserve`, `jsxImportSource: vue`) and `svelte.json` (`isolatedModules` and `verbatimModuleSyntax`, which `Svelte`'s TypeScript needs). On rollup and `webpack` this is also what compiles `React` and `Preact` JSX: `rollup-plugin-esbuild` and `esbuild-loader` read the preset.
 
 The types of stylesheet imports (a plain one for its side effect, a CSS module for its class names) and of a `.wasm` import ship too. Name the ones you use in `compilerOptions.types`:
 
@@ -282,11 +282,11 @@ export default {
 
 ### What each bundler does with them
 
-- **esbuild** sets `jsx` and `jsxImportSource` for React and Preact, runs a Solid plugin, adds `unplugin-vue/esbuild` for Vue, and compiles Svelte as it always has. Stylesheets keep going through its Sass plugin, which now runs PostCSS and Tailwind on what Sass produced; `cssModules` loads `*.module.css` (and `.module.scss`) with esbuild's own `local-css` loader. `wasm` uses esbuild's `binary` loader.
-- **vite** sets `oxc.jsx` for React and Preact, adds `unplugin-vue/vite` for Vue, and compiles Solid and Svelte in a plugin of its own. `postcss` and `tailwind` set `css.postcss` unless you set it. Vite scopes `*.module.css` itself, whatever `cssModules` says.
-- **rollup** sets its `jsx` option for React and Preact (the TypeScript plugin reads the preset), adds `unplugin-vue/rollup` for Vue, and compiles Solid and Svelte in a plugin of its own. With `styles` set, the adapter compiles every stylesheet itself and emits it into `styles.css`, so leave rollup's CSS plugin out; `styles: {}` compiles plain CSS. It also replaces `process.env.NODE_ENV` in the bundled code, since rollup has no `define`.
-- **webpack** adds rules that run the toolkit's own loader for Solid, Svelte and `.wasm`, and applies `unplugin-vue/webpack` for Vue, with a rule that strips the types of a `<script lang="ts">` block. With `styles` set, it adds the one stylesheet rule (the toolkit's loader for PostCSS and Tailwind, then `css-loader`, scoping `*.module.css` only with `cssModules`, then `mini-css-extract-plugin`) and applies `mini-css-extract-plugin` unless your config does, so leave your own `.css` rule out and install `css-loader` and `mini-css-extract-plugin`. Webpack's `mode` defines `process.env.NODE_ENV`.
-- **parcel** gets pipelines in the generated `.parcelrc`: one transformer of the toolkit's compiles JSX for React, Preact and Solid (parcel reads the JSX runtime from `tsconfig.json` without following its `extends`), Svelte, `.wasm`, and with `postcss` or `tailwind` every stylesheet, in place of parcel's own PostCSS step. Parcel compiles Vue with `@parcel/transformer-vue` and scopes `*.module.css` itself. Svelte and the frameworks' runtimes are reached through `exports`, so switch `packageExports` on as shown in the [parcel section](#parcel).
+- **`esbuild`** sets `jsx` and `jsxImportSource` for `React` and `Preact`, runs a `Solid` plugin, adds `unplugin-vue/esbuild` for `Vue`, and compiles `Svelte` as it always has. Stylesheets keep going through its `Sass` plugin, which now runs `PostCSS` and `Tailwind` on what `Sass` produced; `cssModules` loads `*.module.css` (and `.module.scss`) with `esbuild`'s own `local-css` loader. `wasm` uses `esbuild`'s `binary` loader.
+- **`vite`** sets `oxc.jsx` for `React` and `Preact`, adds `unplugin-vue/vite` for `Vue`, and compiles `Solid` and `Svelte` in a plugin of its own. `postcss` and `tailwind` set `css.postcss` unless you set it. `Vite` scopes `*.module.css` itself, whatever `cssModules` says.
+- **rollup** sets its `jsx` option for `React` and `Preact` (the TypeScript plugin reads the preset), adds `unplugin-vue/rollup` for `Vue`, and compiles `Solid` and `Svelte` in a plugin of its own. With `styles` set, the adapter compiles every stylesheet itself and emits it into `styles.css`, so leave rollup's CSS plugin out; `styles: {}` compiles plain CSS. It also replaces `process.env.NODE_ENV` in the bundled code, since rollup has no `define`.
+- **`webpack`** adds rules that run the toolkit's own loader for `Solid`, `Svelte` and `.wasm`, and applies `unplugin-vue/webpack` for `Vue`, with a rule that strips the types of a `<script lang="ts">` block. With `styles` set, it adds the one stylesheet rule (the toolkit's loader for `PostCSS` and `Tailwind`, then `css-loader`, scoping `*.module.css` only with `cssModules`, then `mini-css-extract-plugin`) and applies `mini-css-extract-plugin` unless your config does, so leave your own `.css` rule out and install `css-loader` and `mini-css-extract-plugin`. `Webpack`'s `mode` defines `process.env.NODE_ENV`.
+- **parcel** gets pipelines in the generated `.parcelrc`: one transformer of the toolkit's compiles JSX for `React`, `Preact` and `Solid` (parcel reads the JSX runtime from `tsconfig.json` without following its `extends`), `Svelte`, `.wasm`, and with `postcss` or `tailwind` every stylesheet, in place of parcel's own `PostCSS` step. `Parcel` compiles `Vue` with `@parcel/transformer-vue` and scopes `*.module.css` itself. `Svelte` and the frameworks' runtimes are reached through `exports`, so switch `packageExports` on as shown in the [parcel section](#parcel).
 
 ## Reloading a development build
 
@@ -320,7 +320,7 @@ One fixture plugin, `test-fixtures/obsidian-plugin` in this repository, is built
 
 `npm run test:integration:obsidian:android` runs the same checks in Obsidian Mobile on an Android emulator, through the harness's Appium transport. Mobile has no Node builtins, so there the command is registered but not run: a plugin that reaches a builtin has to check the platform first, whichever bundler built it. It needs the Android SDK, an `obsidian_test` emulator with Obsidian installed, and Appium, so it also runs locally only.
 
-Each build feature has a fixture of its own in `test-fixtures/features/`: one per framework, one with PostCSS, Tailwind and a CSS module together, and one with a WebAssembly module. Every bundler builds each of them, in production and, where it can, in development, and each `main.js` runs in a DOM: the framework's component renders its text, the CSS module's scoped class name is in `styles.css` beside Tailwind's utility, and the WebAssembly module answers.
+Each build feature has a fixture of its own in `test-fixtures/features/`: one per framework, one with `PostCSS`, `Tailwind` and a CSS module together, and one with a `WebAssembly` module. Every bundler builds each of them, in production and, where it can, in development, and each `main.js` runs in a DOM: the framework's component renders its text, the CSS module's scoped class name is in `styles.css` beside `Tailwind`'s utility, and the `WebAssembly` module answers.
 
 [Hot Reload]: https://github.com/pjeby/hot-reload
 [obsidian-integration-testing]: https://mnaoumov.dev/obsidian-integration-testing/
