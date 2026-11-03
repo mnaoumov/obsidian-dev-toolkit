@@ -28,17 +28,39 @@ import { defineObsidianPluginVitestConfig } from '@mnaoumov/obsidian-dev-toolkit
 export const config = defineObsidianPluginVitestConfig();
 ```
 
-It declares five projects, each collecting its own suffix:
+It declares six projects, each collecting its own suffix:
 
-| Project                                 | Collects                                                                 |
-|-----------------------------------------|--------------------------------------------------------------------------|
-| `unit-tests`                            | `*.test.ts` (minus every `*.integration.test.ts`), in `jsdom`            |
-| `integration-tests:no-app`              | `*.no-app.integration.test.ts`, with no Obsidian instance at all         |
-| `integration-tests:desktop`             | `*.desktop.integration.test.ts` + `*.cross-platform.integration.test.ts` |
-| `integration-tests:desktop-performance` | `*.desktop-performance.integration.test.ts`                              |
-| `integration-tests:android`             | `*.android.integration.test.ts` + `*.cross-platform.integration.test.ts` |
+| Project                                        | Collects                                                                 |
+|------------------------------------------------|--------------------------------------------------------------------------|
+| `unit-tests`                                   | `*.test.ts` (minus every `*.integration.test.ts`), in `jsdom`            |
+| `integration-tests:no-app`                     | `*.no-app.integration.test.ts`, with no Obsidian instance at all         |
+| `integration-tests:desktop`                    | `*.desktop.integration.test.ts` + `*.cross-platform.integration.test.ts` |
+| `integration-tests:desktop:after-layout-ready` | the same files as `integration-tests:desktop`                            |
+| `integration-tests:desktop-performance`        | `*.desktop-performance.integration.test.ts`                              |
+| `integration-tests:android`                    | `*.android.integration.test.ts` + `*.cross-platform.integration.test.ts` |
 
 A behavior that must hold on **both** platforms therefore lives in exactly one `*.cross-platform.integration.test.ts` file with plain top-level `describe` / `it`: both platform projects collect it and run it under their own transport. A behavior specific to one platform stays in a single `*.desktop.` or `*.android.` file. Neither needs a wrapper function or a per-platform entry point.
+
+### Enabled at startup, and enabled later
+
+`integration-tests:desktop` enables the plugin during startup, the way Obsidian loads a plugin that is already on. `integration-tests:desktop:after-layout-ready` runs the same suites with the plugin enabled once the vault's layout is ready, the way a user turns it on in settings. A plugin can break on one path and not the other: an `onload` that reads the workspace before `onLayoutReady`, or one that waits for a `layout-ready` event that already fired. See [Plugin lifecycle patterns](https://mnaoumov.dev/obsidian-integration-testing/guides/plugin-lifecycle/).
+
+The second project is a copy of `context.desktop`, taken after `editContext`, so every edit you make there carries over; only its name and its `globalSetup` differ. Its name sits under `integration-tests:desktop:*`, so `test({ projects: ['integration-tests:desktop'] })`, which a plugin's `test:integration:desktop` and `test:integration` scripts run, runs both.
+
+The enable timing is an option of `obsidian-integration-testing`'s `createSetup` (`pluginEnableTiming`), so the copy's `globalSetup` is swapped for a twin: `obsidian-integration-testing/vitest-global-setup-plugin` for `@mnaoumov/obsidian-dev-toolkit/test-runners/after-layout-ready-vitest-global-setup`, and `@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup` for `@mnaoumov/obsidian-dev-toolkit/integration-test-after-layout-ready-vitest-global-setup`. A setup module of your own cannot be re-timed from outside, so when `context.desktop` names one, the project is left out. Write a twin of it that passes `pluginEnableTiming: 'after-layout-ready'` to `createSetup`, and name it:
+
+```typescript
+import { defineObsidianPluginVitestConfig } from '@mnaoumov/obsidian-dev-toolkit/test-runners/vitest-config';
+
+export const config = defineObsidianPluginVitestConfig({
+  editContext(context) {
+    context.desktop.globalSetup = ['./scripts/vitest-global-setup.ts'];
+    context.desktopAfterLayoutReadyGlobalSetup = ['./scripts/vitest-global-setup-after-layout-ready.ts'];
+  }
+});
+```
+
+Set `context.desktopAfterLayoutReadyGlobalSetup = false` to leave the project out on purpose.
 
 `unit-tests` resolves `obsidian` to `obsidian-test-mocks/obsidian`. Every project that loads the plugin from `dist/build/main.js` first checks that build: it refuses to start when the build is missing or older than the source, because a plugin's `test:integration*` scripts call Vitest directly and never build, and a stale bundle would otherwise be tested and read as a defect.
 
