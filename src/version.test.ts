@@ -304,6 +304,15 @@ describe('updateVersion', () => {
   });
 
   describe('the plugin files', () => {
+    it('should preserve older compatibility entries when raising minAppVersion', async () => {
+      await updateVersionInExtraFiles('2.0.0', { minAppVersion: '1.9.0' });
+      const versions: Record<string, string> = { '1.0.0': '1.0.0', '1.5.0': '1.5.0' };
+      const versionsParams = getEditJsonParams(1);
+      expect(versionsParams.path).toBe('versions.json');
+      await versionsParams.editFunction(versions);
+      expect(versions).toEqual({ '1.0.0': '1.0.0', '1.5.0': '1.5.0', '2.0.0': '1.9.0' });
+    });
+
     it('should copy manifest.json to manifest-beta.json with the new version for a pre-release', async () => {
       const mockFetch = stubDesktopReleasesFeed({ latestVersion: '1.7.0' });
       await updateVersionInExtraFiles('1.0.1-beta.0');

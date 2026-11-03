@@ -115,6 +115,7 @@ export interface ValidatePluginReleaseOptions extends ValidatePluginManifestOpti
 
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
 const NUMERIC_VERSION_REGEX = /^[0-9.]+$/;
+const BETA_MANIFEST_FILE: string = ObsidianPluginRepoPaths.ManifestBetaJson;
 const PLUGIN_ID_REGEX = /^[a-z0-9-_]+$/;
 const DISALLOWED_WORDS = ['obsidian', 'plugin'];
 const AUTHOR_PLACEHOLDERS = new Set(['anonymous', 'author', 'me', 'plugin author', 'unknown', 'your-name', 'your name']);
@@ -218,6 +219,19 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
   findings.push(...await validateVersionsJsonFile(join(rootFolder, ObsidianPluginRepoPaths.VersionsJson)));
 
   const manifestVersion = readVersion(manifest);
+  if (
+    manifestFile !== BETA_MANIFEST_FILE
+    && (options.shouldCheckVersion ?? true)
+    && manifestVersion !== undefined
+    && !NUMERIC_VERSION_REGEX.test(manifestVersion)
+  ) {
+    findings.push(
+      error(
+        'manifest-version-not-numeric',
+        `${manifestFile} version "${manifestVersion}" must contain only numbers and dots. Put pre-release versions in manifest-beta.json.`
+      )
+    );
+  }
   if (tag !== undefined) {
     findings.push(...validateReleaseTag(tag, manifestVersion));
   }

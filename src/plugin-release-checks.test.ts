@@ -232,6 +232,18 @@ describe('validatePluginRelease', () => {
     return findings.map((finding) => finding.ruleId);
   }
 
+  it('should reject a prerelease in the stable manifest but accept it in manifest-beta.json', async () => {
+    const manifest = { ...VALID_MANIFEST, version: '1.2.3-beta.1' };
+    await writeJson('manifest.json', manifest);
+    expect(await releaseRuleIds()).toEqual(['manifest-version-not-numeric']);
+    expect(await releaseRuleIds({ shouldCheckVersion: false })).toEqual([]);
+
+    await writeJson('manifest-beta.json', manifest);
+    expect(await releaseRuleIds({ manifestFile: 'manifest-beta.json' })).toEqual([]);
+    await writeJson('manifest.json', VALID_MANIFEST);
+    expect(await releaseRuleIds()).toEqual([]);
+  });
+
   it('should report a missing manifest', async () => {
     expect(await releaseRuleIds()).toEqual(['manifest-invalid-json']);
     const findings = await validatePluginRelease({ manifestFile: 'missing.json', rootFolder });

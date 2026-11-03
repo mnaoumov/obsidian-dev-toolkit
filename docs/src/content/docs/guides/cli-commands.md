@@ -87,6 +87,8 @@ The manifest, `versions.json` and asset rules are those of [`obsidianmd/obsidian
 
 [Version Management](#version-management) runs the same manifest, tag and asset checks by itself, and stops the release on an error before it is tagged. The checks are also the `validatePluginRelease` function (`@mnaoumov/obsidian-dev-toolkit/plugin-release-checks`), and the scanner run is `runScannerCheck` (`@mnaoumov/obsidian-dev-toolkit/plugin-scanner-check`).
 
+Stable manifest versions must contain only digits and dots: a suffix such as `-beta.1` fails the release check. Prerelease versions belong in `manifest-beta.json`, which `validatePluginRelease({ manifestFile: 'manifest-beta.json' })` accepts. The lower-level `validatePluginManifest` checks the manifest schema for either channel; `validatePluginRelease` also enforces the stable channel's numeric version requirement.
+
 ## Lint, Lint Markdown and Format
 
 ```typescript
