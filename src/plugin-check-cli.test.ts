@@ -13,7 +13,8 @@ import {
   runCheckPluginCli
 } from './plugin-check-cli.ts';
 
-const { mockRunScannerCheck, mockValidatePluginRelease } = vi.hoisted(() => ({
+const { mockAnalyzePluginApiVersion, mockRunScannerCheck, mockValidatePluginRelease } = vi.hoisted(() => ({
+  mockAnalyzePluginApiVersion: vi.fn(),
   mockRunScannerCheck: vi.fn(),
   mockValidatePluginRelease: vi.fn()
 }));
@@ -27,9 +28,11 @@ vi.mock('./plugin-scanner-check.ts', () => ({
   runScannerCheck: mockRunScannerCheck
 }));
 
+vi.mock('./plugin-api-version-check.ts', () => ({ analyzePluginApiVersion: mockAnalyzePluginApiVersion }));
+
 describe('parseCheckPluginArguments', () => {
   it('should leave every option out by default', () => {
-    expect(parseCheckPluginArguments([], {})).toEqual({ releaseParams: {}, scannerParams: undefined });
+    expect(parseCheckPluginArguments([], {})).toEqual({ releaseParams: {}, scannerParams: undefined, shouldCheckApiVersion: false });
   });
 
   it('should map every flag to its option', () => {
@@ -38,16 +41,18 @@ describe('parseCheckPluginArguments', () => {
       {}
     )).toEqual({
       releaseParams: { distFolder: 'out', repository: 'jane/tabs', shouldRequireAssets: true, tag: '1.0.0' },
-      scannerParams: { repository: 'jane/tabs', shouldBeStrict: false, version: 'v1.3.0' }
+      scannerParams: { repository: 'jane/tabs', shouldBeStrict: false, version: 'v1.3.0' },
+      shouldCheckApiVersion: false
     });
   });
 
   it('should take the tag and the repository from a GitHub Actions run', () => {
     expect(parseCheckPluginArguments(['--scanner'], { GITHUB_REF: 'refs/tags/2.0.0', GITHUB_REPOSITORY: 'jane/tabs' })).toEqual({
       releaseParams: { repository: 'jane/tabs', tag: '2.0.0' },
-      scannerParams: { repository: 'jane/tabs' }
+      scannerParams: { repository: 'jane/tabs' },
+      shouldCheckApiVersion: false
     });
-    expect(parseCheckPluginArguments([], { GITHUB_REF: 'refs/heads/main' })).toEqual({ releaseParams: {}, scannerParams: undefined });
+    expect(parseCheckPluginArguments([], { GITHUB_REF: 'refs/heads/main' })).toEqual({ releaseParams: {}, scannerParams: undefined, shouldCheckApiVersion: false });
   });
 
   it('should read process.env by default', () => {
@@ -108,6 +113,15 @@ describe('runCheckPluginCli', () => {
 
     mockRunScannerCheck.mockResolvedValue({ exitCode: 1, output: 'error: x' });
     expect(await runCheckPluginCli(['--scanner'])).toBe(1);
+  });
+
+  it('should report the API floor and fail only on an insufficient manifest', async () => {
+    mockValidatePluginRelease.mockResolvedValue([]);
+    mockAnalyzePluginApiVersion.mockResolvedValue({ apiUsages: ['main.ts:1:1: API'], hasErrors: false, summary: 'API floor: 1.10.0' });
+    expect(await runCheckPluginCli(['--api-version'])).toBe(0);
+    expect(stdout.join('')).toContain('API floor: 1.10.0\nmain.ts:1:1: API\n');
+    mockAnalyzePluginApiVersion.mockResolvedValue({ apiUsages: [], hasErrors: true, summary: 'Raise minAppVersion' });
+    expect(await runCheckPluginCli(['--api-version'])).toBe(1);
   });
 
   it('should print a failure to stderr', async () => {

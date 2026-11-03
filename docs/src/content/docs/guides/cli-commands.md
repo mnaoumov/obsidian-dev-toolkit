@@ -85,11 +85,20 @@ The manifest, `versions.json` and asset rules are those of [`obsidianmd/obsidian
 | `--dist=<folder>` | The folder holding the release assets, relative to the project root. Defaults to `dist/build`. |
 | `--require-assets` | Fails when the asset folder does not exist, instead of skipping the asset checks. |
 | `--scanner` | Also runs the scanner's ESLint and Stylelint rulesets, through `obsidianmd/obsidian-workflows`. |
+| `--api-version` | Derives an API version floor from the plugin's source and compares it with `manifest.json`'s `minAppVersion`. Requires the plugin's typed ESLint configuration. |
 | `--scanner-version=<tag>` | The `obsidianmd/obsidian-workflows` release to run. Defaults to the one this package was tested with. |
 | `--no-strict` | Reports the scanner's policy findings as warnings, as the action does without `strict`. |
 | `--repository=<owner/repo>` | The plugin's repository, for the scanner's `authorUrl` check. In GitHub Actions it defaults to `GITHUB_REPOSITORY`. |
 
 [Version Management](#version-management) runs the same manifest, tag and asset checks by itself, and stops the release on an error before it is tagged. The checks are also the `validatePluginRelease` function (`@mnaoumov/obsidian-dev-toolkit/plugin-release-checks`), and the scanner run is `runScannerCheck` (`@mnaoumov/obsidian-dev-toolkit/plugin-scanner-check`).
+
+### Check the API Version Floor
+
+Run `npx check-plugin --api-version` before a release to compare your declared `minAppVersion` with the highest version required by an unguarded API use. It runs only `obsidianmd/no-unsupported-api` from your typed ESLint configuration, overriding its minimum to `0.0.0`, and prints the comparison and source locations. An insufficient manifest fails the command; a higher manifest gets advice that it could be lowered after reviewing other requirements. Recognized `requireApiVersion()` guards retain the upstream rule's behavior. Inline lint suppressions are disabled for this analysis, and neither the manifest nor `versions.json` is rewritten.
+
+The default scan covers JavaScript and TypeScript files under `src/`, excluding `*.test.*`, `*.spec.*` and declaration files, and respects your ESLint ignores. A missing configuration, parse failure, empty scan or unrecognized report fails the command. No detected versioned API usage means no floor could be derived; it does not mean every Obsidian version works. The result covers only APIs and guards the upstream rule recognizes in the scanned source and installed Obsidian declarations. Dependencies, computed API access, unsupported guard shapes, runtime features and other compatibility requirements still need review. This optional check is separate from the automatic manifest, tag and asset release guards.
+
+For a different source layout, call `analyzePluginApiVersion({ files: ['lib/**/*.ts'] })` from `@mnaoumov/obsidian-dev-toolkit/plugin-api-version-check`. The returned report includes `minAppVersion`, `requiredMinAppVersion` (undefined when no versioned use was detected), `hasErrors`, `summary` and `apiUsages`.
 
 Stable manifest versions must contain only digits and dots: a suffix such as `-beta.1` fails the release check. Prerelease versions belong in `manifest-beta.json`, which `validatePluginRelease({ manifestFile: 'manifest-beta.json' })` accepts. The lower-level `validatePluginManifest` checks the manifest schema for either channel; `validatePluginRelease` also enforces the stable channel's numeric version requirement.
 

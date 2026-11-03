@@ -12,6 +12,7 @@ import { parseArgs } from 'node:util';
 import type { ValidatePluginReleaseOptions } from './plugin-release-checks.ts';
 import type { RunScannerCheckOptions } from './plugin-scanner-check.ts';
 
+import { analyzePluginApiVersion } from './plugin-api-version-check.ts';
 import {
   formatPluginCheckFindings,
   hasPluginCheckErrors,
@@ -27,18 +28,22 @@ export interface CheckPluginArguments {
    * The {@link ValidatePluginReleaseOptions} of the release checks.
    */
   readonly releaseParams: ValidatePluginReleaseOptions;
-
   /**
    * The {@link RunScannerCheckOptions} of the scanner checks, or `undefined` when `--scanner` was not given.
    */
   readonly scannerParams: RunScannerCheckOptions | undefined;
+
+  /**
+   * Whether to derive and compare the source's API version floor.
+   */
+  readonly shouldCheckApiVersion: boolean;
 }
 
 const TAG_REF_PREFIX = 'refs/tags/';
 
 /**
  * Parses the command line of `check-plugin`: `--tag=<tag>` (defaulting to the tag of `GITHUB_REF` when that is a tag
- * ref), `--dist=<folder>`, `--require-assets`, `--scanner`, `--scanner-version=<tag>`, `--no-strict` and
+ * ref), `--dist=<folder>`, `--require-assets`, `--api-version`, `--scanner`, `--scanner-version=<tag>`, `--no-strict` and
  * `--repository=<owner/repo>` (defaulting to `GITHUB_REPOSITORY`).
  *
  * @param $arguments - The arguments, without the node and script paths.
@@ -51,6 +56,7 @@ export function parseCheckPluginArguments($arguments: string[], env: NodeJS.Proc
     // eslint-disable-next-line unicorn/name-replacements -- `args` is the option name Node's `parseArgs` reads.
     args: $arguments,
     options: {
+      'api-version': { type: 'boolean' },
       'dist': { type: 'string' },
       'no-strict': { type: 'boolean' },
       'repository': { type: 'string' },
@@ -78,7 +84,8 @@ export function parseCheckPluginArguments($arguments: string[], env: NodeJS.Proc
         ...(values['no-strict'] === true && { shouldBeStrict: false }),
         ...(values['scanner-version'] !== undefined && { version: values['scanner-version'] })
       }
-      : undefined
+      : undefined,
+    shouldCheckApiVersion: values['api-version'] === true
   };
 }
 
@@ -91,10 +98,20 @@ export function parseCheckPluginArguments($arguments: string[], env: NodeJS.Proc
  */
 export async function runCheckPluginCli($arguments: string[]): Promise<number> {
   try {
-    const { releaseParams, scannerParams } = parseCheckPluginArguments($arguments);
+    const { releaseParams, scannerParams, shouldCheckApiVersion } = parseCheckPluginArguments($arguments);
     const findings = await validatePluginRelease(releaseParams);
     const hasErrors = hasPluginCheckErrors(findings);
     process.stdout.write(findings.length === 0 ? 'Manifest and release checks passed.\n' : `${formatPluginCheckFindings(findings)}\n`);
+
+    let hasApiVersionErrors = false;
+    if (shouldCheckApiVersion) {
+      const report = await analyzePluginApiVersion();
+      process.stdout.write(`${report.summary}\n`);
+      for (const usage of report.apiUsages) {
+        process.stdout.write(`${usage}\n`);
+      }
+      hasApiVersionErrors = report.hasErrors;
+    }
 
     let scannerExitCode = 0;
     if (scannerParams) {
@@ -104,7 +121,7 @@ export async function runCheckPluginCli($arguments: string[]): Promise<number> {
       scannerExitCode = scannerResult.exitCode;
     }
 
-    return hasErrors || scannerExitCode !== 0 ? 1 : 0;
+    return hasErrors || hasApiVersionErrors || scannerExitCode !== 0 ? 1 : 0;
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     return 1;
