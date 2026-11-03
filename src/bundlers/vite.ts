@@ -28,6 +28,7 @@ import type {
   BundleOutputLike
 } from './rollup-compatible.ts';
 
+import { DEFAULT_OBSIDIAN_RUNTIME_FLOOR } from '../obsidian-runtime.ts';
 import {
   BuildMode,
   cleanObsidianPluginDistFolder,
@@ -151,7 +152,8 @@ export function getViteConfigDefaults(userConfig: UserConfig, buildContext: Obsi
           }
         })
       },
-      sourcemap: build.sourcemap ?? (!buildContext.isProductionBuild && 'inline')
+      sourcemap: build.sourcemap ?? (!buildContext.isProductionBuild && 'inline'),
+      target: build.target ?? buildContext.runtimeFloor ?? DEFAULT_OBSIDIAN_RUNTIME_FLOOR
     }
   };
 }

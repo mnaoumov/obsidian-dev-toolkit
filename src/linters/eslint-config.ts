@@ -10,7 +10,7 @@
 
 /* v8 ignore start -- Declarative ESLint rule/plugin configuration; correctness is verified by running ESLint, not unit tests. */
 
-import type { DefineEslintConfigsOptions } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-config';
+import type { DefineEslintConfigsOptions as GenericDefineEslintConfigsOptions } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-config';
 import type { Linter } from 'eslint';
 
 import {
@@ -26,20 +26,32 @@ import obsidianmd from 'eslint-plugin-obsidianmd';
 import { PlainTextParser } from 'eslint-plugin-obsidianmd/dist/lib/plainTextParser.js';
 import { defineConfig } from 'eslint/config';
 
+import type { ObsidianRuntimeFloor } from '../obsidian-runtime.ts';
+
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 import { jsonPlugin } from './eslint-rules/manifest-helpers.ts';
 import { obsidianDevToolkitPlugin } from './eslint-rules/obsidian-dev-toolkit-plugin.ts';
 import { stripOwnedRuleCustomMessageEntries } from './obsidianmd-rule-custom-message.ts';
+import { getRuntimeCompatibilityConfig } from './runtime-compatibility.ts';
 
-// eslint-disable-next-line unicorn/prefer-export-from -- Re-exported so a plugin's `scripts/eslint-config.ts` keeps importing both from here.
-export type { DefineEslintConfigsOptions };
+/**
+ * Options for the Obsidian ESLint configuration.
+ */
+export interface DefineEslintConfigsOptions extends GenericDefineEslintConfigsOptions {
+  /**
+   * The ECMAScript edition available in the oldest supported runtime.
+   *
+   * @default `es2022`
+   */
+  readonly runtimeFloor?: ObsidianRuntimeFloor;
+}
 // eslint-disable-next-line unicorn/prefer-export-from -- Re-exported so a plugin's `scripts/eslint-config.ts` keeps importing both from here.
 export { EslintConfigContext };
 
 /*
  * The minimum Obsidian installer that still receives app updates and works is 1.1.9, which ships Electron
- * 21.3.3 and runs Node 16.16.0. Shipped source must therefore avoid Node/ES runtime builtins unavailable in
- * that version. Tests and scripts are dev-only and exempt.
+ * 21.3.3 and runs Node 16.16.0. Shipped source must therefore avoid Node APIs unavailable in that version.
+ * ECMAScript builtins use the separately configurable runtime floor. Tests and scripts are dev-only and exempt.
  *
  * Source of truth: `obsidian-integration-testing/metadata.json` — the newest release carrying the field
  * (1.13.1) declares `minRunnableInstallerVersion: "1.1.9"`, and that installer's `runtimeVersions` gives the
@@ -69,7 +81,12 @@ export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): L
     ...getGlobalIgnoreConfigs(),
     // Obsidianmd configs run first so our stricter rules override their relaxed defaults
     ...getObsidianLintConfigs(context),
-    ...getTypeScriptEslintConfigs({ context, minimumNodeVersion: MINIMUM_NODE_VERSION }),
+    ...getTypeScriptEslintConfigs({ context, minimumNodeVersion: options.minimumNodeVersion ?? MINIMUM_NODE_VERSION }),
+    {
+      ...getRuntimeCompatibilityConfig(options.runtimeFloor),
+      files: context.sourceFiles,
+      ignores: [...context.testFiles, ...context.scriptFiles]
+    },
     ...getObsidianOverrideConfigs(context),
     ...getNodeBuiltinsConfigs(context),
     ...getIntegrationTestConfigs(context),

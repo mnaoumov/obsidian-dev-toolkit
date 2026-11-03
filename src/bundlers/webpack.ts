@@ -30,6 +30,7 @@ import type {
 import type { ObsidianPluginWebpackLoaderOptions } from './obsidian-plugin-webpack-loader.ts';
 
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
+import { DEFAULT_OBSIDIAN_RUNTIME_FLOOR } from '../obsidian-runtime.ts';
 import {
   BuildMode,
   cleanObsidianPluginDistFolder,
@@ -89,6 +90,11 @@ export interface ObsidianPluginWebpackPluginOptions extends ObsidianPluginDeploy
    * its `mode` is `development`, and {@link BuildMode.Production} otherwise.
    */
   readonly mode?: BuildMode;
+}
+
+interface ApplyWebpackOptionDefaultsOptions {
+  readonly mode: BuildMode;
+  readonly runtimeFloor: string | undefined;
 }
 
 /**
@@ -176,7 +182,7 @@ export class ObsidianPluginWebpackPlugin implements WebpackPluginInstance {
    */
   public apply(compiler: Compiler): void {
     const mode = this.options.mode ?? getWebpackBuildMode(compiler.options);
-    applyWebpackOptionDefaults(compiler.options, mode);
+    applyWebpackOptionDefaults(compiler.options, { mode, runtimeFloor: this.options.runtimeFloor });
     applyWebpackFeatures(compiler, this.options, mode === BuildMode.Production);
     // Added at the report stage, after minification, which would otherwise strip it as an ordinary comment.
     new compiler.webpack.BannerPlugin({
@@ -363,12 +369,13 @@ function applyWebpackFeatures(compiler: Compiler, features: ObsidianPluginFeatur
  * applying its own defaults, so an unset option still reads `undefined` here.
  *
  * @param options - The normalized webpack options, changed in place.
- * @param mode - The build mode.
+ * @param params - The build mode and runtime floor.
  */
-function applyWebpackOptionDefaults(options: WebpackOptionsNormalized, mode: BuildMode): void {
+function applyWebpackOptionDefaults(options: WebpackOptionsNormalized, params: ApplyWebpackOptionDefaultsOptions): void {
+  const { mode, runtimeFloor = DEFAULT_OBSIDIAN_RUNTIME_FLOOR } = params;
   const isProductionBuild = mode === BuildMode.Production;
   options.mode ??= isProductionBuild ? 'production' : 'development';
-  options.target ??= 'node';
+  options.target ??= ['node', runtimeFloor];
   options.devtool ??= !isProductionBuild && 'inline-source-map';
 
   if (typeof options.entry === 'object' && Object.keys(options.entry).length === 1 && options.entry['main']?.import === undefined) {

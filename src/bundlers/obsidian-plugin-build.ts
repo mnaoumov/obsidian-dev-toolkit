@@ -24,6 +24,8 @@ import {
 import { builtinModules } from 'node:module';
 import process, { loadEnvFile } from 'node:process';
 
+import type { ObsidianRuntimeFloor } from '../obsidian-runtime.ts';
+
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 
 /**
@@ -151,6 +153,11 @@ export interface ObsidianPluginBuildContext {
    * How a development build is reloaded in Obsidian once it is deployed.
    */
   readonly reload: ObsidianPluginReload;
+
+  /**
+   * The ECMAScript edition required by the build, when explicitly selected.
+   */
+  readonly runtimeFloor?: ObsidianRuntimeFloor;
 }
 
 /**
@@ -168,6 +175,13 @@ export interface ObsidianPluginDeploymentOptions {
    * `'hot-reload-plugin'`.
    */
   readonly reload?: ObsidianPluginReload;
+
+  /**
+   * The ECMAScript edition available in the oldest supported runtime. Use the same value for linting.
+   *
+   * @default `es2022`
+   */
+  readonly runtimeFloor?: ObsidianRuntimeFloor;
 }
 
 /**
@@ -354,6 +368,7 @@ export async function resolveObsidianPluginBuildContext(params: ResolveObsidianP
     mainJsPath: join(distFolder, ObsidianPluginRepoPaths.MainJs),
     obsidianConfigFolder: params.obsidianConfigFolder ?? obsidianPluginBuilderEnv.OBSIDIAN_CONFIG_FOLDER ?? '',
     pluginName: packageJson.name ?? '(unknown)',
-    reload: params.reload ?? 'hot-reload-plugin'
+    reload: params.reload ?? 'hot-reload-plugin',
+    ...(params.runtimeFloor !== undefined && { runtimeFloor: params.runtimeFloor })
   };
 }

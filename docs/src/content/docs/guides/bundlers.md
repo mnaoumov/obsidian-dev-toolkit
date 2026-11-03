@@ -16,6 +16,16 @@ Every adapter does the same things:
 
 Each adapter fills in only what your own configuration leaves unset, so anything you configure wins. TypeScript stays your choice of the bundler's own plugin or loader. A UI framework, the stylesheet pipeline and WebAssembly are [build features](#build-features), one set of options every adapter takes the same way.
 
+## Runtime compatibility
+
+The shared lint configuration checks shipped source against an explicit ECMAScript runtime floor with [eslint-plugin-es-x](https://eslint-community.github.io/eslint-plugin-es-x/). The default is `es2022`; set `runtimeFloor` to `es2020`, `es2021`, `es2022`, `es2023` or `es2024` in both `defineEslintConfigs({ runtimeFloor })` and your builder options when your deployment policy differs. Keep that value in one project module imported by both configurations. Tests and development scripts are exempt. Your later custom lint configuration can override individual checks when your plugin supplies its own polyfill.
+
+This is a configurable policy, not a guarantee inferred from `minAppVersion`: desktop installer updates are independent of app updates, and mobile uses the operating system's WebView. The community's Electron 28 and iOS 16.6 figures are not a published universal minimum. The existing desktop metadata also records runnable Electron 21 installers. Verify the actual runtimes your plugin supports before raising the floor; changing the manifest alone does not upgrade their JavaScript engines. See [Obsidian's installer update guidance](https://obsidian.md/help/updates).
+
+A syntax target cannot supply missing built-ins. Lint catches newer runtime features such as iterator helpers, `Set.union`, `Array.fromAsync` and `Promise.withResolvers`. Obsidian's `Array.findLastIndex` polyfill remains under `obsidianmd/no-unsupported-api`, which checks its `@since` version; `Array.findLast` and typed-array methods retain their runtime checks.
+
+The esbuild builder derives its `target` from this floor, and vite derives `build.target`, preserving explicit consumer targets. The webpack adapter applies the floor to generated runtime syntax through `target: ['node', runtimeFloor]`; configure the TypeScript or Babel loader's target as well. With rollup, configure your TypeScript plugin's `compilerOptions.target` from the same value. With parcel, configure the target's `engines` in `customizeParcelOptions` for your supported browsers; the ECMAScript edition alone does not determine a browser version. No adapter installs runtime polyfills.
+
 ## esbuild
 
 For local TypeScript breakpoints, [generate a VS Code attach configuration and debug the development build](/obsidian-dev-toolkit/guides/debugging/).
@@ -105,7 +115,7 @@ export default {
 };
 ```
 
-`webpack` builds for production and `webpack --watch` (or `mode: 'development'`) for development; `new ObsidianPluginWebpackPlugin({ mode })` decides it outright. Unless you set them, the plugin fills in `entry`, `mode`, `output.path`, `output.filename`, a `commonjs2` library, `output.asyncChunks: false`, `target: 'node'` (what Obsidian's renderer runs) with the browser's export conditions and never `node`, so a package hands over its browser build even when its `exports` lists `node` first, and `devtool`. It also puts license comments the minimizer extracted into `main.js.LICENSE.txt` back into `main.js`, since no Obsidian release ships that file.
+`webpack` builds for production and `webpack --watch` (or `mode: 'development'`) for development; `new ObsidianPluginWebpackPlugin({ mode })` decides it outright. Unless you set them, the plugin fills in `entry`, `mode`, `output.path`, `output.filename`, a `commonjs2` library, `output.asyncChunks: false`, `target: ['node', 'es2022']` (using your `runtimeFloor` when supplied) with the browser's export conditions and never `node`, so a package hands over its browser build even when its `exports` lists `node` first, and `devtool`. It also puts license comments the minimizer extracted into `main.js.LICENSE.txt` back into `main.js`, since no Obsidian release ships that file.
 
 The TypeScript step in both examples is esbuild-based on purpose: `@rollup/plugin-typescript` and `ts-loader` call TypeScript's JavaScript API, which TypeScript 7 no longer has, so with the TypeScript npm installs today they fail before reading a file.
 
