@@ -35,6 +35,11 @@ const DEVELOPMENT_CONTEXT: ObsidianPluginBuildContext = {
 const POSTCSS_PLUGIN = { postcssPlugin: 'marker' };
 
 describe('vite', () => {
+  it('derives the syntax target from the runtime floor while preserving an explicit target', () => {
+    expect(getViteConfigDefaults({}, PRODUCTION_CONTEXT).build?.target).toBe('es2022');
+    expect(getViteConfigDefaults({}, { ...PRODUCTION_CONTEXT, runtimeFloor: 'es2020' }).build?.target).toBe('es2020');
+    expect(getViteConfigDefaults({ build: { target: 'es2021' } }, { ...PRODUCTION_CONTEXT, runtimeFloor: 'es2020' }).build?.target).toBe('es2021');
+  });
   type ExternalFunction = (source: string, importer: string | undefined, isResolved: boolean) => unknown;
 
   it('contributes nothing without features', () => {

@@ -35,6 +35,7 @@ import type { ObsidianPluginDeploymentOptions } from '../obsidian-plugin-build.t
 import type { ObsidianPluginFeatureOptions } from '../obsidian-plugin-features.ts';
 
 import { ObsidianPluginRepoPaths } from '../../obsidian-plugin-repo-paths.ts';
+import { DEFAULT_OBSIDIAN_RUNTIME_FLOOR } from '../../obsidian-runtime.ts';
 import {
   BuildMode,
   cleanObsidianPluginDistFolder,
@@ -208,7 +209,7 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
       copyToObsidianPluginsFolderPlugin({ distFolder, isProductionBuild, obsidianConfigFolder, pluginName, reload })
     ],
     sourcemap: !isProductionBuild && 'inline',
-    target: 'ES2022',
+    target: params.runtimeFloor ?? DEFAULT_OBSIDIAN_RUNTIME_FLOOR,
     treeShaking: true
   };
 

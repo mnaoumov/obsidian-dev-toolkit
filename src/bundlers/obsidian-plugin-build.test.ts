@@ -239,6 +239,10 @@ if you want to view the source, please visit the github repository of this plugi
   });
 
   describe('resolveObsidianPluginBuildContext', () => {
+    it('passes an explicit runtime floor to adapters', async () => {
+      const context = await resolveObsidianPluginBuildContext({ mode: BuildMode.Production, runtimeFloor: 'es2020' });
+      expect(context.runtimeFloor).toBe('es2020');
+    });
     it('resolves a production build', async () => {
       const context = await resolveObsidianPluginBuildContext({ mode: BuildMode.Production });
       expect(context).toEqual({
