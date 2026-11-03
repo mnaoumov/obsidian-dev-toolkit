@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 8.1.0
+
+- feat(testing): run desktop suites with both plugin enable timings
+- feat: generate VS Code plugin debugger configurations
+- fix: reject pre-release versions in stable plugin manifests
+- feat(bundlers): inline browser workers across adapters
+- test: stub GITHUB_REPOSITORY in the check-plugin process.env case
+- feat: add check-plugin and community directory release checks
+- feat: add deploy-to-device command for Obsidian Mobile on Android
+
 ## 8.0.0
 
 - build(deps)!: float typescript-dev-toolkit to ^6
