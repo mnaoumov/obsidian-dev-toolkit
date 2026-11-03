@@ -3,8 +3,8 @@
  *
  * Shared vitest configuration for Obsidian plugins.
  *
- * Every plugin in the workspace declares the same five vitest projects — `unit-tests` plus the
- * `integration-tests:{no-app,desktop,desktop-performance,android}` family — with the same timeouts,
+ * Every plugin in the workspace declares the same six vitest projects — `unit-tests` plus the
+ * `integration-tests:{no-app,desktop,desktop:after-layout-ready,desktop-performance,android}` family — with the same timeouts,
  * `setupFiles`, and `globalSetup` wiring. Maintaining that per repo means a convention change costs one
  * near-identical edit per plugin, and any repo that is missed drifts silently. This module owns that
  * configuration once, so a plugin's `scripts/vitest-config.ts` collapses to a single call.
@@ -114,6 +114,22 @@ const UNIT_TEST_GLOBAL_STUBS_PROJECT_NAME = 'unit-tests:global-stubs';
  */
 const STALE_BUILD_GLOBAL_SETUP = '@mnaoumov/obsidian-dev-toolkit/test-runners/stale-build-global-setup';
 
+const DEFAULT_GLOBAL_SETUP = 'obsidian-integration-testing/vitest-global-setup-plugin';
+
+/*
+ * The global setups whose `pluginEnableTiming: 'after-layout-ready'` twin this package ships, keyed by the
+ * startup-timed module a desktop project names. The timing is an option of `createSetup`, so a setup module cannot be
+ * re-timed from outside it: only a module listed here can be swapped for its twin.
+ */
+const AFTER_LAYOUT_READY_GLOBAL_SETUPS: ReadonlyMap<string, string> = new Map([
+  [
+    '@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup',
+    '@mnaoumov/obsidian-dev-toolkit/integration-test-after-layout-ready-vitest-global-setup'
+  ],
+  [DEFAULT_GLOBAL_SETUP, '@mnaoumov/obsidian-dev-toolkit/test-runners/after-layout-ready-vitest-global-setup']
+]);
+
+const DESKTOP_AFTER_LAYOUT_READY_PROJECT_NAME = 'integration-tests:desktop:after-layout-ready';
 const OBSIDIAN_VERSION_ENV_VARIABLE_NAME = 'OBSIDIAN_VERSION';
 const SHARED_EXCLUDE = DEFAULT_VITEST_TEST_EXCLUDE;
 
@@ -123,7 +139,7 @@ const SHARED_EXCLUDE = DEFAULT_VITEST_TEST_EXCLUDE;
 export interface DefineObsidianPluginVitestConfigOptions {
   /**
    * A function that builds projects the base configuration does not know about, such as a plugin's own
-   * `integration-tests:demo-vault` project. The returned projects are appended after the standard five.
+   * `integration-tests:demo-vault` project. The returned projects are appended after the standard ones.
    *
    * @param context - The vitest configuration context.
    * @returns The extra projects.
@@ -204,13 +220,31 @@ export class ObsidianPluginVitestConfigContext {
   public readonly desktop: ObsidianPluginVitestProjectConfig = {
     environment: 'node',
     fileParallelism: false,
-    globalSetup: [STALE_BUILD_GLOBAL_SETUP, 'obsidian-integration-testing/vitest-global-setup-plugin'],
+    globalSetup: [STALE_BUILD_GLOBAL_SETUP, DEFAULT_GLOBAL_SETUP],
     hookTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS * HOOK_TIMEOUT_MULTIPLIER,
     include: [DESKTOP_TEST_FILES, CROSS_PLATFORM_TEST_FILES],
     name: 'integration-tests:desktop',
     setupFiles: ['obsidian-integration-testing/vitest-setup'],
     testTimeout: INTEGRATION_TEST_TIMEOUT_IN_MILLISECONDS
   };
+
+  /**
+   * The `globalSetup` of the `integration-tests:desktop:after-layout-ready` project, or `false` to leave that
+   * project out.
+   *
+   * That project runs every desktop suite a second time with the plugin under test enabled once the vault's layout
+   * is ready, the way a user turns it on in settings, rather than during startup. It is a copy of
+   * {@link ObsidianPluginVitestConfigContext.desktop}, taken after `editContext`, so every edit made there carries
+   * over; only its name and its `globalSetup` differ. Its name sits under `integration-tests:desktop:*`, so a script
+   * that runs `integration-tests:desktop` runs it too.
+   *
+   * Left `undefined`, the `globalSetup` is derived from the desktop one: `obsidian-integration-testing`'s own module
+   * and this package's `integration-test-vitest-global-setup` are swapped for their `after-layout-ready` twins. The
+   * timing is an option of `createSetup`, so a module of the plugin's own (one with a `populate`, say) cannot be
+   * re-timed from outside it, and the project is then left out. Write a twin of that module that passes
+   * `pluginEnableTiming: 'after-layout-ready'` and name it here to bring the project back.
+   */
+  public desktopAfterLayoutReadyGlobalSetup: false | string[] | undefined;
 
   /**
    * The `integration-tests:desktop-performance` project, running the at-scale suites. It is declared for
@@ -467,6 +501,7 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
         },
         { test: context.noApp },
         { test: context.desktop },
+        ...getDesktopAfterLayoutReadyProjects(context),
         { test: context.desktopPerformance },
         { test: context.android },
         ...globalStubsProjects,
@@ -475,6 +510,28 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
       reporters: [...context.reporters]
     }
   };
+}
+
+/**
+ * Builds the `integration-tests:desktop:after-layout-ready` project from the edited desktop project, or nothing when
+ * its `globalSetup` cannot be derived or was turned off.
+ *
+ * @param context - The vitest configuration context, after `editContext`.
+ * @returns The project, or an empty list.
+ */
+function getDesktopAfterLayoutReadyProjects(context: ObsidianPluginVitestConfigContext): TestProjectConfiguration[] {
+  const globalSetup = context.desktopAfterLayoutReadyGlobalSetup ?? toAfterLayoutReadyGlobalSetup(context.desktop.globalSetup);
+  if (globalSetup === false) {
+    return [];
+  }
+
+  return [{
+    test: {
+      ...context.desktop,
+      globalSetup,
+      name: DESKTOP_AFTER_LAYOUT_READY_PROJECT_NAME
+    }
+  }];
 }
 
 /**
@@ -495,6 +552,36 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
  */
 function getUnitTestExecArgv(): string[] {
   return process.allowedNodeEnvironmentFlags.has('--webstorage') ? ['--no-webstorage'] : [];
+}
+
+/**
+ * Swaps each startup-timed global setup of a desktop project for its `after-layout-ready` twin.
+ *
+ * A module with no twin is a setup of the plugin's own, whose `createSetup` call fixes the timing out of reach, and
+ * a list with no module to swap would run the plugin at startup under a name that says otherwise. Either way the
+ * project is left out rather than run with the wrong timing.
+ *
+ * @param globalSetup - The desktop project's `globalSetup`.
+ * @returns The swapped list, or `false` when it cannot be derived.
+ */
+function toAfterLayoutReadyGlobalSetup(globalSetup: ObsidianPluginVitestProjectConfig['globalSetup']): false | string[] {
+  const entries = typeof globalSetup === 'string' ? [globalSetup] : globalSetup ?? [];
+  let hasSwapped = false;
+  const swapped: string[] = [];
+
+  for (const entry of entries) {
+    const twin = AFTER_LAYOUT_READY_GLOBAL_SETUPS.get(entry);
+    if (twin !== undefined) {
+      hasSwapped = true;
+      swapped.push(twin);
+    } else if (entry === STALE_BUILD_GLOBAL_SETUP) {
+      swapped.push(entry);
+    } else {
+      return false;
+    }
+  }
+
+  return hasSwapped ? swapped : false;
 }
 
 /**

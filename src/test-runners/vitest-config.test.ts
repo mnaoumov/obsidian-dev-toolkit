@@ -44,6 +44,7 @@ const STANDARD_PROJECT_NAMES = [
   'unit-tests',
   'integration-tests:no-app',
   'integration-tests:desktop',
+  'integration-tests:desktop:after-layout-ready',
   'integration-tests:desktop-performance',
   'integration-tests:android'
 ];
@@ -281,7 +282,7 @@ describe('defineObsidianPluginVitestConfig', () => {
         context.coverageExclude.push('src/**/*.generated.ts');
       }
     });
-    expect(config.test?.projects?.[3]).toMatchObject({
+    expect(config.test?.projects?.[4]).toMatchObject({
       test: {
         globalSetup: ['./scripts/vitest-global-setup-performance.ts']
       }
@@ -311,7 +312,7 @@ describe('defineObsidianPluginVitestConfig', () => {
         pool: 'vmThreads'
       }
     });
-    expect(config.test?.projects?.[5]).toEqual({
+    expect(config.test?.projects?.[6]).toEqual({
       resolve: {
         alias: {
           obsidian: 'obsidian-test-mocks/obsidian'
@@ -357,6 +358,98 @@ describe('defineObsidianPluginVitestConfig', () => {
     expect(config.test?.projects?.[0]).toMatchObject({ test: { name: 'unit-tests', pool: 'forks' } });
   });
 
+  describe('the after-layout-ready desktop project', () => {
+    /**
+     * Finds the after-layout-ready project in an assembled configuration.
+     *
+     * @param config - The assembled configuration.
+     * @returns Its `test` section, or `undefined` when the project was left out.
+     */
+    function findAfterLayoutReadyProject(config: ViteUserConfig): TestProjectConfiguration | undefined {
+      return config.test?.projects?.find((project) => typeof project === 'object' && !('then' in project) && project.test?.name === 'integration-tests:desktop:after-layout-ready');
+    }
+
+    it('should copy the desktop project with the after-layout-ready setup in place of the default one', () => {
+      const config = defineObsidianPluginVitestConfig();
+      const desktop = new ObsidianPluginVitestConfigContext().desktop;
+      expect(findAfterLayoutReadyProject(config)).toEqual({
+        test: {
+          ...desktop,
+          globalSetup: [
+            '@mnaoumov/obsidian-dev-toolkit/test-runners/stale-build-global-setup',
+            '@mnaoumov/obsidian-dev-toolkit/test-runners/after-layout-ready-vitest-global-setup'
+          ],
+          name: 'integration-tests:desktop:after-layout-ready'
+        }
+      });
+    });
+
+    it('should carry over an edit made to the desktop project', () => {
+      const config = defineObsidianPluginVitestConfig({
+        editContext(context) {
+          context.desktop.globalSetup = ['@mnaoumov/obsidian-dev-toolkit/integration-test-vitest-global-setup'];
+          context.desktop.setupFiles = ['./scripts/setup.ts'];
+        }
+      });
+      expect(findAfterLayoutReadyProject(config)).toMatchObject({
+        test: {
+          globalSetup: ['@mnaoumov/obsidian-dev-toolkit/integration-test-after-layout-ready-vitest-global-setup'],
+          setupFiles: ['./scripts/setup.ts']
+        }
+      });
+    });
+
+    it('should accept a single global setup given as a string', () => {
+      const config = defineObsidianPluginVitestConfig({
+        editContext(context) {
+          context.desktop.globalSetup = 'obsidian-integration-testing/vitest-global-setup-plugin';
+        }
+      });
+      expect(findAfterLayoutReadyProject(config)).toMatchObject({
+        test: { globalSetup: ['@mnaoumov/obsidian-dev-toolkit/test-runners/after-layout-ready-vitest-global-setup'] }
+      });
+    });
+
+    it('should leave the project out when the desktop project uses a setup of its own', () => {
+      const config = defineObsidianPluginVitestConfig({
+        editContext(context) {
+          context.desktop.globalSetup = ['./scripts/vitest-global-setup.ts'];
+        }
+      });
+      expect(findAfterLayoutReadyProject(config)).toBeUndefined();
+    });
+
+    it('should leave the project out when the desktop project has no setup to swap', () => {
+      const config = defineObsidianPluginVitestConfig({
+        editContext(context) {
+          delete context.desktop.globalSetup;
+        }
+      });
+      expect(findAfterLayoutReadyProject(config)).toBeUndefined();
+    });
+
+    it('should use the setup the context names', () => {
+      const config = defineObsidianPluginVitestConfig({
+        editContext(context) {
+          context.desktop.globalSetup = ['./scripts/vitest-global-setup.ts'];
+          context.desktopAfterLayoutReadyGlobalSetup = ['./scripts/vitest-global-setup-after-layout-ready.ts'];
+        }
+      });
+      expect(findAfterLayoutReadyProject(config)).toMatchObject({
+        test: { globalSetup: ['./scripts/vitest-global-setup-after-layout-ready.ts'] }
+      });
+    });
+
+    it('should leave the project out when the context turns it off', () => {
+      const config = defineObsidianPluginVitestConfig({
+        editContext(context) {
+          context.desktopAfterLayoutReadyGlobalSetup = false;
+        }
+      });
+      expect(findAfterLayoutReadyProject(config)).toBeUndefined();
+    });
+  });
+
   it('should append the custom projects after the standard ones', () => {
     const config = defineObsidianPluginVitestConfig({
       customProjects(context) {
@@ -372,7 +465,7 @@ describe('defineObsidianPluginVitestConfig', () => {
     expect(config.test?.projects).toMatchObject(
       [...STANDARD_PROJECT_NAMES, 'integration-tests:demo-vault'].map((name) => ({ test: { name } }))
     );
-    expect(config.test?.projects?.[5]).toMatchObject({
+    expect(config.test?.projects?.[6]).toMatchObject({
       test: {
         testTimeout: 45_000
       }
@@ -476,6 +569,7 @@ describe('defineObsidianPluginVitestConfig project isolation', () => {
     'integration-tests:demo-vault': ['a.demo-vault.integration.test.ts'],
     'integration-tests:desktop': ['a.cross-platform.integration.test.ts', 'a.desktop.integration.test.ts'],
     'integration-tests:desktop-performance': ['a.desktop-performance.integration.test.ts'],
+    'integration-tests:desktop:after-layout-ready': ['a.cross-platform.integration.test.ts', 'a.desktop.integration.test.ts'],
     'integration-tests:no-app': ['a.no-app.integration.test.ts'],
     'unit-tests': ['plain.test.ts']
   };
@@ -506,7 +600,7 @@ describe('defineObsidianPluginVitestConfig project isolation', () => {
   });
 
   /**
-   * A plugin's own shape: the five standard projects plus the three custom ones every plugin in the
+   * A plugin's own shape: the standard projects plus the three custom ones every plugin in the
    * workspace declares.
    *
    * @returns The assembled configuration.
@@ -584,6 +678,15 @@ describe('defineObsidianPluginVitestConfig project isolation', () => {
 
   it('should give every project exactly its own files', async () => {
     expect(await collectFileNamesByProject(makePluginConfig())).toEqual(EXPECTED_FILE_NAMES_BY_PROJECT);
+  });
+
+  // The filter `test({ projects: ['integration-tests:desktop'] })` passes, so every plugin's desktop script runs
+  // its suites with both plugin enable timings and none of the projects merely named like it.
+  it('should run the after-layout-ready project wherever the desktop one is selected', async () => {
+    expect(await collectFileNamesByProject(makePluginConfig(), ['integration-tests:desktop', 'integration-tests:desktop:*'])).toEqual({
+      'integration-tests:desktop': EXPECTED_FILE_NAMES_BY_PROJECT['integration-tests:desktop'],
+      'integration-tests:desktop:after-layout-ready': EXPECTED_FILE_NAMES_BY_PROJECT['integration-tests:desktop:after-layout-ready']
+    });
   });
 
   it.each(['configuration', 'cli', 'environment'])(
