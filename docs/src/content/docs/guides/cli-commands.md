@@ -13,6 +13,10 @@ await build();
 
 The generic commands (clean, compile, spellcheck, find over-exposed declarations, the test runners, the branch gate and the npm publish) are documented on the [TypeScript Dev Toolkit commands page](https://mnaoumov.dev/typescript-dev-toolkit/guides/cli-commands/), together with how to wire a command into an npm script, how to switch a command off with an environment variable, and why every command skips what `.gitignore` skips. A plugin calls them from `@mnaoumov/typescript-dev-toolkit` directly.
 
+## Generate a debugger configuration
+
+Run `npx generate-debug-config` in a plugin project to create `.vscode/launch.json` for VS Code's built-in browser debugger. It reads the npm package name used by esbuild's development source maps and refuses to overwrite existing settings. Pass `--port=9333` to change the default renderer port of `9222`. See [Debugging plugins](/obsidian-dev-toolkit/guides/debugging/) for launching Obsidian, attaching, and diagnosing unbound breakpoints.
+
 ## Build Production Version
 
 ```typescript

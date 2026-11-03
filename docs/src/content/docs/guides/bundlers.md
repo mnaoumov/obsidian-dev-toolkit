@@ -18,6 +18,8 @@ Each adapter fills in only what your own configuration leaves unset, so anything
 
 ## esbuild
 
+For local TypeScript breakpoints, [generate a VS Code attach configuration and debug the development build](/obsidian-dev-toolkit/guides/debugging/).
+
 ```typescript
 // scripts/build.ts
 import { build } from '@mnaoumov/obsidian-dev-toolkit/bundlers/esbuild';
