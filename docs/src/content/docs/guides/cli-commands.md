@@ -125,7 +125,7 @@ import {
 
 Releases the plugin. It is the [generic release](https://mnaoumov.dev/typescript-dev-toolkit/guides/cli-commands/#release) (the clean-repo check, the branch gate, the version bump, the changelog, the commit, the tag, the push and the GitHub release) plus what only a plugin has:
 
-- **`manifest.json` and `versions.json`.** The new version is written into `manifest.json`, with `minAppVersion` set to the latest Obsidian version the desktop app can run, and a `versions.json` entry maps the new version to that `minAppVersion`. The latest version is read from the feed the desktop app updates from, not from GitHub's latest release, which can be a mobile-only one no desktop user can install.
+- **`manifest.json` and `versions.json`.** The new version is written into `manifest.json`, preserving its current `minAppVersion` by default, and a new `versions.json` entry maps the release to that minimum. Older compatibility entries are preserved. No latest-version feed is fetched. Use `--min-app-version` to change the minimum explicitly, or `--api-version` to raise it when the source analysis detects an unguarded API requiring a newer version.
 - **Pre-releases.** A pre-release version (`prepatch`, `preminor`, `premajor` or `prerelease`, which number it `x.y.z-beta.n`, or an explicit `x.y.z-suffix`) goes to a `manifest-beta.json` copied from `manifest.json`, and `manifest.json` and `versions.json` are left alone, so the release installs through [BRAT](https://community.obsidian.md/plugins/obsidian42-brat) without reaching users of the stable release. The next stable release deletes `manifest-beta.json`.
 - **The release assets.** The updated manifest is copied into `dist/build`, and every file in `dist/build` is attached to the GitHub release, instead of the `npm pack` tarball a library attaches.
 - **The demo vault.** A plugin with a `demo-vault/` folder gets it archived and attached to the release. See [Demo Vault](/obsidian-dev-toolkit/guides/demo-vault/).
@@ -148,14 +148,15 @@ const { options, versionUpdateType } = parseVersionArguments($arguments);
 await wrapCliTask(() => updateVersion(versionUpdateType, options));
 ```
 
-It accepts every flag of the generic release, plus three of the plugin's own. When invoking via `npm run`, separate the flags with `--`, e.g. `npm run version -- patch --no-changelog-editing`:
+It accepts every flag of the generic release, plus the plugin flags below. When invoking via `npm run`, separate the flags with `--`, e.g. `npm run version -- patch --no-changelog-editing`:
 
 | Flag | Effect |
 | --- | --- |
-| `--min-app-version=<x.y.z>` | Writes this `minAppVersion` into `manifest.json` and the new `versions.json` entry, instead of the latest Obsidian desktop version, which is then not fetched. |
+| `--min-app-version=<x.y.z>` | Writes this `minAppVersion` into `manifest.json` and the new `versions.json` entry, overriding the existing minimum. With `--api-version`, a value below the detected floor fails before compatibility files are edited. |
+| `--api-version` | Runs the typed API analysis described above and raises the existing minimum only if required. No detected floor leaves it unchanged. Analysis failures stop the update. Ignored for pre-releases, as is `--min-app-version`. |
 | `--no-demo-vault` | Skips archiving the demo vault for this release. |
 | `--no-release-checks` | Skips the community directory checks. |
 
-The same three are the `minAppVersion`, `shouldArchiveDemoVault` and `shouldRunReleaseChecks` options of `updateVersion`.
+The corresponding options of `updateVersion` are `minAppVersion`, `shouldCheckApiVersion` (default `false`), `shouldArchiveDemoVault` and `shouldRunReleaseChecks`. API analysis uses the same source layout, typed ESLint setup and coverage limits as `check-plugin --api-version`; it cannot prove compatibility with older runtimes or dependencies. The generic branch gate runs before compatibility files are updated, so an unsupported API lint failure may require first raising the manifest or guarding the API.
 
 [Hot Reload]: https://community.obsidian.md/plugins/hot-reload
