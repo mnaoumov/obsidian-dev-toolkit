@@ -22,7 +22,7 @@ import { pathToFileURL } from 'node:url';
 /**
  * Which shared transform a module goes through, as {@link getFeatureFileKind} tells it.
  */
-export type FeatureFileKind = 'jsx' | 'stylesheet' | 'svelte' | 'wasm';
+export type FeatureFileKind = 'jsx' | 'stylesheet' | 'svelte' | 'wasm' | 'worker';
 
 /**
  * Parameters for {@link getFrameworkDefines}.
@@ -82,6 +82,11 @@ export interface ObsidianPluginFeatureOptions {
    * Whether `import bytes from './module.wasm'` imports the module's bytes as a `Uint8Array`, inlined into `main.js`.
    */
   readonly wasm?: boolean;
+
+  /**
+   * Whether `*.worker.ts?worker-source` and `*.worker.js?worker-source` imports export bundled browser worker source as a string.
+   */
+  readonly workers?: boolean;
 }
 
 /**
@@ -132,6 +137,7 @@ const JSX_SOURCE_FILE_PATTERN = /\.[jt]sx$/iu;
 const STYLESHEET_FILE_PATTERN = /\.p?css$/iu;
 const SVELTE_FILE_PATTERN = /\.svelte(?:\.[cm]?[jt]s)?$/iu;
 const WASM_FILE_PATTERN = /\.wasm$/iu;
+const WORKER_FILE_PATTERN = /\.worker\.[jt]s$/iu;
 const VIRTUAL_MODULE_PREFIX = '\0';
 
 /**
@@ -151,6 +157,9 @@ export function getFeatureFileKind(id: string): FeatureFileKind | undefined {
     return 'stylesheet';
   }
   const [filePath = ''] = id.split('?', 1);
+  if (WORKER_FILE_PATTERN.test(filePath)) {
+    return 'worker';
+  }
   if (SVELTE_FILE_PATTERN.test(filePath)) {
     return 'svelte';
   }

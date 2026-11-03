@@ -279,6 +279,9 @@ export function getWebpackFeatureRules(params: GetWebpackFeatureRulesParams): Ru
   if (features.wasm) {
     rules.push({ test: /\.wasm$/iu, type: 'javascript/auto', use: featureLoader('wasm') });
   }
+  if (features.workers) {
+    rules.push({ enforce: 'pre', resourceQuery: /^\?worker-source$/u, test: /\.worker\.[jt]s$/iu, type: 'javascript/auto', use: featureLoader('worker') });
+  }
   if (features.styles) {
     rules.push({
       test: /\.p?css$/iu,
