@@ -208,6 +208,7 @@
     "archive-demo-vault": "bin/archive-demo-vault.mjs",
     "check-plugin": "bin/check-plugin.mjs",
     "deploy-to-device": "bin/deploy-to-device.mjs",
+    "generate-debug-config": "bin/generate-debug-config.mjs",
     "generate-coverage-badge": "bin/generate-coverage-badge.mjs"
   },
   "files": [
