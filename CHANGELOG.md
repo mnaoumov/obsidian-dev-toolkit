@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 8.2.0
+
+- feat(lint): require code spans for tool and service names
+- fix(version): preserve the plugin minimum Obsidian version
+- feat: analyze plugin API version requirements
+- feat: share a configurable runtime floor across lint and builds
+
 ## 8.1.0
 
 - feat(testing): run desktop suites with both plugin enable timings
