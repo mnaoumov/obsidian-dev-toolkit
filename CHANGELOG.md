@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 8.2.1
+
+- fix(docs): link public Obsidian API types to official references
+
 ## 8.2.0
 
 - feat(lint): require code spans for tool and service names
