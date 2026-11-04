@@ -81,6 +81,14 @@ git tag 1.2.3
 git push origin 1.2.3
 ```
 
+Push only the tag at first, and push the branch once the job has passed:
+
+```sh
+git push origin HEAD:main
+```
+
+Obsidian reads the plugin's version from `manifest.json` on the default branch and downloads the assets of the release with that tag. A branch pushed before the release exists names a release users cannot install yet, and one whose release job then fails names it for good. The workflow is triggered by the tag alone, so it cannot push the branch for you; that step stays yours. `npm run version` does it in this order by itself.
+
 The job then does the following, in order:
 
 1. **Checks the tag.** Obsidian finds a release by the version in the plugin's manifest, so a tag that is not that version is a release that never reaches anyone. The job fails unless the tag is the `version` of `manifest.json`. For a tag with a `-` in it, it compares against `manifest-beta.json` when the plugin has one.

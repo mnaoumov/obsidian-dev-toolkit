@@ -29,6 +29,7 @@ const {
   mockEditJson,
   mockExistsSync,
   mockReaddirPosix,
+  mockReadJson,
   mockResolvePathFromRootSafe,
   mockRm,
   mockUpdateVersionGeneric,
@@ -40,6 +41,7 @@ const {
   mockEditJson: vi.fn<(params: EditJsonParams<Record<string, string>>) => Promise<void>>(),
   mockExistsSync: vi.fn<(path: string) => boolean>(),
   mockReaddirPosix: vi.fn<(path: string) => Promise<string[]>>(),
+  mockReadJson: vi.fn<(path: string) => Promise<unknown>>(),
   mockResolvePathFromRootSafe: vi.fn<(params: ResolvePathFromRootSafeParams) => string>(),
   mockRm: vi.fn(),
   mockUpdateVersionGeneric: vi.fn<(versionUpdateType?: string, options?: GenericUpdateVersionOptions) => Promise<void>>(),
@@ -64,7 +66,8 @@ vi.mock('@mnaoumov/typescript-dev-toolkit/fs', () => ({
 }));
 
 vi.mock('@mnaoumov/typescript-dev-toolkit/json', () => ({
-  editJson: mockEditJson
+  editJson: mockEditJson,
+  readJson: mockReadJson
 }));
 
 vi.mock('@mnaoumov/typescript-dev-toolkit/root', () => ({
@@ -98,6 +101,7 @@ beforeEach(() => {
   mockAnalyzePluginApiVersion.mockResolvedValue({ requiredMinAppVersion: undefined });
   mockExistsSync.mockReturnValue(false);
   mockReaddirPosix.mockResolvedValue([]);
+  mockReadJson.mockResolvedValue({ minAppVersion: '1.0.0', version: '1.0.1' });
   mockResolvePathFromRootSafe.mockImplementation((params: ResolvePathFromRootSafeParams) => `/root/${params.path}`);
   mockRm.mockResolvedValue(undefined);
   mockUpdateVersionGeneric.mockResolvedValue(undefined);
@@ -310,6 +314,48 @@ describe('updateVersion', () => {
       await genericOptions.prepareGitHubRelease('1.0.1');
       expect(prepareGitHubRelease).toHaveBeenCalledWith('1.0.1');
       expect(mockArchivePluginDemoVault).not.toHaveBeenCalled();
+    });
+
+    it('should check that both stable manifests equal the tag before anything is prepared', async () => {
+      const prepareGitHubRelease = vi.fn(noopAsync);
+      const genericOptions = await captureGenericOptions('patch', { prepareGitHubRelease });
+      assertNonNullable(genericOptions.prepareGitHubRelease);
+      await genericOptions.prepareGitHubRelease('1.0.1');
+      expect(mockReadJson).toHaveBeenNthCalledWith(1, '/root/manifest.json');
+      expect(mockReadJson).toHaveBeenNthCalledWith(2, '/root/dist/build/manifest.json');
+      expect(prepareGitHubRelease).toHaveBeenCalledWith('1.0.1');
+    });
+
+    it('should refuse a stable release whose released manifest does not carry the tag', async () => {
+      mockReadJson.mockResolvedValueOnce({ minAppVersion: '1.0.0', version: '1.0.1' }).mockResolvedValueOnce({ minAppVersion: '1.0.0', version: '1.0.0' });
+      const prepareGitHubRelease = vi.fn(noopAsync);
+      const genericOptions = await captureGenericOptions('patch', { prepareGitHubRelease });
+      assertNonNullable(genericOptions.prepareGitHubRelease);
+      await expect(genericOptions.prepareGitHubRelease('1.0.1')).rejects.toThrow(
+        'Refusing to release 1.0.1: dist/build/manifest.json carries version 1.0.0, and a stable manifest must equal the release tag.'
+      );
+      expect(prepareGitHubRelease).not.toHaveBeenCalled();
+      expect(mockArchivePluginDemoVault).not.toHaveBeenCalled();
+    });
+
+    it('should not check the stable manifests for a pre-release', async () => {
+      const genericOptions = await captureGenericOptions('prerelease');
+      assertNonNullable(genericOptions.prepareGitHubRelease);
+      await genericOptions.prepareGitHubRelease('1.0.1-beta.1');
+      expect(mockReadJson).not.toHaveBeenCalled();
+      expect(mockArchivePluginDemoVault).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('the release ordering', () => {
+    it('should publish the release before the branch is pushed by default', async () => {
+      const genericOptions = await captureGenericOptions('patch');
+      expect(genericOptions.shouldPublishBeforePush).toBe(true);
+    });
+
+    it('should let the caller fall back to the push-first ordering', async () => {
+      const genericOptions = await captureGenericOptions('patch', { shouldPublishBeforePush: false });
+      expect(genericOptions.shouldPublishBeforePush).toBe(false);
     });
   });
 

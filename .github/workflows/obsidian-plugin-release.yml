@@ -9,6 +9,10 @@ name: Obsidian Plugin Release
 # `obsidian-plugin-attest-release-assets.yml`), then push the tag. A tag with a `-` in it makes a pre-release. When the
 # release already exists, its assets are replaced.
 #
+# Push the tag alone, and the branch only after this workflow has published the release: Obsidian reads the version
+# from `manifest.json` on the default branch, so a branch pushed first names a release that does not exist yet. A
+# tag-triggered run cannot move the branch itself, so that last push stays with the caller.
+#
 # The caller owns the trigger and the permissions, and pins the workflow to a release tag of the toolkit:
 #
 #   on:

@@ -9,6 +9,11 @@
  * It is guarded by the community directory's checks (`plugin-release-checks.ts`): `manifest.json` and `versions.json`
  * before anything runs, and the tag and the assets in `dist/build` once the version is bumped, before the release
  * commit, so a release the directory would reject or delist stops before it is tagged.
+ *
+ * It publishes before it pushes (the generic `shouldPublishBeforePush`): the tag goes up first, the GitHub release
+ * is created and verified with every asset, and only then does the default branch receive the commit that carries the
+ * new stable `manifest.json`. Obsidian reads a plugin's version from that branch and downloads the assets of the
+ * release whose tag equals it, so the branch must never name a release that is not public yet.
  */
 
 import type {
@@ -17,7 +22,10 @@ import type {
 } from '@mnaoumov/typescript-dev-toolkit/version';
 
 import { readdirPosix } from '@mnaoumov/typescript-dev-toolkit/fs';
-import { editJson } from '@mnaoumov/typescript-dev-toolkit/json';
+import {
+  editJson,
+  readJson
+} from '@mnaoumov/typescript-dev-toolkit/json';
 import { resolvePathFromRootSafe } from '@mnaoumov/typescript-dev-toolkit/root';
 import {
   isPreRelease,
@@ -114,6 +122,14 @@ export interface UpdateVersionOptions extends GenericUpdateVersionOptions {
   readonly shouldCheckApiVersion?: boolean;
 
   /**
+   * Whether to publish and verify the GitHub release before the release commit reaches the default branch, so
+   * the branch never exposes a stable `manifest.json` whose release is not public yet. See the generic option.
+   *
+   * @default `true`, unlike the generic release
+   */
+  readonly shouldPublishBeforePush?: boolean;
+
+  /**
    * Whether to run the community directory's manifest, tag and asset checks, and stop the release on an error.
    *
    * @default `true`
@@ -185,6 +201,7 @@ export async function updateVersion(versionUpdateType?: string, options: UpdateV
     prepareGitHubRelease,
     shouldArchiveDemoVault = true,
     shouldCheckApiVersion = false,
+    shouldPublishBeforePush = true,
     shouldRunReleaseChecks = true,
     ...genericOptions
   } = options;
@@ -197,11 +214,15 @@ export async function updateVersion(versionUpdateType?: string, options: UpdateV
     ...genericOptions,
     getReleaseAssetPaths: getPluginReleaseAssetPaths,
     async prepareGitHubRelease(newVersion: string): Promise<void> {
+      if (!isPreRelease(newVersion)) {
+        await assertReleasedManifestMatchesTag(newVersion);
+      }
       await prepareGitHubRelease?.(newVersion);
       if (shouldArchiveDemoVault) {
         await archivePluginDemoVault();
       }
     },
+    shouldPublishBeforePush,
     async updateVersionInExtraFiles(newVersion: string): Promise<void> {
       await updateVersionInFilesForPlugin(newVersion, { minAppVersion, shouldCheckApiVersion });
       if (shouldRunReleaseChecks) {
@@ -236,6 +257,26 @@ async function assertPluginReleaseChecksPass(stage: string, options: ValidatePlu
     );
   }
   console.warn(report);
+}
+
+/**
+ * Stops a stable release whose `manifest.json`, in the repository or among the assets, does not carry the tag's
+ * version. Runs before the tag is pushed, so a mismatch leaves the remote untouched.
+ *
+ * @param newVersion - The version being released, which is also the tag.
+ * @returns A {@link Promise} that resolves when both manifests carry the version.
+ */
+async function assertReleasedManifestMatchesTag(newVersion: string): Promise<void> {
+  const manifestPaths = [
+    ObsidianPluginRepoPaths.ManifestJson,
+    join(ObsidianPluginRepoPaths.DistBuild, ObsidianPluginRepoPaths.ManifestJson)
+  ];
+  for (const path of manifestPaths) {
+    const manifest = await readJson<Manifest>(resolvePathFromRootSafe({ path }));
+    if (manifest.version !== newVersion) {
+      throw new Error(`Refusing to release ${newVersion}: ${path} carries version ${manifest.version}, and a stable manifest must equal the release tag.`);
+    }
+  }
 }
 
 /**
