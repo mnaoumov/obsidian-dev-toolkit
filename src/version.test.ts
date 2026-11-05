@@ -151,6 +151,11 @@ describe('copyUpdatedManifest', () => {
     expect(mockCp).toHaveBeenCalledTimes(1);
     expect(mockCp).toHaveBeenCalledWith('/root/manifest.json', '/root/dist/build/manifest.json', { force: true });
   });
+
+  it('should copy the given manifest to dist/build/manifest.json', async () => {
+    await copyUpdatedManifest('manifest-beta.json');
+    expect(mockCp).toHaveBeenCalledWith('/root/manifest-beta.json', '/root/dist/build/manifest.json', { force: true });
+  });
 });
 
 describe('parseVersionArguments', () => {
@@ -338,12 +343,25 @@ describe('updateVersion', () => {
       expect(mockArchivePluginDemoVault).not.toHaveBeenCalled();
     });
 
-    it('should not check the stable manifests for a pre-release', async () => {
+    it('should check manifest-beta.json and the asset manifest, not manifest.json, for a pre-release', async () => {
+      mockReadJson.mockResolvedValue({ minAppVersion: '1.0.0', version: '1.0.1-beta.1' });
       const genericOptions = await captureGenericOptions('prerelease');
       assertNonNullable(genericOptions.prepareGitHubRelease);
       await genericOptions.prepareGitHubRelease('1.0.1-beta.1');
-      expect(mockReadJson).not.toHaveBeenCalled();
+      expect(mockReadJson).toHaveBeenCalledTimes(2);
+      expect(mockReadJson).toHaveBeenNthCalledWith(1, '/root/manifest-beta.json');
+      expect(mockReadJson).toHaveBeenNthCalledWith(2, '/root/dist/build/manifest.json');
       expect(mockArchivePluginDemoVault).toHaveBeenCalledTimes(1);
+    });
+
+    it('should refuse a pre-release whose asset manifest does not carry the tag', async () => {
+      mockReadJson.mockResolvedValueOnce({ minAppVersion: '1.0.0', version: '1.0.1-beta.1' }).mockResolvedValueOnce({ minAppVersion: '1.0.0', version: '1.0.0' });
+      const genericOptions = await captureGenericOptions('prerelease');
+      assertNonNullable(genericOptions.prepareGitHubRelease);
+      await expect(genericOptions.prepareGitHubRelease('1.0.1-beta.1')).rejects.toThrow(
+        'Refusing to release 1.0.1-beta.1: dist/build/manifest.json carries version 1.0.0, and a pre-release manifest must equal the release tag.'
+      );
+      expect(mockArchivePluginDemoVault).not.toHaveBeenCalled();
     });
   });
 
@@ -383,7 +401,7 @@ describe('updateVersion', () => {
 
       expect(mockFetch).not.toHaveBeenCalled();
       expect(mockRm).not.toHaveBeenCalled();
-      expect(mockCp).toHaveBeenNthCalledWith(2, '/root/manifest.json', '/root/dist/build/manifest.json', { force: true });
+      expect(mockCp).toHaveBeenNthCalledWith(2, '/root/manifest-beta.json', '/root/dist/build/manifest.json', { force: true });
     });
 
     it('should use the minAppVersion option verbatim without fetching', async () => {

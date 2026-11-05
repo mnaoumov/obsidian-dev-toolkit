@@ -275,6 +275,33 @@ describe.skipIf(BASH === null)('the workflow steps under bash', { timeout: BASH_
     });
   });
 
+  describe('Use the pre-release manifest', () => {
+    async function useManifest(tag: string): Promise<unknown> {
+      const release = await readWorkflow('obsidian-plugin-release.yml');
+      const result = runStep(getRun(release, 'Use the pre-release manifest'), folder, { TAG: tag });
+      expect(result.status, result.output).toBe(0);
+      const manifest: unknown = JSON.parse(await readFile(join(folder, 'dist/build/manifest.json'), 'utf-8'));
+      return manifest;
+    }
+
+    beforeEach(async () => {
+      await mkdir(join(folder, 'dist/build'), { recursive: true });
+      await writeFile(join(folder, 'manifest.json'), JSON.stringify({ version: '1.2.3' }));
+      await writeFile(join(folder, 'dist/build/manifest.json'), JSON.stringify({ version: '1.2.3' }));
+    });
+
+    it('should ship manifest-beta.json as the asset for a pre-release tag', async () => {
+      await writeFile(join(folder, 'manifest-beta.json'), JSON.stringify({ version: '1.3.0-beta.1' }));
+      expect(await useManifest('1.3.0-beta.1')).toEqual({ version: '1.3.0-beta.1' });
+    });
+
+    it('should keep the built manifest for a stable tag, or without a manifest-beta.json', async () => {
+      expect(await useManifest('1.3.0-beta.1')).toEqual({ version: '1.2.3' });
+      await writeFile(join(folder, 'manifest-beta.json'), JSON.stringify({ version: '1.3.0-beta.1' }));
+      expect(await useManifest('1.2.3')).toEqual({ version: '1.2.3' });
+    });
+  });
+
   describe('Publish the release', () => {
     let ghLog = '';
 

@@ -92,7 +92,7 @@ Obsidian reads the plugin's version from `manifest.json` on the default branch a
 The job then does the following, in order:
 
 1. **Checks the tag.** Obsidian finds a release by the version in the plugin's manifest, so a tag that is not that version is a release that never reaches anyone. The job fails unless the tag is the `version` of `manifest.json`. For a tag with a `-` in it, it compares against `manifest-beta.json` when the plugin has one.
-2. **Builds the plugin** with `build-command`, into `dist/build`.
+2. **Builds the plugin** with `build-command`, into `dist/build`. For a tag with a `-` in it, `manifest-beta.json` then replaces the built `manifest.json` when the plugin has one, because [BRAT](https://community.obsidian.md/plugins/obsidian42-brat) reads the `manifest.json` release asset, so that asset must carry the pre-release version.
 3. **Archives the demo vault** when the plugin has a `demo-vault/` folder, with the toolkit's `archive-demo-vault` command, so the release carries the same archive `npm run version` attaches. See [Demo Vault](/obsidian-dev-toolkit/guides/demo-vault/).
 4. **Publishes the release.** Every file in `dist/build` is attached: `main.js`, `manifest.json`, `styles.css` and the demo vault archive. An empty file is left out with a warning, because `GitHub` refuses a 0-byte asset and rolls the whole release back. A tag with a `-` in it makes a pre-release. When the release exists already, its assets are replaced.
 5. **Attests the assets' build provenance** with `actions/attest`, so anyone can check them with `gh attestation verify <file> --repo <owner>/<repo>`.
