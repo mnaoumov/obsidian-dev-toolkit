@@ -158,6 +158,12 @@ jobs:
         # The command is the caller's own input, so it is split into words on purpose.
         run: ${BUILD_COMMAND:-$RUN build}
 
+      - name: Use the pre-release manifest
+        # The build copies manifest.json into dist/build, but BRAT reads the manifest.json release asset, so a
+        # pre-release tag ships manifest-beta.json under that name, carrying the pre-release version.
+        run: |
+          case "$TAG" in *-*) if [ -f manifest-beta.json ]; then cp manifest-beta.json dist/build/manifest.json; fi ;; esac
+
       - name: Archive the demo vault
         if: inputs.demo-vault && hashFiles('demo-vault/**') != ''
         env:

@@ -3,7 +3,8 @@
  *
  * Releases an Obsidian plugin: the generic release from `@mnaoumov/typescript-dev-toolkit/version`, plus what only a
  * plugin has — `manifest.json` (and `manifest-beta.json` for a pre-release) and `versions.json` bumped with the
- * plugin's `minAppVersion`, the updated manifest copied into `dist/build`, the demo vault archived as a release
+ * plugin's `minAppVersion`, the updated manifest (`manifest-beta.json` for a pre-release) copied into `dist/build` as
+ * the `manifest.json` release asset, the demo vault archived as a release
  * asset, and the files in `dist/build` attached to the GitHub release instead of an `npm pack` tarball.
  *
  * It is guarded by the community directory's checks (`plugin-release-checks.ts`): `manifest.json` and `versions.json`
@@ -138,13 +139,18 @@ export interface UpdateVersionOptions extends GenericUpdateVersionOptions {
 }
 
 /**
- * Copies the updated manifest file to the distribution build folder.
+ * Copies the updated manifest file to the distribution build folder, as the `manifest.json` release asset.
  *
+ * A pre-release passes `manifest-beta.json`, because BRAT reads `manifest.json` from the release assets (and ignores
+ * `manifest-beta.json` in the repository since its 1.1.0), so the asset must carry the pre-release version.
+ *
+ * @param manifestFile - The repository manifest to copy: `manifest.json` for a stable release, `manifest-beta.json`
+ * for a pre-release.
  * @returns A {@link Promise} that resolves when the copy operation is complete.
  */
-export async function copyUpdatedManifest(): Promise<void> {
+export async function copyUpdatedManifest(manifestFile: string = ObsidianPluginRepoPaths.ManifestJson): Promise<void> {
   await cp(
-    resolvePathFromRootSafe({ path: ObsidianPluginRepoPaths.ManifestJson }),
+    resolvePathFromRootSafe({ path: manifestFile }),
     resolvePathFromRootSafe({ path: join(ObsidianPluginRepoPaths.DistBuild, ObsidianPluginRepoPaths.ManifestJson) }),
     { force: true }
   );
@@ -214,9 +220,7 @@ export async function updateVersion(versionUpdateType?: string, options: UpdateV
     ...genericOptions,
     getReleaseAssetPaths: getPluginReleaseAssetPaths,
     async prepareGitHubRelease(newVersion: string): Promise<void> {
-      if (!isPreRelease(newVersion)) {
-        await assertReleasedManifestMatchesTag(newVersion);
-      }
+      await assertReleasedManifestMatchesTag(newVersion);
       await prepareGitHubRelease?.(newVersion);
       if (shouldArchiveDemoVault) {
         await archivePluginDemoVault();
@@ -260,21 +264,24 @@ async function assertPluginReleaseChecksPass(stage: string, options: ValidatePlu
 }
 
 /**
- * Stops a stable release whose `manifest.json`, in the repository or among the assets, does not carry the tag's
- * version. Runs before the tag is pushed, so a mismatch leaves the remote untouched.
+ * Stops a release whose manifest, in the repository or among the assets, does not carry the tag's version: for a
+ * stable release `manifest.json`, for a pre-release `manifest-beta.json`, and in both cases the `manifest.json`
+ * asset in `dist/build`. Runs before the tag is pushed, so a mismatch leaves the remote untouched.
  *
  * @param newVersion - The version being released, which is also the tag.
  * @returns A {@link Promise} that resolves when both manifests carry the version.
  */
 async function assertReleasedManifestMatchesTag(newVersion: string): Promise<void> {
+  const isPreReleaseVersion = isPreRelease(newVersion);
   const manifestPaths = [
-    ObsidianPluginRepoPaths.ManifestJson,
+    isPreReleaseVersion ? ObsidianPluginRepoPaths.ManifestBetaJson : ObsidianPluginRepoPaths.ManifestJson,
     join(ObsidianPluginRepoPaths.DistBuild, ObsidianPluginRepoPaths.ManifestJson)
   ];
+  const releaseKind = isPreReleaseVersion ? 'a pre-release' : 'a stable';
   for (const path of manifestPaths) {
     const manifest = await readJson<Manifest>(resolvePathFromRootSafe({ path }));
     if (manifest.version !== newVersion) {
-      throw new Error(`Refusing to release ${newVersion}: ${path} carries version ${manifest.version}, and a stable manifest must equal the release tag.`);
+      throw new Error(`Refusing to release ${newVersion}: ${path} carries version ${manifest.version}, and ${releaseKind} manifest must equal the release tag.`);
     }
   }
 }
@@ -296,7 +303,8 @@ async function updateVersionInFilesForPlugin(
 ): Promise<void> {
   const { minAppVersion, shouldCheckApiVersion } = options;
   const manifestBetaJsonPath = resolvePathFromRootSafe({ path: ObsidianPluginRepoPaths.ManifestBetaJson });
-  if (isPreRelease(newVersion)) {
+  const isPreReleaseVersion = isPreRelease(newVersion);
+  if (isPreReleaseVersion) {
     await cp(
       resolvePathFromRootSafe({ path: ObsidianPluginRepoPaths.ManifestJson }),
       manifestBetaJsonPath,
@@ -340,5 +348,5 @@ async function updateVersionInFilesForPlugin(
     }
   }
 
-  await copyUpdatedManifest();
+  await copyUpdatedManifest(isPreReleaseVersion ? ObsidianPluginRepoPaths.ManifestBetaJson : ObsidianPluginRepoPaths.ManifestJson);
 }
