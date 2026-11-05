@@ -35,7 +35,14 @@ function fingerprint(files: Record<string, string>): string {
   return hash.digest('hex');
 }
 
-describe('generatePerformanceVault', () => {
+/*
+ * Generating a corpus is pure CPU work that scales with its size: the default corpus and the 12,000-note varied one
+ * take one to two seconds on an idle machine, and well past vitest's 5 s default on one capped worker under bulk load
+ * (5.4 s measured alone with `VITEST_MAX_WORKERS=1` on 2026-11-04). The budget is for that, not for a slow assertion.
+ */
+const GENERATION_TIMEOUT_IN_MILLISECONDS = 60_000;
+
+describe('generatePerformanceVault', { timeout: GENERATION_TIMEOUT_IN_MILLISECONDS }, () => {
   it('preserves configurable link, unlinked mention and identical deletion scenarios', () => {
     const files = generatePerformanceVault(SMALL_OPTIONS);
     expect(Object.keys(files)).toHaveLength(20);

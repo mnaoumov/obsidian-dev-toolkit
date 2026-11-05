@@ -537,10 +537,16 @@ describe('defineObsidianPluginVitestConfig', () => {
  *
  * These cases hand the assembled configuration to vitest and ask it what each project would collect.
  * `createVitest` resolves the projects and globs their files in-process — no Obsidian, no `globalSetup`,
- * no test run — in well under a tenth of a second per call. `config: false` is what stops vitest walking
- * up from the fixture root and finding this repo's own `vitest.config.ts`.
+ * no test run. That takes 0.1-0.5 s per call on an idle machine, but it is real filesystem and config
+ * resolution work whose cost swings with CPU contention: one capped worker under bulk load took the same
+ * call from 0.2 s to 35 s within one file (2026-11-04, every core busy). So the cases carry an explicit
+ * budget for that load rather than for a slow assertion.
+ * `config: false` is what stops vitest walking up from the fixture root and finding this repo's own
+ * `vitest.config.ts`.
  */
-describe('defineObsidianPluginVitestConfig project isolation', () => {
+const PROJECT_COLLECTION_TIMEOUT_IN_MILLISECONDS = 60_000;
+
+describe('defineObsidianPluginVitestConfig project isolation', { timeout: PROJECT_COLLECTION_TIMEOUT_IN_MILLISECONDS }, () => {
   /**
    * One empty file per suffix: every standard project's, plus the three custom projects every plugin in
    * the workspace declares. `plain.test.ts` is the unit suite, and is the file a widened integration
