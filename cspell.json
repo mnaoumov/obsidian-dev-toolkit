@@ -119,6 +119,7 @@
     "linkinator",
     "Linkpath",
     "Linktext",
+    "LOCALAPPDATA",
     "localforage",
     "localtime",
     "lockfiles",

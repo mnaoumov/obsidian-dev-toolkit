@@ -13,9 +13,13 @@ await build();
 
 The generic commands (clean, compile, spellcheck, find over-exposed declarations, the test runners, the branch gate and the `npm` publish) are documented on the [TypeScript Dev Toolkit commands page](https://mnaoumov.dev/typescript-dev-toolkit/guides/cli-commands/), together with how to wire a command into an `npm` script, how to switch a command off with an environment variable, and why every command skips what `.gitignore` skips. A plugin calls them from `@mnaoumov/typescript-dev-toolkit` directly.
 
-## Generate a debugger configuration
+## Start Obsidian for debugging
 
-Run `npx generate-debug-config` in a plugin project to create `.vscode/launch.json` for VS Code's built-in browser debugger. It reads the `npm` package name used by `esbuild`'s development source maps and refuses to overwrite existing settings. Pass `--port=9333` to change the default renderer port of `9222`. See [Debugging plugins](/obsidian-dev-toolkit/guides/debugging/) for launching Obsidian, attaching, and diagnosing unbound breakpoints.
+Run `npx start-obsidian-for-debugging` to start desktop Obsidian with its renderer's remote debugging endpoint on port `9222`, which any IDE or DevTools client can attach to. It waits until the endpoint answers and reports itself as Obsidian, and fails, rather than claiming success, when an Obsidian that was already running took the request. `--port=<number>` changes the port, `--executable=<path>` names the Obsidian executable, and arguments after `--` go to Obsidian unchanged. It does not build, enable or attach anything. See [Debugging plugins](/obsidian-dev-toolkit/guides/debugging/) for the whole workflow.
+
+## Generate a VS Code debugger configuration
+
+Run `npx generate-vscode-debug-config` in a plugin project to create `.vscode/launch.json` for VS Code's built-in browser debugger. It reads the `npm` package name used by `esbuild`'s development source maps and refuses to overwrite existing settings. Pass `--port=9333` to change the default renderer port of `9222`. See [Debugging in VS Code](/obsidian-dev-toolkit/guides/debugging-vscode/) for attaching and diagnosing unbound breakpoints.
 
 ## Build Production Version
 

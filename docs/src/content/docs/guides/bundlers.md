@@ -28,7 +28,7 @@ The `esbuild` builder derives its `target` from this floor, and `vite` derives `
 
 ## esbuild
 
-For local TypeScript breakpoints, [generate a VS Code attach configuration and debug the development build](/obsidian-dev-toolkit/guides/debugging/).
+For local TypeScript breakpoints, [start Obsidian for debugging and attach to the development build](/obsidian-dev-toolkit/guides/debugging/).
 
 ```typescript
 // scripts/build.ts
