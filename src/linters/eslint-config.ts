@@ -23,7 +23,6 @@ import {
 import { join } from '@mnaoumov/typescript-lib/path';
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `plugin` is too confusing.
 import obsidianmd from 'eslint-plugin-obsidianmd';
-import { PlainTextParser } from 'eslint-plugin-obsidianmd/dist/lib/plainTextParser.js';
 import { defineConfig } from 'eslint/config';
 
 import type { ObsidianRuntimeFloor } from '../obsidian-runtime.ts';
@@ -123,23 +122,17 @@ function getIntegrationTestConfigs(context: EslintConfigContext): Linter.Config[
 }
 
 /*
- * The Community directory requires a root `LICENSE`, and `obsidianmd/validate-license` is the only check
- * on what it says: the copyright holder must not still be the sample plugin's, and the year must be
- * current. Both need `PlainTextParser`, which the plugin does not export, so it is reached through its
- * build output -- the package declares no `exports` map and ships a declaration beside the module, so the
- * deep path resolves, but it is the one import here that a patch release upstream could break.
- *
- * The rule compares the year against `new Date().getFullYear()` at lint time, so a repo goes red at the
- * turn of the year until its LICENSE is bumped. `.github/workflows/update-license-year.yml` does that on
- * 1 January; a repo adopting this config needs the same workflow, or the year check will fail its CI.
+ * The Community directory requires a root `LICENSE`, and `obsidianmd/validate-license` checks that it is not
+ * the sample plugin's notice left unedited: the sample's copyright holder, and the year of such a line. Any other
+ * holder's line is not checked at all, so the year of the author's own notice never turns a repo red.
+ * `obsidianmd.configs.recommended` already lints `LICENSE` through the plugin's `obsidianmd/plain-text`
+ * language, at `warn`; this block only raises it to an error.
  */
 function getLicenseConfigs(): Linter.Config[] {
   return defineConfig([
     {
       files: [ObsidianPluginRepoPaths.License],
-      languageOptions: {
-        parser: PlainTextParser
-      },
+      language: 'obsidianmd/plain-text',
       plugins: {
         obsidianmd
       },
@@ -151,17 +144,16 @@ function getLicenseConfigs(): Linter.Config[] {
 }
 
 /*
- * The root `manifest.json` is what the Community directory's automated review actually reads, and until
- * this config existed no linter read it at all: `obsidianmd/validate-manifest` registers a `Program`
- * visitor and expects an ESTree `ObjectExpression`, while every JSON parser that ships produces something
- * else -- `@eslint/json` produces Momoa (`Document`), `jsonc-eslint-parser` produces
- * `JSONObjectExpression` -- so the rule silently matches nothing no matter which files it is scoped to.
- * The in-house rules below visit the Momoa AST instead.
+ * The root `manifest.json` is what the Community directory's automated review actually reads.
+ * `obsidianmd/validate-manifest` checks it the way that review does (the keys, their types, and the words and
+ * format of the id, name and description); `obsidianmd.configs.recommended` turns it on at `warn`, and this
+ * block raises it to an error, with `checkId` so a new plugin's id is checked as the developer docs ask.
  *
- * `manifest.json` is strict JSON, so an `eslint-disable` comment in it is a parse error AND would stop
- * Obsidian loading the plugin. That makes the config the only place a check can be waived, which is why
- * these are four rules rather than one: a repo with a grandfathered `id` can turn off `manifest-id` alone
- * and keep the rest.
+ * The in-house `manifest-*` rules hold only what upstream does not check, and report nothing it already does.
+ * `manifest.json` is strict JSON, so an `eslint-disable` comment in it is a parse error AND would stop Obsidian
+ * loading the plugin. That makes the config the only place a check can be waived, which is why each in-house
+ * check is a rule of its own, and why a grandfathered id is waived through `validate-manifest`'s own options:
+ * `checkId: false`, or `allowedWords` for one word in one field.
  */
 function getManifestConfigs(): Linter.Config[] {
   return defineConfig([
@@ -170,13 +162,15 @@ function getManifestConfigs(): Linter.Config[] {
       language: 'json/json',
       plugins: {
         'json': jsonPlugin,
-        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin,
+        obsidianmd
       },
       rules: {
         'obsidian-dev-toolkit/manifest-description': 'error',
+        'obsidian-dev-toolkit/manifest-funding-url': 'error',
         'obsidian-dev-toolkit/manifest-id': 'error',
         'obsidian-dev-toolkit/manifest-name': 'error',
-        'obsidian-dev-toolkit/manifest-schema': 'error'
+        'obsidianmd/validate-manifest': ['error', { checkId: true }]
       }
     }
   ]);
@@ -252,13 +246,18 @@ function getObsidianLintConfigs(context: EslintConfigContext): Linter.Config[] {
    */
   const ownedRuleNames = new Set(getEslintCoreConfigs(context).flatMap((config) => Object.keys(config.rules ?? {})));
 
+  /*
+   * A block that names a `language` lints a file that is not code (`package.json`, `manifest.json`, `LICENSE`, an
+   * English locale `.json`) and is already scoped to it, so it keeps its own `files`. Narrowed to the source files instead,
+   * it would parse every `.ts` file as JSON or plain text.
+   */
   const scopedObsidianRecommendedConfigs = obsidianRecommendedConfigs.map((config) => {
-    return config.files?.includes('package.json')
-      ? config
-      : {
+    return config.language === undefined
+      ? {
         ...stripOwnedRuleCustomMessageEntries({ config, ownedRuleNames }),
         files: context.sourceFiles
-      };
+      }
+      : config;
   });
 
   return defineConfig([

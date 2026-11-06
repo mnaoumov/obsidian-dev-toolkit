@@ -56,6 +56,7 @@ export function preprocessPlugin(isEsm?: boolean): Plugin {
 
 function getObsidianCjsImportMetaUrl(): string {
   if (typeof __filename === 'string') {
+    // eslint-disable-next-line unicorn/prefer-module -- Serialized into a CommonJS bundle, where `require` is the module's own.
     const localRequire = require;
     const url = localRequire('node:url') as UrlModule;
     if (typeof url.pathToFileURL === 'function') {
@@ -68,11 +69,13 @@ function getObsidianCjsImportMetaUrl(): string {
 }
 
 function patchObsidianRequire(): void {
+  // eslint-disable-next-line unicorn/prefer-module -- Serialized into a CommonJS bundle, where `require` is the module's own.
   const originalRequire = require as (NodeJS.Require & Partial<RequirePatched> | undefined);
   if (!originalRequire || originalRequire.__isPatched) {
     return;
   }
 
+  // eslint-disable-next-line no-global-assign, no-implicit-globals, unicorn/prefer-module -- The banner replaces the bundle's own `require` with the patched one; that is its whole job.
   require = Object.assign(
     (id: string) => requirePatched(id),
     originalRequire,

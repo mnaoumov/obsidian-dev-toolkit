@@ -22,10 +22,15 @@ import {
   stripOwnedRuleCustomMessageEntries
 } from './obsidianmd-rule-custom-message.ts';
 
+/*
+ * Since `eslint-plugin-obsidianmd` 0.5.0 the recommended config carries several wrapper entries: an early one per
+ * language wrapping only `no-new-func`, and a later one, for the files that run in Obsidian, that adds `no-console`.
+ * The premise is about the one that wraps `no-console`.
+ */
 function getUpstreamRuleEntry(): LinterType.RuleEntry {
   const ruleEntry = obsidianmd.configs.recommended
     .map((config) => config.rules?.[RULE_CUSTOM_MESSAGE_RULE_NAME])
-    .find((entry) => entry !== undefined);
+    .find((entry) => Array.isArray(entry) && typeof entry[1] === 'object' && entry[1] !== null && 'no-console' in entry[1]);
   assertNonNullable(ruleEntry);
   return ruleEntry;
 }

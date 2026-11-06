@@ -6,9 +6,9 @@
 import type { ESLint } from 'eslint';
 
 import { manifestDescription } from './manifest-description.ts';
+import { manifestFundingUrl } from './manifest-funding-url.ts';
 import { manifestId } from './manifest-id.ts';
 import { manifestName } from './manifest-name.ts';
-import { manifestSchema } from './manifest-schema.ts';
 import { noBareCodeElement } from './no-bare-code-element.ts';
 import { noLocalObsidianInternals } from './no-local-obsidian-internals.ts';
 import { noOverCapWaitInEvalInObsidian } from './no-over-cap-wait-in-eval-in-obsidian.ts';
@@ -30,9 +30,9 @@ export const OBSIDIAN_DEV_TOOLKIT_ESLINT_PLUGIN_NAME = 'obsidian-dev-toolkit';
 export const obsidianDevToolkitPlugin: ESLint.Plugin = {
   rules: {
     'manifest-description': manifestDescription,
+    'manifest-funding-url': manifestFundingUrl,
     'manifest-id': manifestId,
     'manifest-name': manifestName,
-    'manifest-schema': manifestSchema,
     'no-bare-code-element': noBareCodeElement,
     'no-local-obsidian-internals': noLocalObsidianInternals,
     'no-over-cap-wait-in-eval-in-obsidian': noOverCapWaitInEvalInObsidian,

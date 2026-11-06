@@ -18,9 +18,9 @@ describe('obsidianDevToolkitPlugin', () => {
   it('should carry the Obsidian rules alone', () => {
     expect(Object.keys(obsidianDevToolkitPlugin.rules ?? {}).sort()).toEqual([
       'manifest-description',
+      'manifest-funding-url',
       'manifest-id',
       'manifest-name',
-      'manifest-schema',
       'no-bare-code-element',
       'no-local-obsidian-internals',
       'no-over-cap-wait-in-eval-in-obsidian',

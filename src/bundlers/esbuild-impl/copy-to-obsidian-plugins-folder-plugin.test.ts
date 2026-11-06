@@ -43,7 +43,6 @@ vi.mock('obsidian-integration-testing', () => ({
   evalInObsidian: mockEvalInObsidian
 }));
 
-// eslint-disable-next-line obsidianmd/hardcoded-config-path -- Testing that .obsidian is stripped from the vault path.
 const OBSIDIAN_CONFIG_FOLDER = 'f:/dev/ObsidianVaults/Test/.obsidian';
 const EXPECTED_VAULT_ROOT = 'f:/dev/ObsidianVaults/Test';
 

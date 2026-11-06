@@ -5,8 +5,7 @@
  *
  * The manifest is linted through `@eslint/json`'s `json/json` language, whose AST is Momoa
  * (`Document` -> `Object` -> `Member`) rather than ESTree, so these rules visit `Document` instead of
- * `Program`. That difference is exactly why `obsidianmd/validate-manifest` can never fire: it registers a
- * `Program` visitor and expects an ESTree `ObjectExpression`, which no shipped JSON parser produces.
+ * `Program`, as `obsidianmd/validate-manifest` does since `eslint-plugin-obsidianmd` 0.5.0.
  *
  * The Momoa node shapes are declared structurally here rather than imported from `@humanwhocodes/momoa`,
  * which is only a transitive dependency of `@eslint/json`. A type-only import would leak into the
@@ -20,11 +19,6 @@ import type {
 
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `plugin` is too confusing.
 import json from '@eslint/json';
-
-/**
- * The Momoa node type of a JSON boolean value.
- */
-export const JSON_NODE_TYPE_BOOLEAN = 'Boolean';
 
 /**
  * The Momoa node type of a JSON object value.
@@ -45,11 +39,6 @@ export const JSON_NODE_TYPE_STRING = 'String';
  * resolvable, so there is no way to avoid the bridge.
  */
 export const jsonPlugin: ESLint.Plugin = bridgeJsonPlugin();
-
-/**
- * The `version` a plugin repo carries before its first release, when `minAppVersion` is legitimately absent.
- */
-export const UNRELEASED_VERSION = '0.0.0';
 
 /**
  * The root node of a parsed JSON document.
@@ -126,18 +115,6 @@ export function findManifestMember(manifestObject: JsonObjectNode, key: string):
 export function getManifestObject(node: unknown): JsonObjectNode | null {
   const document = node as JsonDocumentNode;
   return document.body.type === JSON_NODE_TYPE_OBJECT ? document.body as JsonObjectNode : null;
-}
-
-/**
- * Reads the value of a top-level string member of the manifest.
- *
- * @param manifestObject - The manifest's root object node.
- * @param key - The key to look for.
- * @returns The member's value, or `null` when it is absent or not a string.
- */
-export function getManifestStringValue(manifestObject: JsonObjectNode, key: string): null | string {
-  const member = findManifestMember(manifestObject, key);
-  return member ? getStringValue(member.value) : null;
 }
 
 /**
