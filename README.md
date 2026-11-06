@@ -12,7 +12,7 @@ npm install --save-dev @mnaoumov/obsidian-dev-toolkit
 
 The guides and the API reference are at <https://mnaoumov.dev/obsidian-dev-toolkit/>.
 
-Run `npx generate-debug-config` in your plugin project to create a VS Code renderer attach configuration matching the `esbuild` development source maps. See [Debugging plugins](docs/src/content/docs/guides/debugging.md) for starting Obsidian, binding TypeScript breakpoints and diagnosing source paths.
+Run `npx start-obsidian-for-debugging` to start Obsidian with its renderer debugging endpoint, and `npx generate-vscode-debug-config` in your plugin project to create a VS Code attach configuration matching the `esbuild` development source maps. See [Debugging plugins](docs/src/content/docs/guides/debugging.md) for starting Obsidian and the development build, and [Debugging in VS Code](docs/src/content/docs/guides/debugging-vscode.md) for binding TypeScript breakpoints and diagnosing source paths.
 
 `esbuild` builds include source-map ignore lists for shared debug and patching wrappers, so DevTools can link console messages to their callers. Extend the defaults with `ignoreListSources` or disable them with `ignoreListSources: false`; see the [bundler guide](https://mnaoumov.dev/obsidian-dev-toolkit/guides/bundlers/#esbuild).
 

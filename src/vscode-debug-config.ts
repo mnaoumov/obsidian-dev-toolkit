@@ -11,9 +11,9 @@ const MAX_PORT = 65_535;
 const WORKSPACE_FOLDER = '${workspaceFolder}';
 
 /**
- * Parameters for {@link createObsidianDebugConfig}.
+ * Parameters for {@link createVsCodeDebugConfig}.
  */
-export interface CreateObsidianDebugConfigParams {
+export interface CreateVsCodeDebugConfigParams {
   /**
    * The npm package name, matching the build's source-map URL prefix.
    */
@@ -29,7 +29,7 @@ export interface CreateObsidianDebugConfigParams {
 /**
  * The settings accepted by VS Code's built-in browser debugger.
  */
-export interface ObsidianDebugAttachConfig {
+export interface VsCodeDebugAttachConfig {
   /**
    * The local debugging address.
    */
@@ -67,11 +67,11 @@ export interface ObsidianDebugAttachConfig {
 /**
  * A VS Code launch configuration containing the renderer attachment.
  */
-export interface ObsidianDebugConfig {
+export interface VsCodeDebugConfig {
   /**
    * The renderer attachment configurations.
    */
-  readonly configurations: readonly ObsidianDebugAttachConfig[];
+  readonly configurations: readonly VsCodeDebugAttachConfig[];
   /**
    * The VS Code launch file schema version.
    */
@@ -85,7 +85,7 @@ export interface ObsidianDebugConfig {
  * @returns A serializable VS Code launch file.
  * @throws If the port or package name cannot be used in the mapping.
  */
-export function createObsidianDebugConfig(params: CreateObsidianDebugConfigParams): ObsidianDebugConfig {
+export function createVsCodeDebugConfig(params: CreateVsCodeDebugConfigParams): VsCodeDebugConfig {
   const { pluginName, port = DEFAULT_DEBUG_PORT } = params;
   if (!Number.isSafeInteger(port) || port < 1 || port > MAX_PORT) {
     throw new Error('The debugging port must be an integer between 1 and 65535.');

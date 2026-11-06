@@ -20,7 +20,7 @@ import {
 } from 'vitest';
 
 import { fixSourceMapsPlugin } from './bundlers/esbuild-impl/fix-source-maps-plugin.ts';
-import { createObsidianDebugConfig } from './debug-config.ts';
+import { createVsCodeDebugConfig } from './vscode-debug-config.ts';
 
 interface DevelopmentSourceMap {
   readonly sources: string[];
@@ -51,7 +51,7 @@ it('should map a real development bundle source back to the original TypeScript'
     const map = JSON.parse(Buffer.from(encoded, 'base64').toString('utf-8')) as DevelopmentSourceMap;
     expect(map.sourcesContent).toContain(source);
     expect(bundle).toContain('/* nosourcemap */');
-    const config = createObsidianDebugConfig({ pluginName });
+    const config = createVsCodeDebugConfig({ pluginName });
     const overrides = config.configurations[0]?.sourceMapPathOverrides ?? {};
     const prefix = `app://obsidian.md/plugin:${pluginName}/`;
     // eslint-disable-next-line no-template-curly-in-string -- This is a literal VS Code substitution variable.
