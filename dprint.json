@@ -6,10 +6,14 @@
     "exportDeclaration.forceMultiLine": "whenMultiple",
     "functionExpression.spaceAfterFunctionKeyword": true,
     "importDeclaration.forceMultiLine": "whenMultiple",
+    // ESLint sorts by local aliases; dprint sorts by imported names. Let ESLint own this order.
+    "importDeclaration.sortNamedImports": "maintain",
     "jsx.quoteStyle": "preferDouble",
     "lineWidth": 1000,
     "quoteStyle": "alwaysSingle",
-    "trailingCommas": "never"
+    "trailingCommas": "never",
+    // Keep single-line control-flow bodies compatible with ESLint's curly rule.
+    "useBraces": "always"
   },
   "json": {},
   "markdown": {},

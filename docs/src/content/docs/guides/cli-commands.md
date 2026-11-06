@@ -112,6 +112,8 @@ import { lint as lintMarkdown } from '@mnaoumov/obsidian-dev-toolkit/linters/mar
 
 The generic `ESLint`, `markdownlint` and `dprint` commands, with one difference: a project that has no configuration of its own gets this package's template copied in (`eslint.config.mts`, `.markdownlint-cli2.mjs`, `dprint.json`), which builds on the Obsidian layer of the shared configuration rather than the generic one. They take the same options as the generic commands, such as `{ shouldFix: true }`.
 
+The `dprint.json` template sets `"useBraces": "always"`, so `dprint` keeps the braces the shared `ESLint` `curly` rule requires, and `"importDeclaration.sortNamedImports": "maintain"`, so `ESLint` alone orders named imports by their local aliases. Without them, `lint:fix` adds braces or reorders imports, `format` undoes it, and `lint` fails again. The formatter reads a project's own `dprint.json` as given, so a project created from an older template adds both settings by hand.
+
 The Obsidian layer of the `ESLint` configuration is `defineEslintConfigs` (`@mnaoumov/obsidian-dev-toolkit/linters/eslint-config`): the generic configuration plus `eslint-plugin-obsidianmd`'s recommended rules, the Node-builtins exemption for `src/**/desktop-*.ts`, the integration-test rules, and lint rules for `manifest.json` and `LICENSE`. Its own rules are registered under `obsidian-dev-toolkit`, so a disable comment names one as `obsidian-dev-toolkit/<rule>`. The `markdownlint` layer is `obsidianMarkdownlintCli2Config` (`@mnaoumov/obsidian-dev-toolkit/linters/markdownlint-cli2-config`).
 
 ## Version Management
