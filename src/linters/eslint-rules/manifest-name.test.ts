@@ -7,8 +7,6 @@ import {
 import { jsonPlugin } from './manifest-helpers.ts';
 import {
   manifestName,
-  MESSAGE_ID_CONTAINS_OBSIDIAN,
-  MESSAGE_ID_CONTAINS_PLUGIN,
   MESSAGE_ID_INVALID_CHARACTERS
 } from './manifest-name.ts';
 
@@ -23,26 +21,6 @@ const ruleTester = new RuleTester({
 ruleTester.run('manifest-name', manifestName, {
   invalid: [
     {
-      code: '{ "name": "Obsidian Tools" }',
-      errors: [{ messageId: MESSAGE_ID_CONTAINS_OBSIDIAN }],
-      name: 'contains Obsidian'
-    },
-    {
-      code: '{ "name": "Obsi Tools" }',
-      errors: [{ messageId: MESSAGE_ID_CONTAINS_OBSIDIAN }],
-      name: 'contains the Obsi- variant'
-    },
-    {
-      code: '{ "name": "Notesidian" }',
-      errors: [{ messageId: MESSAGE_ID_CONTAINS_OBSIDIAN }],
-      name: 'contains the -sidian variant'
-    },
-    {
-      code: '{ "name": "Sample Plugin Extended" }',
-      errors: [{ messageId: MESSAGE_ID_CONTAINS_PLUGIN }],
-      name: 'contains Plugin'
-    },
-    {
       code: '{ "name": "Snowman ☃" }',
       errors: [{ messageId: MESSAGE_ID_INVALID_CHARACTERS }],
       name: 'holds a character outside Basic Latin'
@@ -50,7 +28,7 @@ ruleTester.run('manifest-name', manifestName, {
     {
       code: '{ "name": "Backlink: Full Path" }',
       errors: [{ messageId: MESSAGE_ID_INVALID_CHARACTERS }],
-      name: 'holds punctuation the directory does not permit'
+      name: 'holds punctuation the rule does not permit'
     }
   ],
   valid: [
@@ -63,12 +41,20 @@ ruleTester.run('manifest-name', manifestName, {
       name: 'the three permitted punctuation marks'
     },
     {
+      code: '{ "name": "Obsidian Tools" }',
+      name: 'contains Obsidian, which obsidianmd/validate-manifest reports instead'
+    },
+    {
+      code: '{ "name": "Sample Plugin Extended" }',
+      name: 'contains Plugin, which obsidianmd/validate-manifest reports instead'
+    },
+    {
       code: '{ "id": "no-name-here" }',
-      name: 'no name at all, which manifest-schema reports instead'
+      name: 'no name at all, which obsidianmd/validate-manifest reports instead'
     },
     {
       code: '{ "name": 1 }',
-      name: 'a non-string name, whose type manifest-schema reports instead'
+      name: 'a non-string name, whose type obsidianmd/validate-manifest reports instead'
     },
     {
       code: '[]',

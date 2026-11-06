@@ -12,7 +12,6 @@ import {
   runDeployToDeviceCli
 } from './device-deployment-cli.ts';
 
-// eslint-disable-next-line obsidianmd/hardcoded-config-path -- A device-side path the stubbed deployment reports back, not a lookup against a live vault.
 const PLUGIN_FOLDER = '/v/.obsidian/plugins/p';
 
 const { mockDeployToDevice } = vi.hoisted(() => ({

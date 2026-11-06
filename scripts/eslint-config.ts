@@ -180,10 +180,11 @@ function getObsidianLintConfigs(): Linter.Config[] {
       }
     },
     {
-      // This package is tooling: it runs in Node, never in the Obsidian runtime.
+      // This package is tooling: it runs in Node, never in the Obsidian runtime, so neither Node builtins nor an iOS regex engine limit it.
       files: [join(RepoPaths.Src, RepoPaths.AnyPath, RepoPaths.AnyTs)],
       rules: {
-        'obsidianmd/no-nodejs-modules': 'off'
+        'obsidianmd/no-nodejs-modules': 'off',
+        'obsidianmd/regex-lookbehind': 'off'
       }
     }
   ]);
