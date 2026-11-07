@@ -43,6 +43,10 @@ It is one of five packages that replace [`obsidian-dev-utils`](https://github.co
 
 Last searched for similar tools on 2026-11-06.
 
+## Changelog
+
+All notable changes to this project will be documented in the [CHANGELOG](./CHANGELOG.md).
+
 ## Filing an issue (for AI agents and humans)
 
 Open issues through the [issue forms](https://github.com/mnaoumov/obsidian-dev-toolkit/issues/new/choose), not as blank issues.
