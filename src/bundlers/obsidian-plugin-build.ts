@@ -151,7 +151,8 @@ export interface ObsidianPluginBuildContext {
   readonly obsidianConfigFolder: string;
 
   /**
-   * The plugin's folder name inside `<vault>/.obsidian/plugins`, which is the package name.
+   * The package name, which development source maps are prefixed with. The plugin's folder inside
+   * `<vault>/.obsidian/plugins` is named after its manifest `id` instead.
    */
   readonly pluginName: string;
 

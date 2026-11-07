@@ -60,7 +60,7 @@ export interface DeployToObsidianPluginsFolderParams {
   readonly obsidianConfigFolder: string;
 
   /**
-   * The name of the Obsidian plugin.
+   * The package name, used as the plugin id when the build has no readable `manifest.json`.
    */
   readonly pluginName: string;
 
@@ -115,9 +115,9 @@ interface InstallAndEnableHotReloadParams {
   readonly obsidianConfigFolder: string;
 
   /**
-   * The name of the built Obsidian plugin to enable once HotReload is in place.
+   * The manifest id of the built Obsidian plugin to enable once HotReload is in place.
    */
-  readonly pluginName: string;
+  readonly pluginId: string;
 }
 
 // The `npm run dev`-owned Obsidian instance: launched on the first rebuild and reused across rebuilds.
@@ -207,7 +207,9 @@ export async function deployToObsidianPluginsFolder(params: DeployToObsidianPlug
 
   const obsidianConfigFolder = toPosixPath(params.obsidianConfigFolder);
 
-  const pluginFolder = join(obsidianConfigFolder, 'plugins', pluginName);
+  // Obsidian loads a plugin only from a direct child of `plugins/` and knows it by its manifest `id`, so the folder is named after the id, not after the package: a scoped package name would nest the folder one level too deep.
+  const pluginId = await readDeployedPluginId(distFolder, pluginName);
+  const pluginFolder = join(obsidianConfigFolder, 'plugins', pluginId);
   await mkdir(pluginFolder, { recursive: true });
   await cp(distFolder, pluginFolder, { recursive: true });
 
@@ -218,13 +220,13 @@ export async function deployToObsidianPluginsFolder(params: DeployToObsidianPlug
     case 'hot-reload-plugin': {
       await installAndEnableHotReload({
         obsidianConfigFolder,
-        pluginName
+        pluginId
       });
       break;
     }
     case 'obsidian-cli': {
       await reloadPluginWithObsidianCli({
-        pluginId: await readPluginId(pluginFolder, pluginName),
+        pluginId,
         vaultName: basename(dirname(obsidianConfigFolder))
       });
       break;
@@ -301,14 +303,14 @@ async function importObsidianIntegrationTesting(): Promise<ObsidianIntegrationTe
 async function installAndEnableHotReload(params: InstallAndEnableHotReloadParams): Promise<void> {
   const {
     obsidianConfigFolder,
-    pluginName
+    pluginId
   } = params;
   const vaultPath = dirname(obsidianConfigFolder);
   const obsidianIntegrationTesting = await importObsidianIntegrationTesting();
   const transport = await getOrLaunchDevInstance(obsidianIntegrationTesting, vaultPath);
   await obsidianIntegrationTesting.evalInObsidian({
     // eslint-disable-next-line no-shadow -- No actual shadowing as the function is executed externally.
-    async callback({ app, obsidianModule, pluginName }) {
+    async callback({ app, obsidianModule, pluginId }) {
       const HOT_RELOAD_PLUGIN_ID = 'hot-reload';
       const COMMUNITY_PLUGINS_REGISTRY_URL = 'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/HEAD/community-plugins.json';
       const { requestUrl } = obsidianModule;
@@ -355,9 +357,9 @@ async function installAndEnableHotReload(params: InstallAndEnableHotReloadParams
         await app.plugins.enablePluginAndSave(HOT_RELOAD_PLUGIN_ID);
       }
 
-      await app.plugins.enablePluginAndSave(pluginName);
+      await app.plugins.enablePluginAndSave(pluginId);
     },
-    input: { pluginName },
+    input: { pluginId },
     shouldSkipPreflightChecks: true,
     transport,
     vaultPath
@@ -420,19 +422,23 @@ async function launchDevInstance(obsidianIntegrationTesting: ObsidianIntegration
 }
 
 /**
- * Reads the plugin id from the deployed `manifest.json`, which is what Obsidian and its CLI know the plugin by.
+ * Reads the plugin id from the built `manifest.json`, which is what Obsidian, its plugins folder and its CLI know the
+ * plugin by.
  *
- * @param pluginFolder - The deployed plugin folder.
- * @param fallbackId - The id to use when the folder has no readable manifest.
+ * @param distFolder - The output folder of the build, holding `manifest.json`.
+ * @param packageName - The package name, whose last segment is the id when the folder has no readable manifest.
  * @returns A {@link Promise} resolving to the plugin id.
  */
-async function readPluginId(pluginFolder: string, fallbackId: string): Promise<string> {
+async function readDeployedPluginId(distFolder: string, packageName: string): Promise<string> {
   try {
-    const manifest = JSON.parse(await readFile(join(pluginFolder, 'manifest.json'), 'utf-8')) as Partial<PluginManifest>;
-    return manifest.id ?? fallbackId;
+    const manifest = JSON.parse(await readFile(join(distFolder, 'manifest.json'), 'utf-8')) as Partial<PluginManifest>;
+    if (manifest.id) {
+      return manifest.id;
+    }
   } catch {
-    return fallbackId;
+    // No readable manifest: fall back to the package name below.
   }
+  return packageName.split('/').at(-1) ?? packageName;
 }
 
 /**
