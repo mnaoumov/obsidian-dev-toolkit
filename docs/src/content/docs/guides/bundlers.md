@@ -12,6 +12,7 @@ Every adapter does the same things:
 - puts every CSS file the bundler emits into one `styles.css`;
 - empties the output folder before the first write and copies `manifest.json` beside the bundle;
 - heads `main.js` with the generated-file banner, after minification so the minifier does not strip it;
+- in a production build, keeps the lines of `main.js` [within a line limit](#line-limit), so the community directory's release scanner does not report it as packed;
 - in a development build, writes an inline source map, deploys every rebuild into the vault named by `OBSIDIAN_CONFIG_FOLDER`, and [reloads it there](#reloading-a-development-build): by default by adding the `.hotreload` marker and enabling [Hot Reload] and the plugin, as the [development build](/obsidian-dev-toolkit/guides/cli-commands/#build-development-version) does.
 
 Each adapter fills in only what your own configuration leaves unset, so anything you configure wins. TypeScript stays your choice of the bundler's own plugin or loader. A UI framework, the stylesheet pipeline and `WebAssembly` are [build features](#build-features), one set of options every adapter takes the same way.
@@ -25,6 +26,14 @@ This is a configurable policy, not a guarantee inferred from `minAppVersion`: de
 A syntax target cannot supply missing built-ins. Lint catches newer runtime features such as iterator helpers, `Set.union`, `Array.fromAsync` and `Promise.withResolvers`. Obsidian's `Array.findLastIndex` polyfill remains under `obsidianmd/no-unsupported-api`, which checks its `@since` version; `Array.findLast` and typed-array methods retain their runtime checks.
 
 The `esbuild` builder derives its `target` from this floor, and `vite` derives `build.target`, preserving explicit consumer targets. The `webpack` adapter applies the floor to generated runtime syntax through `target: ['node', runtimeFloor]`; configure the TypeScript or `Babel` loader's target as well. With rollup, configure your TypeScript plugin's `compilerOptions.target` from the same value. With parcel, configure the target's `engines` in `customizeParcelOptions` for your supported browsers; the ECMAScript edition alone does not determine a browser version. No adapter installs runtime polyfills.
+
+## Line limit
+
+A minifier writes a whole bundle on a handful of lines. The community directory's release scanner warns about a `main.js` over 50 KB whose average line is over 20 000 characters, as "File is unusually packed", because deliberate packing hides code from review. Without a limit, a `React` plugin built with parcel was 225 KB on 6 lines, and `vite` came close to the bound.
+
+So a production build keeps every line of `main.js` near `lineLimit` characters, 1000 by default, which every adapter takes. `esbuild` breaks its own output at that length. `oxc` (in `vite`), `swc` (in parcel) and `terser` (in `webpack`, or in a rollup minifier plugin) have no such option, so once the build is written the toolkit adds a line break after the first `,` or `;` past the limit on each long line, and changes nothing else. A line break there never changes what the code does, and a full parse keeps it out of strings, templates and regular expressions. A `main.js` that references a source map is left alone, because the map would no longer line up.
+
+It costs one byte per line it adds: about 0.1%, or 220 bytes on the 225 KB `React` build. Pass `lineLimit: false` to leave the lines as the minifier wrote them.
 
 ## esbuild
 

@@ -17,7 +17,10 @@ import type {
   Plugin
 } from 'rollup';
 
-import { dirname } from '@mnaoumov/typescript-lib/path';
+import {
+  dirname,
+  join
+} from '@mnaoumov/typescript-lib/path';
 
 import type {
   ObsidianPluginBuildContext,
@@ -25,6 +28,7 @@ import type {
 } from './obsidian-plugin-build.ts';
 import type { ObsidianPluginFeatureOptions } from './obsidian-plugin-features.ts';
 
+import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 import {
   BuildMode,
   cleanObsidianPluginDistFolder,
@@ -33,6 +37,7 @@ import {
   resolveObsidianPluginBuildContext
 } from './obsidian-plugin-build.ts';
 import { getJsxImportSource } from './obsidian-plugin-features.ts';
+import { limitMainJsLineLength } from './obsidian-plugin-line-limit.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
 import {
   createRollupCompatibleFeaturePlugin,
@@ -211,7 +216,10 @@ export function obsidianPluginRollup(options: ObsidianPluginRollupOptions = {}):
       await cleanObsidianPluginDistFolder(getOutputFolder(outputOptions));
     },
     async writeBundle(outputOptions): Promise<void> {
-      const buildContext = { ...getBuildContext(), distFolder: getOutputFolder(outputOptions) };
+      const distFolder = getOutputFolder(outputOptions);
+      const buildContext = { ...getBuildContext(), distFolder, mainJsPath: outputOptions.file ?? join(distFolder, ObsidianPluginRepoPaths.MainJs) };
+      // Rollup does not minify, but a consumer's minifier plugin writes the few long lines the release scanner reports.
+      await limitMainJsLineLength(buildContext);
       await completeObsidianPluginDistFolder(buildContext);
       await deployToObsidianPluginsFolder(buildContext);
     }
