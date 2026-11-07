@@ -41,7 +41,11 @@ import {
   rm
 } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
-import { gt } from 'semver';
+import {
+  gt,
+  prerelease,
+  valid
+} from 'semver';
 
 import type { ValidatePluginReleaseOptions } from './plugin-release-checks.ts';
 
@@ -56,10 +60,14 @@ import {
 
 /**
  * Type representing the structure of Obsidian's `desktop-releases.json` feed.
+ *
+ * This is the feed the desktop app itself updates from, so it is the only source that states a version
+ * desktop users can actually run. Its `latestVersion` is the public stable release; insider (Catalyst) builds
+ * live under a separate `beta` key, which is deliberately not read.
  */
 export interface DesktopReleasesJson {
   /**
-   * The latest Obsidian version available for desktop.
+   * The latest public Obsidian version available for desktop.
    */
   readonly latestVersion: string;
 }
@@ -96,12 +104,14 @@ export interface ParsedVersionArguments extends GenericParsedVersionArguments {
 export interface UpdateVersionOptions extends GenericUpdateVersionOptions {
   /**
    * An explicit `minAppVersion` to write into the plugin's `manifest.json` and its new `versions.json`
-   * entry. When API analysis is requested, an explicit value below the detected floor is rejected.
+   * entry. When set, it is used verbatim and the latest public Obsidian version is not fetched at all. When API
+   * analysis is requested, an explicit value below the detected floor is rejected.
    *
-   * Only applies to non-pre-release versions (a pre-release copies the
-   * existing `manifest.json` and never writes `minAppVersion`).
+   * The support policy is that every release requires the latest public Obsidian, so a plugin never carries the
+   * burden of older versions; this override is the explicit, visible opt-out from that policy. Only applies to
+   * non-pre-release versions (a pre-release copies the existing `manifest.json` and never writes `minAppVersion`).
    *
-   * @default The current manifest's minimum, raised to the detected API floor when analysis is requested.
+   * @default the latest public Obsidian desktop version
    */
   readonly minAppVersion?: string | undefined;
 
@@ -115,8 +125,9 @@ export interface UpdateVersionOptions extends GenericUpdateVersionOptions {
 
   /**
    * Whether to derive an API floor using the project's typed ESLint configuration before updating stable
-   * compatibility files. Raises the existing minimum only when unguarded APIs require it. Analysis failures
-   * stop the update; other runtime and dependency requirements still need review. Ignored for pre-releases.
+   * compatibility files. The floor never changes the minimum: it only stops a release whose minimum is below it (an
+   * explicit `minAppVersion` too low, or source using an API newer than the latest public Obsidian). Analysis
+   * failures stop the update; other runtime and dependency requirements still need review. Ignored for pre-releases.
    *
    * @default `false`
    */
@@ -137,6 +148,15 @@ export interface UpdateVersionOptions extends GenericUpdateVersionOptions {
    */
   readonly shouldRunReleaseChecks?: boolean;
 }
+
+/**
+ * The feed the Obsidian desktop app updates from.
+ *
+ * Deliberately NOT the GitHub `releases/latest` API: that endpoint returns the newest release of any kind
+ * in `obsidianmd/obsidian-releases`, including one whose only asset is the Android APK, which no desktop
+ * user can install. See {@link getLatestPublicObsidianVersion}.
+ */
+const DESKTOP_RELEASES_JSON_URL = 'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/desktop-releases.json';
 
 /**
  * Copies the updated manifest file to the distribution build folder, as the `manifest.json` release asset.
@@ -160,8 +180,8 @@ export async function copyUpdatedManifest(manifestFile: string = ObsidianPluginR
  * Parses the command-line arguments for a plugin release: every flag the generic `parseVersionArguments`
  * recognizes, plus the plugin's own:
  * - `--min-app-version=<x.y.z>` — write this `minAppVersion` into the plugin's `manifest.json` and its new
- *   `versions.json` entry instead of preserving the current minimum.
- * - `--api-version` — analyze unguarded API uses and raise the preserved minimum when necessary.
+ *   `versions.json` entry instead of the latest public Obsidian desktop version.
+ * - `--api-version` — analyze unguarded API uses and stop the release when the minimum is below their floor.
  * - `--no-demo-vault` — skip archiving the plugin's demo vault (`demo-vault/`) as a release artifact.
  * - `--no-release-checks` — skip the community directory's manifest, tag and asset checks.
  *
@@ -287,6 +307,43 @@ async function assertReleasedManifestMatchesTag(newVersion: string): Promise<voi
 }
 
 /**
+ * Fetches the latest public stable version of Obsidian that the desktop app can actually run.
+ *
+ * Reads {@link DESKTOP_RELEASES_JSON_URL}, not the GitHub `releases/latest` API. The API returns the newest
+ * release of ANY kind, so whenever a mobile-only release (an APK-only asset) is newer than the desktop one,
+ * it reports a version that does not exist for desktop. A plugin released in that window gets a
+ * `minAppVersion` no desktop user can satisfy, and Obsidian silently keeps offering them the previous
+ * release instead — the release succeeds and reaches nobody.
+ *
+ * Every failure throws rather than falling back to the manifest's current minimum, so a release never claims the
+ * latest-public policy while silently keeping a stale floor.
+ *
+ * @returns A {@link Promise} that resolves to the latest public Obsidian version available for desktop.
+ */
+async function getLatestPublicObsidianVersion(): Promise<string> {
+  const hint = 'Pass --min-app-version=<x.y.z> to release with an explicit minimum instead.';
+  let response: Response;
+  try {
+    // eslint-disable-next-line no-restricted-globals -- We run this outside of Obsidian, so we don't have `requestUrl()`.
+    response = await fetch(DESKTOP_RELEASES_JSON_URL);
+  } catch (error) {
+    throw new Error(`Could not fetch the latest public Obsidian version from ${DESKTOP_RELEASES_JSON_URL}. ${hint}`, { cause: error });
+  }
+
+  if (!response.ok) {
+    throw new Error(`Could not fetch the latest public Obsidian version: ${DESKTOP_RELEASES_JSON_URL} answered ${String(response.status)}. ${hint}`);
+  }
+
+  const desktopReleasesJson = await response.json() as null | Partial<DesktopReleasesJson>;
+  const latestVersion = desktopReleasesJson?.latestVersion;
+  if (typeof latestVersion !== 'string' || valid(latestVersion) !== latestVersion || prerelease(latestVersion) !== null) {
+    throw new Error(`${DESKTOP_RELEASES_JSON_URL} has no valid public latestVersion (got ${JSON.stringify(latestVersion) ?? 'undefined'}). ${hint}`);
+  }
+
+  return latestVersion;
+}
+
+/**
  * The plugin's release assets: every file in `dist/build`.
  *
  * @returns The asset paths.
@@ -317,19 +374,19 @@ async function updateVersionInFilesForPlugin(
       path: ObsidianPluginRepoPaths.ManifestBetaJson
     });
   } else {
+    const resolvedMinAppVersion = minAppVersion ?? await getLatestPublicObsidianVersion();
     const apiVersionReport = shouldCheckApiVersion ? await analyzePluginApiVersion() : undefined;
     const requiredMinAppVersion = apiVersionReport?.requiredMinAppVersion;
-    if (minAppVersion !== undefined && requiredMinAppVersion !== undefined && gt(requiredMinAppVersion, minAppVersion)) {
-      throw new Error(`The source requires Obsidian ${requiredMinAppVersion}, above --min-app-version=${minAppVersion}. Raise the minimum or guard the newer APIs.`);
+    if (requiredMinAppVersion !== undefined && gt(requiredMinAppVersion, resolvedMinAppVersion)) {
+      throw new Error(
+        minAppVersion === undefined
+          ? `The source requires Obsidian ${requiredMinAppVersion}, above the latest public version ${resolvedMinAppVersion}. Guard the newer APIs.`
+          : `The source requires Obsidian ${requiredMinAppVersion}, above --min-app-version=${minAppVersion}. Raise the minimum or guard the newer APIs.`
+      );
     }
-    let resolvedMinAppVersion: string;
 
     await editJson<Manifest>({
       editFunction: (manifest) => {
-        resolvedMinAppVersion = minAppVersion ?? manifest.minAppVersion;
-        if (requiredMinAppVersion !== undefined && gt(requiredMinAppVersion, resolvedMinAppVersion)) {
-          resolvedMinAppVersion = requiredMinAppVersion;
-        }
         manifest.minAppVersion = resolvedMinAppVersion;
         manifest.version = newVersion;
       },

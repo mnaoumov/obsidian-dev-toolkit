@@ -105,6 +105,7 @@ beforeEach(() => {
   mockResolvePathFromRootSafe.mockImplementation((params: ResolvePathFromRootSafeParams) => `/root/${params.path}`);
   mockRm.mockResolvedValue(undefined);
   mockUpdateVersionGeneric.mockResolvedValue(undefined);
+  stubDesktopReleasesFeed({ latestVersion: '1.7.0' });
 });
 
 afterEach(() => {
@@ -131,9 +132,11 @@ function getEditJsonParams(callIndex: number): EditJsonParams<Record<string, str
   return params;
 }
 
-function stubDesktopReleasesFeed(desktopReleasesJson: object): ReturnType<typeof vi.fn> {
+function stubDesktopReleasesFeed(desktopReleasesJson: null | object, status = 200): ReturnType<typeof vi.fn> {
   const mockFetch = vi.fn().mockResolvedValue({
-    json: vi.fn().mockResolvedValue(desktopReleasesJson)
+    json: vi.fn().mockResolvedValue(desktopReleasesJson),
+    ok: status === 200,
+    status
   });
   vi.stubGlobal('fetch', mockFetch);
   return mockFetch;
@@ -428,19 +431,40 @@ describe('updateVersion', () => {
       expect(mockCp).toHaveBeenCalledWith('/root/manifest.json', '/root/dist/build/manifest.json', { force: true });
     });
 
-    it('should preserve the manifest minimum and record it without fetching or scanning by default', async () => {
-      const mockFetch = stubDesktopReleasesFeed({ latestVersion: '1.7.0' });
+    it('should write the latest public Obsidian version as the minimum by default, without scanning', async () => {
+      const mockFetch = stubDesktopReleasesFeed({ beta: { latestVersion: '1.8.0' }, latestVersion: '1.7.0' });
       await updateVersionInExtraFiles('1.0.1');
 
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith('https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/desktop-releases.json');
       expect(mockAnalyzePluginApiVersion).not.toHaveBeenCalled();
       const manifest: Record<string, string> = { minAppVersion: '1.0.0', version: '1.0.0' };
       await getEditJsonParams(0).editFunction(manifest);
-      expect(manifest).toEqual({ minAppVersion: '1.0.0', version: '1.0.1' });
-      const versions: Record<string, string> = {};
+      expect(manifest).toEqual({ minAppVersion: '1.7.0', version: '1.0.1' });
+      const versions: Record<string, string> = { '1.0.0': '0.15.0' };
       await getEditJsonParams(1).editFunction(versions);
-      expect(versions).toEqual({ '1.0.1': '1.0.0' });
+      expect(versions).toEqual({ '1.0.0': '0.15.0', '1.0.1': '1.7.0' });
     });
+
+    it('should stop before editing files when the latest public version cannot be fetched', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+      await expect(updateVersionInExtraFiles('1.0.1')).rejects.toThrow('Could not fetch the latest public Obsidian version from');
+      expect(mockEditJson).not.toHaveBeenCalled();
+    });
+
+    it('should stop before editing files when the feed answers with an error status', async () => {
+      stubDesktopReleasesFeed({}, 503);
+      await expect(updateVersionInExtraFiles('1.0.1')).rejects.toThrow('answered 503. Pass --min-app-version=<x.y.z>');
+      expect(mockEditJson).not.toHaveBeenCalled();
+    });
+
+    it.each([null, {}, { latestVersion: 17 }, { latestVersion: '1.x' }, { latestVersion: '1.16.0-beta.1' }])(
+      'should stop before editing files when the feed carries no valid public version: %j',
+      async (desktopReleasesJson) => {
+        stubDesktopReleasesFeed(desktopReleasesJson);
+        await expect(updateVersionInExtraFiles('1.0.1')).rejects.toThrow('has no valid public latestVersion');
+        expect(mockEditJson).not.toHaveBeenCalled();
+      }
+    );
 
     it('should stop before editing compatibility files when requested API analysis fails', async () => {
       mockAnalyzePluginApiVersion.mockRejectedValue(new Error('Typed config unavailable'));
@@ -448,21 +472,28 @@ describe('updateVersion', () => {
       expect(mockEditJson).not.toHaveBeenCalled();
     });
 
-    it.each([undefined, '0.9.0', '1.0.0', '1.10.0'])(
-      'should raise the minimum only when the detected API floor %s is higher',
+    it.each([undefined, '0.9.0', '1.7.0'])(
+      'should keep the latest public minimum, never lowering it, when the detected API floor is %s',
       async (requiredMinAppVersion) => {
         mockAnalyzePluginApiVersion.mockResolvedValue({ requiredMinAppVersion });
         await updateVersionInExtraFiles('1.0.1', { shouldCheckApiVersion: true });
-        const expectedMinimum = requiredMinAppVersion === '1.10.0' ? '1.10.0' : '1.0.0';
         const manifest: Record<string, string> = { minAppVersion: '1.0.0', version: '1.0.0' };
         await getEditJsonParams(0).editFunction(manifest);
-        expect(manifest).toEqual({ minAppVersion: expectedMinimum, version: '1.0.1' });
+        expect(manifest).toEqual({ minAppVersion: '1.7.0', version: '1.0.1' });
         const versions: Record<string, string> = { '1.0.0': '0.9.0' };
         await getEditJsonParams(1).editFunction(versions);
-        expect(versions).toEqual({ '1.0.0': '0.9.0', '1.0.1': expectedMinimum });
+        expect(versions).toEqual({ '1.0.0': '0.9.0', '1.0.1': '1.7.0' });
         expect(mockAnalyzePluginApiVersion).toHaveBeenCalledTimes(1);
       }
     );
+
+    it('should reject source whose API floor is above the latest public version before editing files', async () => {
+      mockAnalyzePluginApiVersion.mockResolvedValue({ requiredMinAppVersion: '1.8.0' });
+      await expect(updateVersionInExtraFiles('1.0.1', { shouldCheckApiVersion: true })).rejects.toThrow(
+        'The source requires Obsidian 1.8.0, above the latest public version 1.7.0. Guard the newer APIs.'
+      );
+      expect(mockEditJson).not.toHaveBeenCalled();
+    });
 
     it.each(['1.10.0', '1.11.0'])(
       'should honor a sufficient explicit minimum %s when API analysis is requested',

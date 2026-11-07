@@ -63,6 +63,7 @@ interface ManifestFile {
 
 const STABLE_MANIFEST: ManifestFile = { minAppVersion: '1.5.0', version: '1.0.0' };
 const STABLE_VERSIONS = { '1.0.0': '1.5.0' };
+const LATEST_PUBLIC_VERSION = '1.8.10';
 
 beforeEach(async () => {
   vi.resetAllMocks();
@@ -74,6 +75,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
   await rm(state.rootFolder, { force: true, recursive: true });
 });
 
@@ -103,12 +105,14 @@ describe('the release assets on disk', () => {
 
   it('should ship the stable manifest as the asset and drop manifest-beta.json for a stable release', async () => {
     await writeFile(join(state.rootFolder, 'manifest-beta.json'), JSON.stringify({ ...STABLE_MANIFEST, version: '1.0.1-beta.0' }));
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(Response.json({ beta: '1.9.0', latestVersion: LATEST_PUBLIC_VERSION }))));
 
     await runReleaseHooks('1.0.1');
 
-    expect(await readManifest('dist/build/manifest.json')).toEqual({ ...STABLE_MANIFEST, version: '1.0.1' });
-    expect(await readManifest('manifest.json')).toEqual({ ...STABLE_MANIFEST, version: '1.0.1' });
-    expect(await readManifest('versions.json')).toEqual({ ...STABLE_VERSIONS, '1.0.1': '1.5.0' });
+    const releasedManifest = { minAppVersion: LATEST_PUBLIC_VERSION, version: '1.0.1' };
+    expect(await readManifest('dist/build/manifest.json')).toEqual(releasedManifest);
+    expect(await readManifest('manifest.json')).toEqual(releasedManifest);
+    expect(await readManifest('versions.json')).toEqual({ ...STABLE_VERSIONS, '1.0.1': LATEST_PUBLIC_VERSION });
     expect(existsSync(join(state.rootFolder, 'manifest-beta.json'))).toBe(false);
   });
 });
