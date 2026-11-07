@@ -20,6 +20,7 @@ const PRODUCTION_CONTEXT: ObsidianPluginBuildContext = {
   distFolder: '/project/dist/build',
   entryPoint: '/project/src/main.ts',
   isProductionBuild: true,
+  lineLimit: 1000,
   mainJsPath: '/project/dist/build/main.js',
   obsidianConfigFolder: '',
   pluginName: 'my-plugin',

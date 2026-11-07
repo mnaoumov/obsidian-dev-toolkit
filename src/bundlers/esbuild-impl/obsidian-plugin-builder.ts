@@ -146,6 +146,7 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
     distFolder,
     entryPoint,
     isProductionBuild,
+    lineLimit,
     mainJsPath: distPath,
     obsidianConfigFolder,
     pluginName,
@@ -190,6 +191,8 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
     external: [...OBSIDIAN_PLUGIN_EXTERNALS, 'node:*'],
     format: 'cjs',
     keepNames: true,
+    // A minified bundle is otherwise a few very long lines, which the community directory's release scanner reports.
+    ...(isProductionBuild && lineLimit !== false && { lineLimit }),
     logLevel: 'info',
     mainFields: ['main', 'module'],
     minify: isProductionBuild,

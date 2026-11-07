@@ -27,6 +27,7 @@ import process, { loadEnvFile } from 'node:process';
 import type { ObsidianRuntimeFloor } from '../obsidian-runtime.ts';
 
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
+import { DEFAULT_OBSIDIAN_PLUGIN_LINE_LIMIT } from './obsidian-plugin-line-limit.ts';
 
 /**
  * Enumeration representing the build modes.
@@ -134,6 +135,11 @@ export interface ObsidianPluginBuildContext {
   readonly isProductionBuild: boolean;
 
   /**
+   * The line length a production `main.js` is broken at, or `false` to leave its lines as the minifier wrote them.
+   */
+  readonly lineLimit: false | number;
+
+  /**
    * The absolute path of the emitted `main.js`.
    */
   readonly mainJsPath: string;
@@ -164,6 +170,18 @@ export interface ObsidianPluginBuildContext {
  * Where a development build is deployed and how Obsidian picks it up. Every bundler adapter takes these.
  */
 export interface ObsidianPluginDeploymentOptions {
+  /**
+   * The line length a production `main.js` is broken at, or `false` to leave its lines as the minifier wrote them.
+   *
+   * A minifier puts a whole bundle on a handful of lines, which the community directory's release scanner warns about
+   * as an "unusually packed" file once it is over 50 KB with an average line over 20 000 characters. `esbuild` breaks
+   * its lines itself; the output of the other adapters is re-printed after it is written, whitespace only, when its
+   * average line is over the limit and it carries no source map.
+   *
+   * @default `1000`
+   */
+  readonly lineLimit?: false | number;
+
   /**
    * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable,
    * read from the process or from a `.env` file in the project root.
@@ -365,6 +383,7 @@ export async function resolveObsidianPluginBuildContext(params: ResolveObsidianP
     distFolder,
     entryPoint: getObsidianPluginEntryPoint(),
     isProductionBuild,
+    lineLimit: params.lineLimit ?? DEFAULT_OBSIDIAN_PLUGIN_LINE_LIMIT,
     mainJsPath: join(distFolder, ObsidianPluginRepoPaths.MainJs),
     obsidianConfigFolder: params.obsidianConfigFolder ?? obsidianPluginBuilderEnv.OBSIDIAN_CONFIG_FOLDER ?? '',
     pluginName: packageJson.name ?? '(unknown)',

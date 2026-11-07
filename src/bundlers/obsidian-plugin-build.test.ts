@@ -243,12 +243,19 @@ if you want to view the source, please visit the github repository of this plugi
       const context = await resolveObsidianPluginBuildContext({ mode: BuildMode.Production, runtimeFloor: 'es2020' });
       expect(context.runtimeFloor).toBe('es2020');
     });
+    it('passes an explicit line limit to adapters, false included', async () => {
+      const limitedContext = await resolveObsidianPluginBuildContext({ lineLimit: 500, mode: BuildMode.Production });
+      const unlimitedContext = await resolveObsidianPluginBuildContext({ lineLimit: false, mode: BuildMode.Production });
+      expect(limitedContext.lineLimit).toBe(500);
+      expect(unlimitedContext.lineLimit).toBe(false);
+    });
     it('resolves a production build', async () => {
       const context = await resolveObsidianPluginBuildContext({ mode: BuildMode.Production });
       expect(context).toEqual({
         distFolder: resolve(getRootFolder(), 'dist/build'),
         entryPoint: resolve(getRootFolder(), 'src/main.ts'),
         isProductionBuild: true,
+        lineLimit: 1000,
         mainJsPath: join(resolve(getRootFolder(), 'dist/build'), 'main.js'),
         obsidianConfigFolder: '',
         pluginName: 'my-plugin',

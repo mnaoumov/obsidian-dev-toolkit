@@ -41,6 +41,7 @@ import {
   getJsxImportSource,
   isPostcssNeeded
 } from './obsidian-plugin-features.ts';
+import { limitMainJsLineLength } from './obsidian-plugin-line-limit.ts';
 import { loadPostcssConfig } from './obsidian-plugin-transforms.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
 import {
@@ -271,6 +272,8 @@ export function obsidianPluginVite(options: ObsidianPluginViteOptions = {}): Plu
       await cleanObsidianPluginDistFolder(getBuildContext().distFolder);
     },
     async writeBundle(): Promise<void> {
+      // `oxc`, vite's minifier, has no line limit, so a minified `main.js` is re-printed onto shorter lines.
+      await limitMainJsLineLength(getBuildContext());
       await completeObsidianPluginDistFolder(getBuildContext());
       await deployToObsidianPluginsFolder(getBuildContext());
     }
