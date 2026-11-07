@@ -6,6 +6,7 @@ description: Start Obsidian with its renderer debugging endpoint, run the esbuil
 Debug your plugin in the Obsidian renderer, where its code and the DOM run. Any debugger that speaks the Chrome DevTools Protocol can attach to that renderer once Obsidian is started with its remote debugging endpoint open. This page covers the steps every debugger shares; the IDE-specific setup lives on its own page:
 
 - [Debugging in VS Code](/obsidian-dev-toolkit/guides/debugging-vscode/): an attach configuration the toolkit generates, and how to diagnose unbound breakpoints.
+- [Debugging in WebStorm](/obsidian-dev-toolkit/guides/debugging-webstorm/): an Attach to Node.js/Chrome configuration with the source URL mapping, and how to diagnose unbound breakpoints.
 
 This workflow updates [How to debug Obsidian plugins (2022)](https://mnaoumov.wordpress.com/2022/05/10/how-to-debug-obsidian-plugins/) for the toolkit's current `esbuild` output.
 
