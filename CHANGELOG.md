@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 9.0.0
+
+- docs(changelog): regroup the published release notes for readers
+- fix(bundlers): deploy a development build into the folder named after the manifest id
+- feat(bundlers): keep the lines of a production main.js within a line limit
+- fix(version)!: restore the latest public Obsidian as the release minimum
+- docs: link the changelog from the README
+- docs: add See also comparison of similar tools
+- feat!: lint the manifest with upstream validate-manifest
+- feat!: add start-obsidian-for-debugging and name the VS Code generator
+- fix(templates): align `dprint` braces and import order with `ESLint`
+- docs(readme): state the supported `obsidian-lib` peer majors
+- test: give corpus generation and project collection explicit budgets
+- fix(version): ship manifest-beta.json as the pre-release manifest asset
+- feat(version): publish plugin releases before pushing the branch
+
 ## 8.2.1
 
 This release has 1 fix.
