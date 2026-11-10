@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 9.1.0
+
+- feat(test-runners): install another plugin's released build into an integration vault
+- fix(linters): type the no-dynamic-node-builtin-import test errors as TestCaseError
+- feat(linters): forbid a dynamic import() of a Node builtin in plugin source
+
 ## 9.0.0
 
 - docs(changelog): regroup the published release notes for readers
