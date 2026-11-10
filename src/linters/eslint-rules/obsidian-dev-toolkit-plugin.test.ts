@@ -22,6 +22,7 @@ describe('obsidianDevToolkitPlugin', () => {
       'manifest-id',
       'manifest-name',
       'no-bare-code-element',
+      'no-dynamic-node-builtin-import',
       'no-local-obsidian-internals',
       'no-over-cap-wait-in-eval-in-obsidian',
       'no-untrusted-input-events',
