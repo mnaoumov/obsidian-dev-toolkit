@@ -233,6 +233,7 @@
     "build:lib": "jiti scripts/build-lib.ts",
     "build:templates": "jiti scripts/build-templates.ts",
     "build:types": "jiti scripts/build-types.ts",
+    "build:validate-built-syntax": "jiti scripts/build-validate-built-syntax.ts",
     "build:validate-declarations": "jiti scripts/build-validate-declarations.ts",
     "build:validate-dependencies": "jiti scripts/build-validate-dependencies.ts",
     "build:validate-templates": "jiti scripts/build-validate-templates.ts",

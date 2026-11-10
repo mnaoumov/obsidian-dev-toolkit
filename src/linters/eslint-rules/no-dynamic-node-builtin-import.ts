@@ -53,7 +53,9 @@ export const noDynamicNodeBuiltinImport: Rule.RuleModule = {
       description: 'Forbid a dynamic `import()` of a Node builtin, which a CommonJS plugin bundle keeps as a native import that Obsidian\'s renderer cannot load'
     },
     messages: {
-      [MESSAGE_ID]: 'A dynamic `import(\'{{specifier}}\')` stays a native `import()` in a CommonJS plugin bundle, and Obsidian\'s renderer cannot load it, so it fails when it runs. Import the builtin statically in a `desktop-` module, which `esbuild` compiles to `require()`, and reach that module through a `Platform.isDesktopApp`-gated dynamic `import()`.'
+      // Never spell a quoted path inside `import(...)` here: the library build's extension rewrite re-quotes it with
+      // Double quotes, ending this string in the emitted module (9.1.0 shipped that way).
+      [MESSAGE_ID]: 'A dynamic `import()` of `{{specifier}}` stays a native `import()` in a CommonJS plugin bundle, and Obsidian\'s renderer cannot load it, so it fails when it runs. Import the builtin statically in a `desktop-` module, which `esbuild` compiles to `require()`, and reach that module through a `Platform.isDesktopApp`-gated dynamic `import()`.'
     },
     schema: [],
     type: 'problem'

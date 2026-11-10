@@ -22,6 +22,8 @@ const BUILD_STEPS = [
   'build:generate-exports',
   // Reads every bare import of `dist/lib` against `package.json`, so it must sit after the library is emitted.
   'build:validate-dependencies',
+  // Parses every emitted module, so a post-`esbuild` text rewrite that breaks one fails here instead of shipping.
+  'build:validate-built-syntax',
   'build:templates',
   // Type-checks `templates/` against the `dist/lib/esm` declarations, so it must sit after they are built.
   // A rename a template still spells the old way then fails the build instead of shipping.
