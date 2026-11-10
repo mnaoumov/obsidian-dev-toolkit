@@ -228,3 +228,31 @@ This is what augments the harness's `Lib` interface with the library's flat surf
 Use the reference, **not** a `compilerOptions.types` entry: a `types` entry naming the same path resolves without complaint but does not bring the module augmentation into the program, so `lib.<helper>` still fails to compile.
 
 The `lib` bag is **flat**: every helper sits at the top level (`lib.ensureMetadataCacheReady`, not `lib['metadata-cache'].ensureMetadataCacheReady`). The harness plugin carries its own copy of the library, loaded only in the throwaway test vault, so your plugin's own bundle is untouched.
+
+## Integration tests: installing another plugin's released build
+
+When your plugin depends on another community plugin, or talks to one, a stub of that plugin only proves that your plugin agrees with the stub. `getReleasedPluginPopulate` installs the other plugin's **released** build instead: the `main.js` and `manifest.json` assets of a pinned `GitHub` release, plus an optional `data.json` with the settings to start it on. The version is required and never `latest`, so the test states which release it was run against.
+
+<!-- snippet-check: context declare function myFixtures(): import('obsidian-integration-testing').PopulateFilesParams; -->
+
+```typescript
+import { getReleasedPluginPopulate } from '@mnaoumov/obsidian-dev-toolkit/test-runners/released-plugin';
+import { createSetup } from 'obsidian-integration-testing/vitest-global-setup-plugin';
+
+const OTHER_PLUGIN_ID = 'advanced-rename-and-delete-handler';
+
+export const { setup, teardown } = createSetup({
+  enableCommunityPlugins: [OTHER_PLUGIN_ID],
+  populate: async () => ({
+    ...myFixtures(),
+    ...await getReleasedPluginPopulate({
+      data: { shouldHandleRenames: false },
+      pluginId: OTHER_PLUGIN_ID,
+      repo: 'mnaoumov/obsidian-advanced-rename-and-delete-handler',
+      version: '3.5.1'
+    })
+  })
+});
+```
+
+The assets are downloaded once per version into `node_modules/.cache/obsidian-dev-toolkit/released-plugins/<plugin id>/<version>`, so later runs do no network I/O and nothing needs a `.gitignore` entry. `downloadReleasedPlugin` returns the two files' contents when you need to place them yourself.
