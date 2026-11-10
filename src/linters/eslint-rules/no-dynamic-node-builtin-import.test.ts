@@ -1,3 +1,5 @@
+import type { TestCaseError } from '@typescript-eslint/rule-tester';
+
 import { toRuleTesterModule } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/rule-tester-helper';
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import {
@@ -17,16 +19,7 @@ RuleTester.it = it;
 
 const ruleTester = new RuleTester();
 
-interface ExpectedError {
-  readonly data: SpecifierData;
-  readonly messageId: string;
-}
-
-interface SpecifierData {
-  readonly specifier: string;
-}
-
-function error(specifier: string): ExpectedError {
+function error(specifier: string): TestCaseError<string> {
   return { data: { specifier }, messageId: MESSAGE_ID };
 }
 
