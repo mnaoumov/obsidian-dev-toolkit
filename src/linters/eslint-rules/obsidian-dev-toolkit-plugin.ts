@@ -10,6 +10,7 @@ import { manifestFundingUrl } from './manifest-funding-url.ts';
 import { manifestId } from './manifest-id.ts';
 import { manifestName } from './manifest-name.ts';
 import { noBareCodeElement } from './no-bare-code-element.ts';
+import { noDynamicNodeBuiltinImport } from './no-dynamic-node-builtin-import.ts';
 import { noLocalObsidianInternals } from './no-local-obsidian-internals.ts';
 import { noOverCapWaitInEvalInObsidian } from './no-over-cap-wait-in-eval-in-obsidian.ts';
 import { noUntrustedInputEvents } from './no-untrusted-input-events.ts';
@@ -34,6 +35,7 @@ export const obsidianDevToolkitPlugin: ESLint.Plugin = {
     'manifest-id': manifestId,
     'manifest-name': manifestName,
     'no-bare-code-element': noBareCodeElement,
+    'no-dynamic-node-builtin-import': noDynamicNodeBuiltinImport,
     'no-local-obsidian-internals': noLocalObsidianInternals,
     'no-over-cap-wait-in-eval-in-obsidian': noOverCapWaitInEvalInObsidian,
     'no-untrusted-input-events': noUntrustedInputEvents,

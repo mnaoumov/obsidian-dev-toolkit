@@ -373,6 +373,21 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       rules: {
         'obsidian-dev-toolkit/no-bare-code-element': 'error'
       }
+    },
+    {
+      /*
+       * A dynamic `import()` of a Node builtin stays a native `import()` in a CommonJS plugin bundle, which Obsidian's
+       * renderer cannot load, so it fails only when it runs. `desktop-` modules are NOT exempt: the trap is the same
+       * there, and the fix is a static import in one. Tests are exempt: they run in Node.
+       */
+      files: context.sourceFiles,
+      ignores: context.testFiles,
+      plugins: {
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+      },
+      rules: {
+        'obsidian-dev-toolkit/no-dynamic-node-builtin-import': 'error'
+      }
     }
   ]);
 }
