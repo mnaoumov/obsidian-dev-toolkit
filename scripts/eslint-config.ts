@@ -169,6 +169,17 @@ function getJsdocsConfigs(context: EslintConfigContext): Linter.Config[] {
   ]);
 }
 
+// This repository opts into the rule the shared config leaves off until its consumers migrate: a function that can
+// return "no value" returns `T | null`.
+function getNoUndefinedReturnTypeConfigs(context: EslintConfigContext): Linter.Config[] {
+  return defineConfig({
+    files: context.allFiles(),
+    rules: {
+      'typescript-dev-toolkit/no-undefined-return-type': 'error'
+    }
+  });
+}
+
 function getObsidianLintConfigs(): Linter.Config[] {
   return defineConfig([
     {
@@ -208,7 +219,8 @@ export const configs: Linter.Config[] = defineEslintConfigs({
       ...getIgnoreConfigs(),
       ...getTsdocsConfigs(context),
       ...getJsdocsConfigs(context),
-      ...getObsidianLintConfigs()
+      ...getObsidianLintConfigs(),
+      ...getNoUndefinedReturnTypeConfigs(context)
     ]);
   },
 

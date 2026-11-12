@@ -147,11 +147,11 @@ const VIRTUAL_MODULE_PREFIX = '\0';
  * Vue component's `?vue&type=style&lang.css` block counts as one, and is cut off for the rest.
  *
  * @param id - The module id.
- * @returns The kind of file, or `undefined` for a module no feature transforms.
+ * @returns The kind of file, or `null` for a module no feature transforms.
  */
-export function getFeatureFileKind(id: string): FeatureFileKind | undefined {
+export function getFeatureFileKind(id: string): FeatureFileKind | null {
   if (id.startsWith(VIRTUAL_MODULE_PREFIX)) {
-    return undefined;
+    return null;
   }
   if (STYLESHEET_FILE_PATTERN.test(id)) {
     return 'stylesheet';
@@ -166,7 +166,7 @@ export function getFeatureFileKind(id: string): FeatureFileKind | undefined {
   if (JSX_SOURCE_FILE_PATTERN.test(filePath)) {
     return 'jsx';
   }
-  return WASM_FILE_PATTERN.test(filePath) ? 'wasm' : undefined;
+  return WASM_FILE_PATTERN.test(filePath) ? 'wasm' : null;
 }
 
 /**
@@ -199,10 +199,10 @@ export function getFrameworkDefines(params: GetFrameworkDefinesParams): Record<s
  * Tells which package supplies the automatic JSX runtime of a framework.
  *
  * @param framework - The UI framework, if any.
- * @returns `react` or `preact`, or `undefined` for a framework that does not compile JSX with the automatic runtime.
+ * @returns `react` or `preact`, or `null` for a framework that does not compile JSX with the automatic runtime.
  */
-export function getJsxImportSource(framework: ObsidianPluginFramework | undefined): 'preact' | 'react' | undefined {
-  return framework === 'preact' || framework === 'react' ? framework : undefined;
+export function getJsxImportSource(framework: ObsidianPluginFramework | undefined): 'preact' | 'react' | null {
+  return framework === 'preact' || framework === 'react' ? framework : null;
 }
 
 /**

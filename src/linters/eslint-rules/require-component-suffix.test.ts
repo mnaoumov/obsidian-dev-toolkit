@@ -39,8 +39,9 @@ const ruleTester = new RuleTester({
 });
 
 interface MockBaseType {
-  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members -- Assigned after construction to create a circular mock type hierarchy.
+  // eslint-disable-next-line typescript-dev-toolkit/readonly-interface-members, typescript-dev-toolkit/no-undefined-return-type -- Assigned after construction to create a circular mock type hierarchy; mirrors TypeScript's `InterfaceType.getBaseTypes()`.
   getBaseTypes?: () => MockBaseType[] | undefined;
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors TypeScript's `Type.getSymbol()`.
   readonly getSymbol?: () => MockSymbol | undefined;
 }
 

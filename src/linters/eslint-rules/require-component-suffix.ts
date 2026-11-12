@@ -51,6 +51,7 @@ The ancestor class name that triggers the suffix requirement.
 const REQUIRED_ANCESTOR = 'Component';
 
 interface TypeWithBaseTypes {
+  // eslint-disable-next-line typescript-dev-toolkit/no-undefined-return-type -- Mirrors TypeScript's `InterfaceType.getBaseTypes()`.
   readonly getBaseTypes?: () => Type[] | undefined;
 }
 

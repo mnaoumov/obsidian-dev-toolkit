@@ -170,24 +170,24 @@ export function validatePluginManifest(manifest: unknown, options: ValidatePlugi
   const { isIdListed = false, shouldCheckVersion = true } = options;
   const findings: PluginCheckFinding[] = [];
   const id = readRequiredString(manifest, 'id', findings);
-  if (id !== undefined) {
+  if (id !== null) {
     findings.push(...validateId(id, isIdListed));
   }
 
   const name = readRequiredString(manifest, 'name', findings);
-  if (name !== undefined) {
+  if (name !== null) {
     findings.push(...validateName(name));
   }
 
   if (shouldCheckVersion) {
     const version = readRequiredString(manifest, 'version', findings);
-    if (version !== undefined) {
+    if (version !== null) {
       findings.push(...validateVersion(version));
     }
   }
 
   const description = readRequiredString(manifest, 'description', findings);
-  if (description !== undefined) {
+  if (description !== null) {
     findings.push(...validateDescription(description, name ?? ''));
   }
 
@@ -222,7 +222,7 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
   if (
     manifestFile !== BETA_MANIFEST_FILE
     && (options.shouldCheckVersion ?? true)
-    && manifestVersion !== undefined
+    && manifestVersion !== null
     && !NUMERIC_VERSION_REGEX.test(manifestVersion)
   ) {
     findings.push(
@@ -264,15 +264,15 @@ export function validateReleaseAssets(fileNames: readonly string[], folderLabel 
  * `manifest.json`'s `version`, so a `v` prefix or any other difference leaves it with no release to install.
  *
  * @param tag - The release tag.
- * @param manifestVersion - The `version` of `manifest.json`, or `undefined` when it has none.
+ * @param manifestVersion - The `version` of `manifest.json`, or `null` / `undefined` when it has none.
  * @returns The findings, empty when the tag is the manifest version.
  */
-export function validateReleaseTag(tag: string, manifestVersion: string | undefined): PluginCheckFinding[] {
+export function validateReleaseTag(tag: string, manifestVersion: null | string | undefined): PluginCheckFinding[] {
   const findings: PluginCheckFinding[] = [];
   if (/^v\d/i.test(tag)) {
     findings.push(error('release-tag-v-prefix', `Release tag "${tag}" must not start with "v": the directory looks the release up by the bare version.`));
   }
-  if (manifestVersion !== undefined && manifestVersion !== tag) {
+  if (typeof manifestVersion === 'string' && manifestVersion !== tag) {
     findings.push(error('release-manifest-version-mismatch', `manifest.json version "${manifestVersion}" does not match the release tag "${tag}".`));
   }
   if (!NUMERIC_VERSION_REGEX.test(tag)) {
@@ -318,7 +318,7 @@ function isAllCaps(value: string): boolean {
   return uppercaseLetters >= MIN_ALL_CAPS_LETTERS && value === value.toUpperCase();
 }
 
-async function isIdListedInDirectory(id: string, repository: string | undefined): Promise<boolean | undefined> {
+async function isIdListedInDirectory(id: string, repository: string | undefined): Promise<boolean | null> {
   try {
     // eslint-disable-next-line no-restricted-globals -- We run this outside of Obsidian, so we don't have `requestUrl()`.
     const response = await fetch(COMMUNITY_PLUGINS_JSON_URL);
@@ -329,9 +329,9 @@ async function isIdListedInDirectory(id: string, repository: string | undefined)
         && entry['id'] === id
         && (repository === undefined || (typeof entry['repo'] === 'string' && entry['repo'].toLowerCase() === repository.toLowerCase()))
       )
-      : undefined;
+      : null;
   } catch {
-    return undefined;
+    return null;
   }
 }
 
@@ -347,17 +347,17 @@ async function readJsonFile(path: string): Promise<unknown> {
   }
 }
 
-function readRequiredString(manifest: Record<string, unknown>, field: string, findings: PluginCheckFinding[]): string | undefined {
+function readRequiredString(manifest: Record<string, unknown>, field: string, findings: PluginCheckFinding[]): null | string {
   const value = manifest[field];
   if (typeof value === 'string' && value.trim().length > 0) {
     return value;
   }
   findings.push(error('manifest-missing-required-field', `Plugin manifest is missing required field: ${field}.`));
-  return undefined;
+  return null;
 }
 
-function readVersion(manifest: unknown): string | undefined {
-  return isRecord(manifest) && typeof manifest['version'] === 'string' ? manifest['version'] : undefined;
+function readVersion(manifest: unknown): null | string {
+  return isRecord(manifest) && typeof manifest['version'] === 'string' ? manifest['version'] : null;
 }
 
 function validateAuthor(author: string): PluginCheckFinding[] {
@@ -419,7 +419,7 @@ function validateDisallowedWords(value: string, field: string, ruleId: string): 
 
 async function validateDistFolder(
   rootFolder: string,
-  manifestVersion: string | undefined,
+  manifestVersion: null | string,
   options: ValidatePluginReleaseOptions
 ): Promise<PluginCheckFinding[]> {
   const { distFolder = ObsidianPluginRepoPaths.DistBuild, shouldRequireAssets = false } = options;
@@ -432,7 +432,7 @@ async function validateDistFolder(
 
   const findings = validateReleaseAssets(await readdir(distFolderPath), distFolder);
   const distManifestVersion = readVersion(await readJsonFile(join(distFolderPath, ObsidianPluginRepoPaths.ManifestJson)));
-  if (distManifestVersion !== undefined && manifestVersion !== undefined && distManifestVersion !== manifestVersion) {
+  if (distManifestVersion !== null && manifestVersion !== null && distManifestVersion !== manifestVersion) {
     findings.push(
       error(
         'release-asset-manifest-stale',
@@ -459,7 +459,7 @@ async function validateManifestExemptingListedId(manifest: unknown, options: Val
   }
 
   const isIdListed = await isIdListedInDirectory(id, options.repository);
-  if (isIdListed === undefined) {
+  if (isIdListed === null) {
     findings.push(warning('registry-unavailable', 'The community directory could not be read, so a listed plugin ID could not be exempted.'));
     return findings;
   }

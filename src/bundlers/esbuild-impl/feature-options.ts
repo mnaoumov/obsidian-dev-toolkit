@@ -80,7 +80,7 @@ export function getEsbuildFeatureBuildOptions(params: GetEsbuildFeatureBuildOpti
   const jsxImportSource = getJsxImportSource(features.framework);
   return {
     ...(Object.keys(defines).length > 0 && { define: defines }),
-    ...(jsxImportSource !== undefined && { jsx: 'automatic', jsxImportSource }),
+    ...(jsxImportSource !== null && { jsx: 'automatic', jsxImportSource }),
     ...(features.wasm && { loader: { '.wasm': 'binary' } })
   };
 }

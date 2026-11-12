@@ -46,7 +46,7 @@ const REPO_NODE_MODULES = join(import.meta.dirname, '../../node_modules');
 await wrapCliTask(async () => {
   const bundler = process.argv[BUNDLER_ARGUMENT_INDEX];
   const mode = process.argv[MODE_ARGUMENT_INDEX] === 'development' ? BuildMode.Development : BuildMode.Production;
-  const features = readFeatures();
+  const features = readFeatures() ?? undefined;
   switch (bundler) {
     case 'esbuild': {
       assertProduction(mode, bundler);
@@ -180,6 +180,6 @@ function cssAsAssetRollupPlugin(): RollupPlugin {
   };
 }
 
-function readFeatures(): ObsidianPluginFeatureOptions | undefined {
-  return existsSync(FEATURES_FILE_NAME) ? (JSON.parse(readFileSync(FEATURES_FILE_NAME, 'utf-8')) as ObsidianPluginFeatureOptions) : undefined;
+function readFeatures(): null | ObsidianPluginFeatureOptions {
+  return existsSync(FEATURES_FILE_NAME) ? (JSON.parse(readFileSync(FEATURES_FILE_NAME, 'utf-8')) as ObsidianPluginFeatureOptions) : null;
 }

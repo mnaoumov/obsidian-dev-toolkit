@@ -70,7 +70,7 @@ export function limitLineLength(code: string, lineLimit: number = DEFAULT_OBSIDI
   }
 
   const breakOffsets = getBreakOffsets(code, lineLimit);
-  if (breakOffsets === undefined || breakOffsets.length === 0) {
+  if (breakOffsets === null || breakOffsets.length === 0) {
     return code;
   }
 
@@ -102,10 +102,10 @@ export async function limitMainJsLineLength(params: LimitMainJsLineLengthParams)
   }
 }
 
-function getBreakOffsets(code: string, lineLimit: number): number[] | undefined {
+function getBreakOffsets(code: string, lineLimit: number): null | number[] {
   const tokens = tokenize(code);
-  if (tokens === undefined) {
-    return undefined;
+  if (tokens === null) {
+    return null;
   }
 
   const breakOffsets: number[] = [];
@@ -142,7 +142,7 @@ function hasLineLongerThan(code: string, lineLimit: number): boolean {
   return false;
 }
 
-function tokenize(code: string): Token[] | undefined {
+function tokenize(code: string): null | Token[] {
   const tokens: Token[] = [];
   try {
     parse(code, {
@@ -155,6 +155,6 @@ function tokenize(code: string): Token[] | undefined {
     return tokens;
   } catch (error) {
     console.warn(`Could not parse the bundle to break its long lines, so they are left as they are: ${String(error)}`);
-    return undefined;
+    return null;
   }
 }
