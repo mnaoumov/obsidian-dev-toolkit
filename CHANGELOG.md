@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 10.0.0
+
+This release has 1 breaking change and 1 fix.
+
+### Breaking changes
+
+- return null, not undefined, for no value
+
+### Fixed
+
+- **linters:** ship a no-dynamic-node-builtin-import module that parses
+
 ## 9.1.0
 
 - feat(test-runners): install another plugin's released build into an integration vault
