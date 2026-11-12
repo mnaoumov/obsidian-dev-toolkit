@@ -255,7 +255,7 @@ export function getParcelConfigFiles(params: GetParcelConfigFilesParams): Parcel
     transformers['*.svelte'] = [featureTransformer];
     transformers['*.svelte.{js,ts}'] = [featureTransformer, `./${INLINE_IMPORTS_FILE_NAME}`, '...'];
   }
-  if (features.framework === 'solid' || getJsxImportSource(features.framework) !== undefined) {
+  if (features.framework === 'solid' || getJsxImportSource(features.framework) !== null) {
     transformers['*.{jsx,tsx}'] = [featureTransformer];
   }
   if (features.wasm) {
@@ -321,7 +321,7 @@ module.exports = new Transformer({
       }
       case 'jsx': {
         const code = await asset.getCode();
-        const jsxImportSource = getJsxImportSource(FRAMEWORK ?? undefined);
+        const jsxImportSource = getJsxImportSource(FRAMEWORK ?? undefined) ?? undefined;
         const result = FRAMEWORK === 'solid'
           ? await transforms.transformSolid({ code, filePath, isProductionBuild })
           : await transforms.transformJsx({ code, filePath, isProductionBuild, jsxImportSource });

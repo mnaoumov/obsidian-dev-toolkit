@@ -243,7 +243,7 @@ export function defineWdioObsidianConfig(options: DefineWdioObsidianConfigOption
   const capabilityOptions: WdioObsidianCapabilityOptions = {
     plugins: [pluginFolder],
     ...(options.installerVersion !== undefined && { installerVersion: options.installerVersion }),
-    ...(vault !== undefined && { vault })
+    ...(vault !== null && { vault })
   };
 
   return {
@@ -297,13 +297,13 @@ function findWdioConfigFile(): string {
   return configFileName;
 }
 
-function resolveVault(vault: DefineWdioObsidianConfigOptions['vault']): string | undefined {
+function resolveVault(vault: DefineWdioObsidianConfigOptions['vault']): null | string {
   if (vault === false) {
-    return undefined;
+    return null;
   }
   if (vault !== undefined) {
     return resolvePathFromRootSafe({ path: vault });
   }
   const demoVaultPath = resolvePathFromRootSafe({ path: ObsidianPluginRepoPaths.DemoVault });
-  return existsSync(demoVaultPath) ? demoVaultPath : undefined;
+  return existsSync(demoVaultPath) ? demoVaultPath : null;
 }

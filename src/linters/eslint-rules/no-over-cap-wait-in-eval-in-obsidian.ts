@@ -277,6 +277,17 @@ type HelperFunction = ClosureFunction | TSESTree.FunctionDeclaration;
 type LoopStatement = TSESTree.DoWhileStatement | TSESTree.ForStatement | TSESTree.WhileStatement;
 
 /**
+ * The budget a wait call declares.
+ */
+interface WaitBudget {
+  /**
+   * The expression carrying the budget, or `null` for a `waitUntil` that omits its timeout and so takes the helper's
+   * default.
+   */
+  readonly expression: null | TSESTree.Node;
+}
+
+/**
  * ESLint rule disallowing an in-Obsidian closure whose declared waiting exceeds the transport's script-timeout cap.
  */
 export const noOverCapWaitInEvalInObsidian: Rule.RuleModule = {
@@ -364,14 +375,14 @@ export const noOverCapWaitInEvalInObsidian: Rule.RuleModule = {
      * @param target - The function the call is written in.
      */
     function chargeWaitCall(callNode: TSESTree.CallExpression, target: ChargeTarget): void {
-      const budgetExpression = readWaitBudgetExpression(callNode);
-      if (budgetExpression === undefined) {
+      const budget = readWaitBudget(callNode);
+      if (budget === null) {
         return;
       }
 
-      const waitInMilliseconds = budgetExpression === null
+      const waitInMilliseconds = budget.expression === null
         ? WAIT_UNTIL_DEFAULT_TIMEOUT_IN_MILLISECONDS
-        : resolveNumber(budgetExpression, target.closure, context);
+        : resolveNumber(budget.expression, target.closure, context);
       if (waitInMilliseconds === null) {
         return;
       }
@@ -1235,30 +1246,31 @@ function readParameterInputKey(closureNode: ClosureFunction, localName: string):
 }
 
 /**
- * Reads the expression carrying a wait call's declared budget.
+ * Reads the budget a wait call declares.
  *
  * @param callNode - The call expression to inspect.
- * @returns The expression to resolve; `null` for a `waitUntil` that omits its timeout, which takes the
- * helper's default; or `undefined` when the call is not a wait at all.
+ * @returns The {@link WaitBudget}, whose expression is `null` for a `waitUntil` that omits its timeout; or `null`
+ * when the call is not a wait at all.
  */
-function readWaitBudgetExpression(callNode: TSESTree.CallExpression): null | TSESTree.Node | undefined {
+function readWaitBudget(callNode: TSESTree.CallExpression): null | WaitBudget {
   if (!isIdentifier(callNode.callee)) {
-    return undefined;
+    return null;
   }
 
   const calleeName = callNode.callee.name;
 
   if (calleeName === SLEEP_CALLEE_NAME) {
-    return (callNode.arguments[0]) ?? undefined;
+    const durationNode = callNode.arguments[0];
+    return durationNode ? { expression: durationNode } : null;
   }
 
   if (calleeName !== WAIT_UNTIL_CALLEE_NAME) {
-    return undefined;
+    return null;
   }
 
   const paramsNode = callNode.arguments[0] as TSESTree.Node | undefined;
   if (!paramsNode || !isObjectExpression(paramsNode)) {
-    return undefined;
+    return null;
   }
 
   const timeoutProperty = paramsNode.properties.find((property) =>
@@ -1267,7 +1279,7 @@ function readWaitBudgetExpression(callNode: TSESTree.CallExpression): null | TSE
     && ((property as TSESTree.Property).key as TSESTree.Identifier).name === TIMEOUT_PROPERTY_NAME
   ) as TSESTree.Property | undefined;
 
-  return (timeoutProperty?.value) ?? null;
+  return { expression: timeoutProperty?.value ?? null };
 }
 
 /**

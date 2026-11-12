@@ -778,8 +778,8 @@ async function clickButton(params: ClickButtonParams): Promise<DemoVaultButtonRe
         return [...view()?.containerEl.querySelectorAll<HTMLButtonElement>(':scope .block-language-code-button button.mod-cta') ?? []];
       }
 
-      function findButton(): HTMLButtonElement | undefined {
-        return buttons().find((candidate) => candidate.textContent === caption);
+      function findButton(): HTMLButtonElement | null {
+        return buttons().find((candidate) => candidate.textContent === caption) ?? null;
       }
 
       // Reading view mounts lazily and unmounts sections far off-screen, so NO single scroll position
@@ -845,7 +845,8 @@ async function clickButton(params: ClickButtonParams): Promise<DemoVaultButtonRe
         };
       }
 
-      let button: HTMLButtonElement | undefined;
+      // Initialized from a call rather than `null`, so the checker does not narrow it to `null` past the predicate that assigns it.
+      let button = findButton();
       try {
         await waitUntil({
           intervalInMilliseconds,
@@ -853,7 +854,7 @@ async function clickButton(params: ClickButtonParams): Promise<DemoVaultButtonRe
           predicate: (): boolean => {
             advanceScroll();
             button = findButton();
-            return button !== undefined;
+            return button !== null;
           },
           timeoutInMilliseconds: settleTimeoutInMilliseconds
         });

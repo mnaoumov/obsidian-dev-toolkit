@@ -118,7 +118,7 @@ export function applyRollupInputDefaults(params: ApplyRollupInputDefaultsParams)
     ...inputOptions,
     external: combineExternal(inputOptions.external),
     input: inputOptions.input ?? buildContext.entryPoint,
-    ...(jsxImportSource !== undefined && inputOptions.jsx === undefined && { jsx: { jsxImportSource, mode: 'automatic' } })
+    ...(jsxImportSource !== null && inputOptions.jsx === undefined && { jsx: { jsxImportSource, mode: 'automatic' } })
   };
 }
 

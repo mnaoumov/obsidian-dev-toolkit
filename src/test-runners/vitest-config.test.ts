@@ -365,8 +365,8 @@ describe('defineObsidianPluginVitestConfig', () => {
      * @param config - The assembled configuration.
      * @returns Its `test` section, or `undefined` when the project was left out.
      */
-    function findAfterLayoutReadyProject(config: ViteUserConfig): TestProjectConfiguration | undefined {
-      return config.test?.projects?.find((project) => typeof project === 'object' && !('then' in project) && project.test?.name === 'integration-tests:desktop:after-layout-ready');
+    function findAfterLayoutReadyProject(config: ViteUserConfig): null | TestProjectConfiguration {
+      return config.test?.projects?.find((project) => typeof project === 'object' && !('then' in project) && project.test?.name === 'integration-tests:desktop:after-layout-ready') ?? null;
     }
 
     it('should copy the desktop project with the after-layout-ready setup in place of the default one', () => {
@@ -416,7 +416,7 @@ describe('defineObsidianPluginVitestConfig', () => {
           context.desktop.globalSetup = ['./scripts/vitest-global-setup.ts'];
         }
       });
-      expect(findAfterLayoutReadyProject(config)).toBeUndefined();
+      expect(findAfterLayoutReadyProject(config)).toBeNull();
     });
 
     it('should leave the project out when the desktop project has no setup to swap', () => {
@@ -425,7 +425,7 @@ describe('defineObsidianPluginVitestConfig', () => {
           delete context.desktop.globalSetup;
         }
       });
-      expect(findAfterLayoutReadyProject(config)).toBeUndefined();
+      expect(findAfterLayoutReadyProject(config)).toBeNull();
     });
 
     it('should use the setup the context names', () => {
@@ -446,7 +446,7 @@ describe('defineObsidianPluginVitestConfig', () => {
           context.desktopAfterLayoutReadyGlobalSetup = false;
         }
       });
-      expect(findAfterLayoutReadyProject(config)).toBeUndefined();
+      expect(findAfterLayoutReadyProject(config)).toBeNull();
     });
   });
 

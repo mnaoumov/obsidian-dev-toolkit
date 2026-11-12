@@ -65,10 +65,10 @@ describe('obsidian-plugin-features', () => {
     [
       ['react', 'react'],
       ['preact', 'preact'],
-      ['solid', undefined],
-      ['svelte', undefined],
-      ['vue', undefined],
-      [undefined, undefined]
+      ['solid', null],
+      ['svelte', null],
+      ['vue', null],
+      [undefined, null]
     ] as const
   )('takes the JSX runtime of %s from %s', (framework, expected) => {
     expect(getJsxImportSource(framework)).toBe(expected);
@@ -102,8 +102,8 @@ describe('obsidian-plugin-features', () => {
     ['/src/view.tsx', 'jsx'],
     ['/src/view.jsx?query', 'jsx'],
     ['/src/module.wasm', 'wasm'],
-    ['/src/main.ts', undefined],
-    ['\0virtual.css', undefined]
+    ['/src/main.ts', null],
+    ['\0virtual.css', null]
   ])('tells the kind of %s', (id, expected) => {
     expect(getFeatureFileKind(id)).toBe(expected);
   });

@@ -180,7 +180,7 @@ export function getViteFeatureConfig(params: GetViteFeatureConfigParams): UserCo
   }
 
   const jsxImportSource = getJsxImportSource(features.framework);
-  if (jsxImportSource !== undefined && userConfig.oxc !== false && userConfig.oxc?.jsx === undefined) {
+  if (jsxImportSource !== null && userConfig.oxc !== false && userConfig.oxc?.jsx === undefined) {
     config.oxc = { jsx: { development: !isProductionBuild, importSource: jsxImportSource, runtime: 'automatic' } };
   }
 

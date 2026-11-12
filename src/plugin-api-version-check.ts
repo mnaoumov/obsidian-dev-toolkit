@@ -138,8 +138,8 @@ export async function analyzePluginApiVersion(options: AnalyzePluginApiVersionOp
   };
 }
 
-function getReportedVersion(message: Linter.LintMessage): string | undefined {
+function getReportedVersion(message: Linter.LintMessage): null | string {
   return message.ruleId === RULE_ID && message.messageId === 'apiNotAvailable'
-    ? REPORT_VERSION_REGEX.exec(message.message)?.groups?.['version']
-    : undefined;
+    ? REPORT_VERSION_REGEX.exec(message.message)?.groups?.['version'] ?? null
+    : null;
 }

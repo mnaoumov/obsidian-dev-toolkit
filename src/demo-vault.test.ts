@@ -100,9 +100,9 @@ const INJECTED_APP_JSON_SETTINGS = {
 // that changes what the vault ships edits this map, and both the walk and the reads follow.
 let committedVaultFiles: Map<string, string>;
 
-function findArchiveEntryText(entryName: string): string | undefined {
+function findArchiveEntryText(entryName: string): null | string {
   const entry = readArchive()[entryName];
-  return entry ? Buffer.from(entry).toString('utf-8') : undefined;
+  return entry ? Buffer.from(entry).toString('utf-8') : null;
 }
 
 function getArchiveEntryNames(): string[] {
@@ -111,7 +111,7 @@ function getArchiveEntryNames(): string[] {
 
 function getArchiveEntryText(entryName: string): string {
   const content = findArchiveEntryText(entryName);
-  if (content === undefined) {
+  if (content === null) {
     throw new Error(`The archive has no entry '${entryName}'.`);
   }
 
@@ -280,7 +280,7 @@ describe('archivePluginDemoVault', () => {
     committedVaultFiles.delete(README_RELATIVE_PATH);
     await archivePluginDemoVault();
 
-    expect(findArchiveEntryText(README_ENTRY_NAME)).toBeUndefined();
+    expect(findArchiveEntryText(README_ENTRY_NAME)).toBeNull();
   });
 
   // The demo-vault coverage suite exempts `README.md` from its H1 check, so a README opening on something

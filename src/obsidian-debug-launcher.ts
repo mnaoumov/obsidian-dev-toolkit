@@ -142,7 +142,7 @@ export async function startObsidianForDebugging(options: StartObsidianForDebuggi
   }
 
   const existingUserAgent = await probeEndpoint(port);
-  if (existingUserAgent !== undefined) {
+  if (existingUserAgent !== null) {
     return { executablePath: undefined, port, userAgent: existingUserAgent, wasAlreadyListening: true };
   }
 
@@ -153,7 +153,7 @@ export async function startObsidianForDebugging(options: StartObsidianForDebuggi
   for (;;) {
     const hasExited = exitState.hasExited;
     const userAgent = await probeEndpoint(port);
-    if (userAgent !== undefined) {
+    if (userAgent !== null) {
       return { executablePath, port, userAgent, wasAlreadyListening: false };
     }
     if (hasExited) {
@@ -173,16 +173,16 @@ export async function startObsidianForDebugging(options: StartObsidianForDebuggi
   }
 }
 
-async function findInPath(lookupCommand: string, executableName: string): Promise<string | undefined> {
+async function findInPath(lookupCommand: string, executableName: string): Promise<null | string> {
   let output: string;
   try {
     output = await exec([lookupCommand, executableName], { isQuiet: true, shouldFailIfCalledFromOutsideRoot: false });
   } catch {
-    return undefined;
+    return null;
   }
   const candidates = output.split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0 && existsSync(line));
   // A `scoop` shim forwards to Obsidian's console binary, which exits at once instead of starting the app.
-  return candidates.find((candidate) => !isShim(candidate)) ?? candidates[0];
+  return candidates.find((candidate) => !isShim(candidate)) ?? candidates[0] ?? null;
 }
 
 function isShim(executablePath: string): boolean {
@@ -208,13 +208,13 @@ async function launchDetached(executablePath: string, launchArguments: readonly 
   return exitState;
 }
 
-async function probeEndpoint(port: number): Promise<string | undefined> {
+async function probeEndpoint(port: number): Promise<null | string> {
   let response: Response;
   try {
     // eslint-disable-next-line no-restricted-globals -- We run this outside of Obsidian, so we don't have `requestUrl()`.
     response = await fetch(`http://127.0.0.1:${String(port)}/json/version`);
   } catch {
-    return undefined;
+    return null;
   }
   let version: DebuggingEndpointVersion;
   try {
