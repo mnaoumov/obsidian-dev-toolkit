@@ -28,6 +28,7 @@ describe('obsidianDevToolkitPlugin', () => {
       'no-untrusted-input-events',
       'plugin-name-as-code',
       'plugin-name-as-code-in-ui',
+      'prefer-component-ex',
       'require-component-suffix',
       'require-plugin-api-contract-schemas'
     ]);

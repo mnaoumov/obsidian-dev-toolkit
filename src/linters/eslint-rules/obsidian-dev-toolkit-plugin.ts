@@ -16,6 +16,7 @@ import { noOverCapWaitInEvalInObsidian } from './no-over-cap-wait-in-eval-in-obs
 import { noUntrustedInputEvents } from './no-untrusted-input-events.ts';
 import { pluginNameAsCodeInUi } from './plugin-name-as-code-in-ui.ts';
 import { pluginNameAsCode } from './plugin-name-as-code.ts';
+import { preferComponentEx } from './prefer-component-ex.ts';
 import { requireComponentSuffix } from './require-component-suffix.ts';
 import { requirePluginApiContractSchemas } from './require-plugin-api-contract-schemas.ts';
 
@@ -41,6 +42,7 @@ export const obsidianDevToolkitPlugin: ESLint.Plugin = {
     'no-untrusted-input-events': noUntrustedInputEvents,
     'plugin-name-as-code': pluginNameAsCode,
     'plugin-name-as-code-in-ui': pluginNameAsCodeInUi,
+    'prefer-component-ex': preferComponentEx,
     'require-component-suffix': requireComponentSuffix,
     'require-plugin-api-contract-schemas': requirePluginApiContractSchemas
   }
