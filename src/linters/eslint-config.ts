@@ -388,6 +388,21 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       rules: {
         'obsidian-dev-toolkit/no-dynamic-node-builtin-import': 'error'
       }
+    },
+    {
+      /*
+       * A shipped component extends `ComponentEx` from `@mnaoumov/obsidian-lib`, never Obsidian's raw `Component`:
+       * every plugin built with this toolkit depends on `obsidian-lib` already, and `ComponentEx` adds child tracking,
+       * an awaitable async load and `Disposable`. Tests are exempt: a test double may extend whatever it needs.
+       */
+      files: context.sourceFiles,
+      ignores: context.testFiles,
+      plugins: {
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+      },
+      rules: {
+        'obsidian-dev-toolkit/prefer-component-ex': 'error'
+      }
     }
   ]);
 }
