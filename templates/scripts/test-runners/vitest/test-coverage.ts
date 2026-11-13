@@ -4,4 +4,11 @@ import process from 'node:process';
 
 const [, , ...additionalArguments] = process.argv;
 
-await wrapCliTask(() => testCoverage({ additionalArguments }));
+const FULL_COVERAGE_IN_PERCENTS = 100;
+
+await wrapCliTask(() =>
+  testCoverage({
+    additionalArguments,
+    minCoverageInPercents: FULL_COVERAGE_IN_PERCENTS
+  })
+);
