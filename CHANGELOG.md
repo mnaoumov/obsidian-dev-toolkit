@@ -14,25 +14,44 @@ This release has 1 breaking change and 1 fix.
 
 ## 9.1.0
 
-- feat(test-runners): install another plugin's released build into an integration vault
-- fix(linters): type the no-dynamic-node-builtin-import test errors as TestCaseError
-- feat(linters): forbid a dynamic import() of a Node builtin in plugin source
+This release has 2 new features and 1 fix.
+
+### New
+
+- **test-runners:** install another plugin's released build into an integration vault
+- **linters:** forbid a dynamic import() of a Node builtin in plugin source
+
+### Fixed
+
+- **linters:** type the no-dynamic-node-builtin-import test errors as TestCaseError
 
 ## 9.0.0
 
-- docs(changelog): regroup the published release notes for readers
-- fix(bundlers): deploy a development build into the folder named after the manifest id
-- feat(bundlers): keep the lines of a production main.js within a line limit
-- fix(version)!: restore the latest public Obsidian as the release minimum
-- docs: link the changelog from the README
-- docs: add See also comparison of similar tools
-- feat!: lint the manifest with upstream validate-manifest
-- feat!: add start-obsidian-for-debugging and name the VS Code generator
-- fix(templates): align `dprint` braces and import order with `ESLint`
-- docs(readme): state the supported `obsidian-lib` peer majors
-- test: give corpus generation and project collection explicit budgets
-- fix(version): ship manifest-beta.json as the pre-release manifest asset
-- feat(version): publish plugin releases before pushing the branch
+This release has 3 breaking changes, 2 new features, 3 fixes and 4 documentation changes. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### Breaking changes
+
+- **version:** restore the latest public Obsidian as the release minimum
+- lint the manifest with upstream validate-manifest
+- add start-obsidian-for-debugging and name the VS Code generator
+
+### New
+
+- **bundlers:** keep the lines of a production main.js within a line limit
+- **version:** publish plugin releases before pushing the branch
+
+### Fixed
+
+- **bundlers:** deploy a development build into the folder named after the manifest id
+- **templates:** align `dprint` braces and import order with `ESLint`
+- **version:** ship manifest-beta.json as the pre-release manifest asset
+
+### Documentation
+
+- **changelog:** regroup the published release notes for readers
+- link the changelog from the README
+- add See also comparison of similar tools
+- **readme:** state the supported `obsidian-lib` peer majors
 
 ## 8.2.1
 
