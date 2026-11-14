@@ -321,6 +321,15 @@ The same option is `obsidianPluginVite({ reload: 'obsidian-cli' })`, `obsidianPl
 
 `'obsidian-cli'` needs Obsidian 1.12 or later, running, with **Settings → General → Command line interface** turned on so that `obsidian` is on `PATH`. The CLI names the vault by its folder name, which is the folder that holds `OBSIDIAN_CONFIG_FOLDER`. The CLI reports a failure in its output while exiting with code 0, so the adapter reads the output: an unknown vault, a CLI that is not installed, or any `Error:` it prints fails that rebuild with the message and how to turn the CLI on.
 
+### Without `OBSIDIAN_CONFIG_FOLDER`
+
+With no `OBSIDIAN_CONFIG_FOLDER` (and no `obsidianConfigFolder` option), the adapter reads the vault list of the desktop Obsidian from its `obsidian.json`: `%APPDATA%\obsidian` on Windows, `~/Library/Application Support/obsidian` on macOS, and `$XDG_CONFIG_HOME/obsidian` (or `~/.config/obsidian`), then the Flatpak and Snap locations, on Linux.
+
+- `'obsidian-cli'` deploys into the vault the running Obsidian has open, into its `.obsidian` folder. When no vault is open, or several are, the rebuild fails, listing every vault Obsidian knows with the open ones marked, and asks for `OBSIDIAN_CONFIG_FOLDER`. It does not guess between two open vaults, since deploying a build into the wrong one is worse than asking.
+- `'hot-reload-plugin'` and `false` skip the deployment, as before, but now warn on every rebuild, with the same vault list, instead of skipping silently. They do not default to the open vault: `'hot-reload-plugin'` opens its vault in an Obsidian instance of its own, and `false` would write into a vault nobody named.
+
+`readObsidianVaultRegistry()` from `@mnaoumov/obsidian-dev-toolkit/obsidian-vault-registry` returns that list, most recently opened first, for a script of your own.
+
 ## How the adapters are tested
 
 One fixture plugin, `test-fixtures/obsidian-plugin` in this repository, is built with every bundler by `npm run test:integration`, in production and, for the adapters that take a `mode`, in development. Each `main.js` is then loaded the way Obsidian's own plugin loader does, as the body of `function (require, module, exports)` with a bare `module`, and the plugin class is constructed and its `onload` run. CI runs it on every push.
