@@ -81,14 +81,14 @@ Checks the plugin the way the community directory does, so a finding that would 
 
 The manifest, `versions.json` and asset rules are those of [`obsidianmd/obsidian-workflows`](https://github.com/obsidianmd/obsidian-workflows), the action the directory team points to as matching its scanner, with its rule ids and its `strict: true` severities: an ID or name holding `obsidian` or `plugin`, a description over 250 characters or naming Obsidian, a placeholder or email in `author`, a non-HTTPS URL, a version that is not semver, `main.js` or `manifest.json` missing from the release. On top of these are the submission bot's own rules: an ID of lowercase letters, digits, dashes and underscores only, and a release tag equal to `manifest.json`'s `version`, with no `v` prefix, since that tag is how the directory finds the release. As in the action, an ID the directory already lists for the plugin's repository is exempt from the banned-word rule, since a listed ID can never change; the directory's `community-plugins.json` is read only when that rule fires.
 
-`--scanner` also runs the scanner's own `ESLint` and Stylelint rulesets, by running `obsidianmd/obsidian-workflows` itself on your machine: its bundled action is downloaded once into `node_modules/.cache`, then run in its pull-request mode with the scanner lint and `strict` on and the build off. So the answer is the scanner's, not a copy of its rules that could drift. The action installs the scanner's linters into a temporary folder on each run, which takes a few minutes, and needs network access. A finding it reports that your own `npm run lint` does not, such as an `eslint-disable` comment naming a rule from a plugin the scanner does not load, is a finding the directory reports too.
+`--scanner` also runs the scanner's own `ESLint` and `Stylelint` rulesets, by running `obsidianmd/obsidian-workflows` itself on your machine: its bundled action is downloaded once into `node_modules/.cache`, then run in its pull-request mode with the scanner lint and `strict` on and the build off. So the answer is the scanner's, not a copy of its rules that could drift. The action installs the scanner's linters into a temporary folder on each run, which takes a few minutes, and needs network access. A finding it reports that your own `npm run lint` does not, such as an `eslint-disable` comment naming a rule from a plugin the scanner does not load, is a finding the directory reports too.
 
 | Flag | Effect |
 | --- | --- |
 | `--tag=<tag>` | Checks this release tag against `manifest.json`. In `GitHub Actions` it defaults to the pushed tag (`GITHUB_REF`). |
 | `--dist=<folder>` | The folder holding the release assets, relative to the project root. Defaults to `dist/build`. |
 | `--require-assets` | Fails when the asset folder does not exist, instead of skipping the asset checks. |
-| `--scanner` | Also runs the scanner's `ESLint` and Stylelint rulesets, through `obsidianmd/obsidian-workflows`. |
+| `--scanner` | Also runs the scanner's `ESLint` and `Stylelint` rulesets, through `obsidianmd/obsidian-workflows`. |
 | `--api-version` | Derives an API version floor from the plugin's source and compares it with `manifest.json`'s `minAppVersion`. Requires the plugin's typed `ESLint` configuration. |
 | `--scanner-version=<tag>` | The `obsidianmd/obsidian-workflows` release to run. Defaults to the one this package was tested with. |
 | `--no-strict` | Reports the scanner's policy findings as warnings, as the action does without `strict`. |
@@ -119,6 +119,30 @@ The generic `ESLint`, `markdownlint` and `dprint` commands, with one difference:
 The `dprint.json` template sets `"useBraces": "always"`, so `dprint` keeps the braces the shared `ESLint` `curly` rule requires, and `"importDeclaration.sortNamedImports": "maintain"`, so `ESLint` alone orders named imports by their local aliases. Without them, `lint:fix` adds braces or reorders imports, `format` undoes it, and `lint` fails again. The formatter reads a project's own `dprint.json` as given, so a project created from an older template adds both settings by hand.
 
 The Obsidian layer of the `ESLint` configuration is `defineEslintConfigs` (`@mnaoumov/obsidian-dev-toolkit/linters/eslint-config`): the generic configuration plus `eslint-plugin-obsidianmd`'s recommended rules, the Node-builtins exemption for `src/**/desktop-*.ts`, the integration-test rules, and lint rules for `manifest.json` and `LICENSE`. Its own rules are registered under `obsidian-dev-toolkit`, so a disable comment names one as `obsidian-dev-toolkit/<rule>`. The `markdownlint` layer is `obsidianMarkdownlintCli2Config` (`@mnaoumov/obsidian-dev-toolkit/linters/markdownlint-cli2-config`).
+
+### Lint CSS for Theme Tokens Only
+
+`obsidianTokenOnlyStylelintConfig` (`@mnaoumov/obsidian-dev-toolkit/linters/stylelint-config`) is an opt-in `stylelint` configuration that keeps a plugin's CSS on the theme's variables, so the plugin follows whatever theme the user runs:
+
+- No hex colors, no named colors (`red`), and no `rgb()`, `rgba()`, `hsl()`, `hsla()` or `hwb()`. A color comes from a variable such as `var(--text-normal)`, or from `color-mix()` over variables.
+- No `!important`.
+- No `px` on `width`, `height`, `inline-size`, `block-size` and their `min-` / `max-` forms.
+- Color, background, border, outline, shadow, font, `line-height`, `fill`, `stroke`, `gap`, padding, margin and `border-radius` values are made of `var()`, `calc()` over `var()`s and plain numbers, `color-mix()` over `var()`s, and the keywords `0`, `auto`, `inherit`, `transparent`, `currentColor` and `none`. A `var()` fallback is another `var()` or one of those keywords, so `var(--x, 12px)` fails. Borders and outlines also take a line style, and shadows take `inset`.
+- `z-index` is a variable, such as Obsidian's `--layer-*`, or a single digit for stacking inside one component.
+
+A fixed size the plugin really needs gets a name: declare it once as a custom property on the component (`--my-cover-width: 64px`) and write `width: var(--my-cover-width)`. The value list does not check custom property declarations, so the raw number lives in one place.
+
+The toolkit does not run `stylelint` for you. Install it (`npm install --save-dev stylelint`), then add a `stylelint.config.mjs`:
+
+```js
+import { obsidianTokenOnlyStylelintConfig } from '@mnaoumov/obsidian-dev-toolkit/linters/stylelint-config';
+
+export default obsidianTokenOnlyStylelintConfig;
+```
+
+and lint with `npx stylelint "src/**/*.css" styles.css`. To combine it with a standard configuration, spread its `rules` into yours.
+
+The configuration is adapted from the one in [`@insurgently/obsidian-ui`](https://github.com/insurgently/insurgently-obsidian-ui) (MIT).
 
 ## Version Management
 

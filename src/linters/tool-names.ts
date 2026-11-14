@@ -61,6 +61,8 @@ const CHECKERS = [
   'markdownlint',
   'markdownlint-cli2',
   'Prettier',
+  'Stylelint',
+  'stylelint',
   'svelte-check',
   'typescript-eslint'
 ];
