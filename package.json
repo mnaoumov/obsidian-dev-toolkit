@@ -354,6 +354,7 @@
     "satori": "^0.33.5",
     "satteri": "^0.10.5",
     "solid-js": "^1.9.18",
+    "stylelint": "^17.16.0",
     "svelte": "^5.57.2",
     "tailwindcss": "^4.3.3",
     "ts-jest": "^29.4.15",
@@ -383,6 +384,7 @@
     "mini-css-extract-plugin": "^2.10.2",
     "obsidian-integration-testing": "^17.8.0",
     "rollup": "^4.64.7",
+    "stylelint": "^16.0.0 || ^17.0.0 || ^18.0.0",
     "svelte": "^5.57.2",
     "ts-jest": "^29.4.15",
     "unplugin-vue": "^8.0.0",
@@ -431,6 +433,9 @@
       "optional": true
     },
     "rollup": {
+      "optional": true
+    },
+    "stylelint": {
       "optional": true
     },
     "svelte": {
