@@ -22,7 +22,6 @@ import {
   invokeAsyncSafely,
   sleep
 } from '@mnaoumov/typescript-lib/async';
-import { getLibDebugger } from '@mnaoumov/typescript-lib/debug';
 import {
   basename,
   dirname,
@@ -39,6 +38,7 @@ import process from 'node:process';
 import type { ObsidianPluginReload } from './obsidian-plugin-build.ts';
 
 import { reloadPluginWithObsidianCli } from './obsidian-cli-reload.ts';
+import { resolveObsidianDeploymentConfigFolder } from './obsidian-deployment-target.ts';
 
 /**
  * Parameters for {@link deployToObsidianPluginsFolder}.
@@ -55,7 +55,9 @@ export interface DeployToObsidianPluginsFolderParams {
   readonly isProductionBuild: boolean;
 
   /**
-   * The folder of the Obsidian configuration. If not provided, the plugin will not copy files.
+   * The folder of the Obsidian configuration, or an empty string when none is configured. Then `reload: 'obsidian-cli'`
+   * deploys into the vault the running Obsidian has open, and the other reloads skip the deployment with a warning
+   * that lists the vaults Obsidian knows.
    */
   readonly obsidianConfigFolder: string;
 
@@ -182,7 +184,8 @@ const DEV_INSTANCE_PROBE_INTERVAL_IN_MILLISECONDS = 2000;
 const DEV_INSTANCE_CLOSED_PROBE_COUNT = 3;
 /**
  * Copies a development build into the vault's plugins folder and reloads it there, as the `reload` option
- * says. Does nothing for a production build, or when no Obsidian config folder is configured.
+ * says. Does nothing for a production build. Without a configured Obsidian config folder it deploys into the open
+ * vault for `reload: 'obsidian-cli'`, and warns and does nothing otherwise (`obsidian-deployment-target.ts`).
  *
  * @param params - The {@link DeployToObsidianPluginsFolderParams}.
  * @returns A {@link Promise} that resolves once the plugin is deployed.
@@ -198,14 +201,16 @@ export async function deployToObsidianPluginsFolder(params: DeployToObsidianPlug
     return;
   }
 
-  if (!params.obsidianConfigFolder) {
-    getLibDebugger('deployToObsidianPluginsFolder')(
-      'No Obsidian config folder configured. `OBSIDIAN_CONFIG_FOLDER` environment variable is not set in system or in `.env` file. The compiled plugin will not be copied into Obsidian plugins folder.'
-    );
+  const reload = params.reload ?? 'hot-reload-plugin';
+  const resolvedObsidianConfigFolder = await resolveObsidianDeploymentConfigFolder({
+    obsidianConfigFolder: params.obsidianConfigFolder,
+    reload
+  });
+  if (resolvedObsidianConfigFolder === null) {
     return;
   }
 
-  const obsidianConfigFolder = toPosixPath(params.obsidianConfigFolder);
+  const obsidianConfigFolder = toPosixPath(resolvedObsidianConfigFolder);
 
   // Obsidian loads a plugin only from a direct child of `plugins/` and knows it by its manifest `id`, so the folder is named after the id, not after the package: a scoped package name would nest the folder one level too deep.
   const pluginId = await readDeployedPluginId(distFolder, pluginName);
@@ -213,7 +218,7 @@ export async function deployToObsidianPluginsFolder(params: DeployToObsidianPlug
   await mkdir(pluginFolder, { recursive: true });
   await cp(distFolder, pluginFolder, { recursive: true });
 
-  switch (params.reload ?? 'hot-reload-plugin') {
+  switch (reload) {
     case false: {
       break;
     }

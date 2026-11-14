@@ -185,7 +185,9 @@ export interface ObsidianPluginDeploymentOptions {
 
   /**
    * A folder for Obsidian configuration. Defaults to the `OBSIDIAN_CONFIG_FOLDER` environment variable,
-   * read from the process or from a `.env` file in the project root.
+   * read from the process or from a `.env` file in the project root. When neither is set, `reload: 'obsidian-cli'`
+   * deploys into the vault the running Obsidian has open (read from its `obsidian.json`), and the other reloads skip
+   * the deployment with a warning that lists the vaults Obsidian knows.
    */
   readonly obsidianConfigFolder?: string;
 
