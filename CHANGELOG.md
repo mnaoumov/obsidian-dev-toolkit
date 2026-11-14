@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 10.1.0
+
+This release has 1 new feature, 1 fix and 1 documentation change. 3 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### New
+
+- **linters:** prefer ComponentEx over the raw obsidian Component
+
+### Fixed
+
+- **templates:** hold the test:coverage template at 100%
+
+### Documentation
+
+- **changelog:** regroup the raw release notes for readers
+
 ## 10.0.0
 
 This release has 1 breaking change and 1 fix.
