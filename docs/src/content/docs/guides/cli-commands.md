@@ -83,6 +83,8 @@ The manifest, `versions.json` and asset rules are those of [`obsidianmd/obsidian
 
 One more warning, `versions-missing-manifest-version`, comes from [`obsidian-plugin-validator`](https://github.com/philpalmieri/obsidian-plugin-validator) rather than the action: `versions.json` has no entry for `manifest.json`'s `version`, which is what a hand bump that skipped `versions.json` leaves behind. It is not reported for `manifest-beta.json`, which never gets an entry.
 
+Two errors come from the same validator's `lib/check-manifest.mjs`: `repository-license-missing` and `repository-readme-missing`, a project root with no `LICENSE` (`LICENSE.md` and `LICENSE.txt` count too, in any case) or no `README.md`. The community directory requires both in every plugin repository, and the `LICENSE` lint only runs on a file that is there. `validatePluginRelease` takes `shouldCheckRepositoryFiles: false` to skip them.
+
 `--scanner` also runs the scanner's own `ESLint` and `Stylelint` rulesets, by running `obsidianmd/obsidian-workflows` itself on your machine: its bundled action is downloaded once into `node_modules/.cache`, then run in its pull-request mode with the scanner lint and `strict` on and the build off. So the answer is the scanner's, not a copy of its rules that could drift. The action installs the scanner's linters into a temporary folder on each run, which takes a few minutes, and needs network access. A finding it reports that your own `npm run lint` does not, such as an `eslint-disable` comment naming a rule from a plugin the scanner does not load, is a finding the directory reports too.
 
 | Flag | Effect |

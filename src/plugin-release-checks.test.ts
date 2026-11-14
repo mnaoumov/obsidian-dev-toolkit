@@ -226,6 +226,8 @@ describe('validatePluginRelease', () => {
 
   beforeEach(async () => {
     rootFolder = await mkdtemp(join(tmpdir(), 'plugin-release-checks-'));
+    await writeFile(join(rootFolder, 'LICENSE'), 'MIT');
+    await writeFile(join(rootFolder, 'README.md'), '# Plugin');
   });
 
   afterEach(async () => {
@@ -257,6 +259,23 @@ describe('validatePluginRelease', () => {
     expect(await releaseRuleIds()).toEqual(['manifest-invalid-json']);
     const findings = await validatePluginRelease({ manifestFile: 'missing.json', rootFolder });
     expect(findings).toEqual([expect.objectContaining({ message: 'missing.json not found or is not valid JSON.' })]);
+  });
+
+  it('should require a LICENSE and a README.md in the project root unless told not to', async () => {
+    await writeJson('manifest.json', VALID_MANIFEST);
+    await rm(join(rootFolder, 'LICENSE'));
+    await rm(join(rootFolder, 'README.md'));
+    expect(await releaseRuleIds()).toEqual(['repository-license-missing', 'repository-readme-missing']);
+    expect(await releaseRuleIds({ shouldCheckRepositoryFiles: false })).toEqual([]);
+    expect(await releaseRuleIds({ manifestFile: 'missing.json' })).toEqual([
+      'manifest-invalid-json',
+      'repository-license-missing',
+      'repository-readme-missing'
+    ]);
+
+    await writeFile(join(rootFolder, 'license.md'), 'MIT');
+    await writeFile(join(rootFolder, 'Readme.md'), '# Plugin');
+    expect(await releaseRuleIds()).toEqual([]);
   });
 
   it('should report a manifest that is not an object', async () => {

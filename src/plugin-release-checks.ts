@@ -12,6 +12,10 @@
  * that a tag differing from the manifest version is an error rather than a warning: the directory then finds no
  * release for the version the manifest names.
  *
+ * The project root must also hold a `LICENSE` (`.md` / `.txt` accepted) and a `README.md`, as the directory requires of
+ * every plugin repository; the check is re-implemented after `obsidian-plugin-validator`'s
+ * `lib/check-manifest.mjs` (MIT).
+ *
  * As in the action, an ID already listed in the directory (`community-plugins.json`) for the same repository is exempt
  * from the banned-word rule, since a listed ID can never change. The directory is fetched only when that rule fires.
  */
@@ -102,6 +106,12 @@ export interface ValidatePluginReleaseOptions extends ValidatePluginManifestOpti
   readonly shouldCheckAssets?: boolean;
 
   /**
+   * Whether to check that the project root holds a `LICENSE` and a `README.md`, which the community directory requires
+   * of every plugin repository. Defaults to `true`.
+   */
+  readonly shouldCheckRepositoryFiles?: boolean;
+
+  /**
    * Whether a missing {@link distFolder} is an error rather than a reason to skip the asset checks. Defaults to
    * `false`.
    */
@@ -130,6 +140,8 @@ const HTTP_URL_REGEX = /https?:\/\/\S+/i;
 const IPV4_REGEX = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 const MIN_ALL_CAPS_LETTERS = 2;
 const GITHUB_REPO_PATH_SEGMENTS = 2;
+const LICENSE_FILE_REGEX = /^license(?:\.(?:md|txt))?$/i;
+const README_FILE_REGEX = /^readme\.md$/i;
 const COMMUNITY_PLUGINS_JSON_URL = 'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json';
 
 /**
@@ -207,15 +219,18 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
     manifestFile = ObsidianPluginRepoPaths.ManifestJson,
     rootFolder = ensureNonNullable(getRootFolder(), 'Could not find the project root'),
     shouldCheckAssets = true,
+    shouldCheckRepositoryFiles = true,
     tag
   } = options;
 
+  const repositoryFileFindings = shouldCheckRepositoryFiles ? await validateRepositoryFiles(rootFolder) : [];
   const manifest = await readJsonFile(join(rootFolder, manifestFile));
   if (manifest === undefined) {
-    return [error('manifest-invalid-json', `${manifestFile} not found or is not valid JSON.`)];
+    return [error('manifest-invalid-json', `${manifestFile} not found or is not valid JSON.`), ...repositoryFileFindings];
   }
 
   const findings = await validateManifestExemptingListedId(manifest, options);
+  findings.push(...repositoryFileFindings);
   const manifestVersion = readVersion(manifest);
   const shouldCheckStableVersion = manifestFile !== BETA_MANIFEST_FILE && (options.shouldCheckVersion ?? true);
   findings.push(
@@ -524,6 +539,22 @@ function validateOptionalFields(manifest: Record<string, unknown>): PluginCheckF
     if (!Object.hasOwn(manifest, field)) {
       findings.push(warning('manifest-missing-recommended-field', `Plugin manifest is missing recommended field: ${field}.`));
     }
+  }
+  return findings;
+}
+
+async function validateRepositoryFiles(rootFolder: string): Promise<PluginCheckFinding[]> {
+  const fileNames = await readdir(rootFolder);
+  const findings: PluginCheckFinding[] = [];
+  if (fileNames.every((fileName) => !LICENSE_FILE_REGEX.test(fileName))) {
+    findings.push(
+      error('repository-license-missing', 'The project root has no LICENSE file. The community directory requires one in every plugin repository.')
+    );
+  }
+  if (fileNames.every((fileName) => !README_FILE_REGEX.test(fileName))) {
+    findings.push(
+      error('repository-readme-missing', 'The project root has no README.md. The community directory requires one in every plugin repository.')
+    );
   }
   return findings;
 }
