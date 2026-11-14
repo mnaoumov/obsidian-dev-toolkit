@@ -216,12 +216,14 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
   }
 
   const findings = await validateManifestExemptingListedId(manifest, options);
-  findings.push(...await validateVersionsJsonFile(join(rootFolder, ObsidianPluginRepoPaths.VersionsJson)));
-
   const manifestVersion = readVersion(manifest);
+  const shouldCheckStableVersion = manifestFile !== BETA_MANIFEST_FILE && (options.shouldCheckVersion ?? true);
+  findings.push(
+    ...await validateVersionsJsonFile(join(rootFolder, ObsidianPluginRepoPaths.VersionsJson), shouldCheckStableVersion ? manifestVersion : null)
+  );
+
   if (
-    manifestFile !== BETA_MANIFEST_FILE
-    && (options.shouldCheckVersion ?? true)
+    shouldCheckStableVersion
     && manifestVersion !== null
     && !NUMERIC_VERSION_REGEX.test(manifestVersion)
   ) {
@@ -289,10 +291,16 @@ export function validateReleaseTag(tag: string, manifestVersion: null | string |
 /**
  * Validates a plugin's `versions.json` content.
  *
+ * When `manifestVersion` is given, a missing entry for it is a warning: Obsidian reads `versions.json` to find the
+ * newest plugin version an older app can install, so a version bumped by hand without its entry leaves that lookup
+ * stale.
+ *
  * @param versions - The parsed `versions.json`.
+ * @param manifestVersion - The `version` of `manifest.json` that must have an entry, or `null` / `undefined` to skip
+ *   that check.
  * @returns The findings, empty when it maps semver plugin versions to semver app versions.
  */
-export function validateVersionsJson(versions: unknown): PluginCheckFinding[] {
+export function validateVersionsJson(versions: unknown, manifestVersion?: null | string): PluginCheckFinding[] {
   if (!isRecord(versions) || Array.isArray(versions)) {
     return [error('versions-invalid-format', 'versions.json must be a JSON object mapping plugin versions to minimum app versions.')];
   }
@@ -305,6 +313,14 @@ export function validateVersionsJson(versions: unknown): PluginCheckFinding[] {
     if (typeof minAppVersion !== 'string' || !SEMVER_REGEX.test(minAppVersion)) {
       findings.push(warning('versions-invalid-semver', `versions.json value for "${pluginVersion}" is not a valid semver string.`));
     }
+  }
+  if (typeof manifestVersion === 'string' && !Object.hasOwn(versions, manifestVersion)) {
+    findings.push(
+      warning(
+        'versions-missing-manifest-version',
+        `versions.json has no entry for manifest.json version "${manifestVersion}". Add "${manifestVersion}": "<minAppVersion>".`
+      )
+    );
   }
   return findings;
 }
@@ -556,12 +572,12 @@ function validateVersion(version: string): PluginCheckFinding[] {
   return findings;
 }
 
-async function validateVersionsJsonFile(versionsJsonPath: string): Promise<PluginCheckFinding[]> {
+async function validateVersionsJsonFile(versionsJsonPath: string, manifestVersion: null | string): Promise<PluginCheckFinding[]> {
   if (!existsSync(versionsJsonPath)) {
     return [];
   }
   const versions = await readJsonFile(versionsJsonPath);
-  return versions === undefined ? [error('versions-invalid-json', 'versions.json is not valid JSON.')] : validateVersionsJson(versions);
+  return versions === undefined ? [error('versions-invalid-json', 'versions.json is not valid JSON.')] : validateVersionsJson(versions, manifestVersion);
 }
 
 function warning(ruleId: string, message: string): PluginCheckFinding {
