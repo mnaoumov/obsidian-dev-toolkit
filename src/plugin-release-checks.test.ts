@@ -171,6 +171,15 @@ describe('validateVersionsJson', () => {
   it('should warn on keys and values that are not semver', () => {
     expect(validateVersionsJson({ '1.0.0': 'x', 'v1': 1 }).map((finding) => finding.level)).toEqual(['warning', 'warning', 'warning']);
   });
+
+  it('should warn when the manifest version has no entry', () => {
+    expect(validateVersionsJson({ '1.0.0': '1.5.0' }, '1.0.1')).toEqual([
+      expect.objectContaining({ level: 'warning', ruleId: 'versions-missing-manifest-version' })
+    ]);
+    expect(validateVersionsJson({ '1.0.0': '1.5.0' }, '1.0.0')).toEqual([]);
+    expect(validateVersionsJson({ '1.0.0': '1.5.0' }, null)).toEqual([]);
+    expect(validateVersionsJson({}, 'toString')).toEqual([expect.objectContaining({ ruleId: 'versions-missing-manifest-version' })]);
+  });
 });
 
 describe('validateReleaseTag', () => {
@@ -274,6 +283,18 @@ describe('validatePluginRelease', () => {
       'release-asset-main-js-missing',
       'release-asset-manifest-stale'
     ]);
+  });
+
+  it('should warn when versions.json lacks the stable manifest version, but not for a beta or unchecked version', async () => {
+    await writeJson('manifest.json', VALID_MANIFEST);
+    await writeJson('manifest-beta.json', { ...VALID_MANIFEST, version: '1.2.4-beta.1' });
+    await writeJson('versions.json', { '1.2.2': '1.5.0' });
+    expect(await releaseRuleIds()).toEqual(['versions-missing-manifest-version']);
+    expect(await releaseRuleIds({ shouldCheckVersion: false })).toEqual([]);
+    expect(await releaseRuleIds({ manifestFile: 'manifest-beta.json' })).toEqual([]);
+
+    await writeJson('versions.json', { '1.2.2': '1.5.0', '1.2.3': '1.5.0' });
+    expect(await releaseRuleIds()).toEqual([]);
   });
 
   it('should report a versions.json that does not parse', async () => {
