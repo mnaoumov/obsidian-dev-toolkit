@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 11.0.0
+
+This release has 1 breaking change and 4 new features. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Breaking changes
+
+- **deps:** move to `typescript-lib` 4 and `typescript-dev-toolkit` 8
+
+### New
+
+- **bundlers:** deploy a development build into the open vault for obsidian-cli reload
+- **plugin-release-checks:** fail when the project root has no LICENSE or README.md
+- **plugin-release-checks:** warn when versions.json has no entry for the manifest version
+- **linters:** opt-in `stylelint` config that allows only theme tokens
+
 ## 10.1.0
 
 This release has 1 new feature, 1 fix and 1 documentation change. 3 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
