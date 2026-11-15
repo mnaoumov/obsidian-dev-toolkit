@@ -351,6 +351,11 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
         'obsidian-dev-toolkit/no-over-cap-wait-in-eval-in-obsidian': 'error',
         'obsidian-dev-toolkit/require-component-suffix': 'error',
         /*
+         * `component.register(() => x[Symbol.dispose]())` has a dedicated helper in `@mnaoumov/obsidian-lib`
+         * (11.0.0+), which every plugin built with this toolkit depends on, so the report names it.
+         */
+        'typescript-dev-toolkit/no-direct-dispose-call': ['error', { registerHelperName: 'registerDisposable' }],
+        /*
          * An `evalInObsidian` / `pollInObsidian` callback is serialized and run inside Obsidian, where the
          * module's imports are not in scope, so a `dedent` template there throws `dedent is not defined`.
          */
