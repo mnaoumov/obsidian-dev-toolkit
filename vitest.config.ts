@@ -14,7 +14,7 @@ const OBSIDIAN_INTEGRATION_TEST_FILES = 'src/**/*.obsidian.integration.test.ts';
 // shared worker; see AGENTS.md on why a timeout here is machine load rather than a broken rule.
 const ESLINT_TYPECHECK_GROUP_ORDER = 1;
 // The first case of a type-aware file pays the cold program build: about 9 s on an idle machine, past 60 s under a
-// loaded bulk run, where the default timeout failed the release preflight three runs in a row.
+// loaded bulk run. Keep the budget here: a per-file `vi.setConfig({ testTimeout })` overrides it.
 const ESLINT_TYPECHECK_TIMEOUT_IN_MILLISECONDS = 180_000;
 const BIG_TIMEOUT_IN_MILLISECONDS = 30_000;
 // Driving an emulator over Appium is slower than the desktop path; the global setup boots it, hence the hook budget.
