@@ -146,7 +146,7 @@ export default obsidianTokenOnlyStylelintConfig;
 
 and lint with `npx stylelint "src/**/*.css" styles.css`. To combine it with a standard configuration, spread its `rules` into yours.
 
-The configuration is adapted from the one in [`@insurgently/obsidian-ui`](https://github.com/insurgently/insurgently-obsidian-ui) (MIT).
+The configuration is adapted from the one in [`@insurgently/obsidian-ui`](https://www.npmjs.com/package/@insurgently/obsidian-ui) (MIT).
 
 ## Version Management
 

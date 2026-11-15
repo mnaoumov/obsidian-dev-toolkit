@@ -8,7 +8,7 @@
  * It is plain data and imports nothing from `stylelint`, so loading it needs no optional peer.
  *
  * Adapted from `stylelint.config.mjs` of `@insurgently/obsidian-ui` 0.4.0
- * (https://github.com/insurgently/insurgently-obsidian-ui), MIT License, Copyright (c) 2026 Insurgently.
+ * (https://www.npmjs.com/package/@insurgently/obsidian-ui), MIT License, Copyright (c) 2026 Insurgently.
  */
 
 /**
