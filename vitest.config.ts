@@ -13,6 +13,9 @@ const OBSIDIAN_INTEGRATION_TEST_FILES = 'src/**/*.obsidian.integration.test.ts';
 // Every `@typescript-eslint/rule-tester` case builds a type-aware program, so these run one file at a time in a
 // shared worker; see AGENTS.md on why a timeout here is machine load rather than a broken rule.
 const ESLINT_TYPECHECK_GROUP_ORDER = 1;
+// The first case of a type-aware file pays the cold program build: about 9 s on an idle machine, past 60 s under a
+// loaded bulk run, where the default timeout failed the release preflight three runs in a row.
+const ESLINT_TYPECHECK_TIMEOUT_IN_MILLISECONDS = 180_000;
 const BIG_TIMEOUT_IN_MILLISECONDS = 30_000;
 // Driving an emulator over Appium is slower than the desktop path; the global setup boots it, hence the hook budget.
 const ANDROID_TIMEOUT_IN_MILLISECONDS = 60_000;
@@ -58,7 +61,8 @@ const config = defineLibraryVitestConfig({
           groupOrder: ESLINT_TYPECHECK_GROUP_ORDER
         },
         server: SHARED_SERVER,
-        setupFiles: []
+        setupFiles: [],
+        testTimeout: ESLINT_TYPECHECK_TIMEOUT_IN_MILLISECONDS
       }
     },
     {
