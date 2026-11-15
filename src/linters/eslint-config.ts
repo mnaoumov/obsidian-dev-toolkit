@@ -23,7 +23,10 @@ import {
 import { join } from '@mnaoumov/typescript-lib/path';
 // eslint-disable-next-line import-x/no-rename-default -- The default export name `plugin` is too confusing.
 import obsidianmd from 'eslint-plugin-obsidianmd';
-import { defineConfig } from 'eslint/config';
+import {
+  defineConfig,
+  globalIgnores
+} from 'eslint/config';
 
 import type { ObsidianRuntimeFloor } from '../obsidian-runtime.ts';
 
@@ -58,6 +61,17 @@ export { EslintConfigContext };
  */
 const MINIMUM_NODE_VERSION = '>=16.16.0';
 
+const DEMO_VAULT_ASSETS_FOLDER = join(ObsidianPluginRepoPaths.DemoVault, '_assets');
+const DEMO_VAULT_SCRIPTS_FOLDER = join(DEMO_VAULT_ASSETS_FOLDER, 'CodeScriptToolkit');
+
+/**
+ * The demo vault's own setup code: the startup script `Demo Vault Helper` points `CodeScript Toolkit` at, and the
+ * helpers the demo notes' buttons call. The plugin writes and maintains both, so they take the source-file rules like
+ * `src/` does. Every other script in a vault is left alone: `CodeScript Toolkit`'s vault shows unusual module and
+ * `require` styles on purpose, and a linter that "fixed" them would break the lesson.
+ */
+const DEMO_VAULT_SETUP_FILES = ['demoSetup.ts', 'startup.ts'].map((fileName) => join(DEMO_VAULT_SCRIPTS_FOLDER, fileName));
+
 /**
  * Build ESLint configurations.
  *
@@ -69,6 +83,8 @@ const MINIMUM_NODE_VERSION = '>=16.16.0';
  */
 export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): Linter.Config[] {
   const context = createDefaultEslintConfigContext();
+  // Before `editContext`, so a project can take them out again. Without this they match no config object at all.
+  context.sourceFiles.push(...DEMO_VAULT_SETUP_FILES);
 
   if (options.editContext) {
     options.editContext(context);
@@ -91,7 +107,48 @@ export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): L
     ...getIntegrationTestConfigs(context),
     ...getManifestConfigs(),
     ...getLicenseConfigs(),
-    ...customConfigs
+    ...getDemoVaultSetupConfigs(),
+    ...customConfigs,
+    ...getDemoVaultSetupUnignoreConfigs()
+  );
+}
+
+function getDemoVaultSetupConfigs(): Linter.Config[] {
+  return defineConfig([
+    {
+      files: DEMO_VAULT_SETUP_FILES,
+      rules: {
+        /*
+         * The nearest `package.json` of these files is the repository's, or the vault's own where the vault installs
+         * packages for its example scripts. Neither lists what they import: `CodeScript Toolkit` serves `obsidian` and
+         * `@mnaoumov/obsidian-lib` to vault scripts at runtime. The rule is registered under both plugin names.
+         */
+        'import-x/no-extraneous-dependencies': 'off',
+        'import/no-extraneous-dependencies': 'off',
+        // `CodeScriptToolkit` is the vault's script folder, named in the plugin's settings and in every demo note.
+        'unicorn/filename-case': 'off'
+      }
+    }
+  ]);
+}
+
+/*
+ * A plugin's own config commonly ignores `demo-vault/**`, since the vault is committed and so in no ignore file. That
+ * hid the setup files from every check, so a global un-ignore of the path to them comes AFTER the consumer's configs:
+ * a later negated pattern wins, and an earlier one is overridden. The folders on the way are re-included first,
+ * because a file inside an ignored folder cannot be un-ignored. Nothing else in the vault is re-included.
+ */
+function getDemoVaultSetupUnignoreConfigs(): Linter.Config[] {
+  return defineConfig(
+    globalIgnores(
+      [
+        `!${ObsidianPluginRepoPaths.DemoVault}/`,
+        `!${DEMO_VAULT_ASSETS_FOLDER}/`,
+        `!${DEMO_VAULT_SCRIPTS_FOLDER}/`,
+        ...DEMO_VAULT_SETUP_FILES.map((file) => `!${file}`)
+      ],
+      'obsidian-dev-toolkit/demo-vault-setup-files'
+    )
   );
 }
 function getIntegrationTestConfigs(context: EslintConfigContext): Linter.Config[] {
