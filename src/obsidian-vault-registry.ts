@@ -90,7 +90,7 @@ export function formatObsidianVaultList(entries: readonly ObsidianVaultRegistryE
 
 /**
  * Lists the folders the desktop Obsidian may keep its user data, `obsidian.json` included, in, most likely first:
- * `%APPDATA%\obsidian` on Windows, `~/Library/Application Support/obsidian` on macOS, and on Linux
+ * the `obsidian` folder in `%APPDATA%` on Windows, `~/Library/Application Support/obsidian` on macOS, and on Linux
  * `$XDG_CONFIG_HOME/obsidian` (or `~/.config/obsidian`), then the Flatpak and Snap locations.
  *
  * @returns The candidate folders.
