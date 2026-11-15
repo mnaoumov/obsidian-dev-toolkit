@@ -4,8 +4,7 @@ import dedent from 'dedent';
 import {
   afterAll,
   describe,
-  it,
-  vi
+  it
 } from 'vitest';
 
 import {
@@ -16,10 +15,6 @@ import {
 RuleTester.afterAll = afterAll;
 RuleTester.describe = describe;
 RuleTester.it = it;
-
-const TYPE_CHECK_TIMEOUT_IN_MILLISECONDS = 60_000;
-
-vi.setConfig({ testTimeout: TYPE_CHECK_TIMEOUT_IN_MILLISECONDS });
 
 const ruleTester = new RuleTester();
 

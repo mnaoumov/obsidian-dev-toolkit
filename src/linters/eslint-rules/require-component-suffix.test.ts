@@ -19,10 +19,6 @@ import {
   requireComponentSuffix
 } from './require-component-suffix.ts';
 
-const TYPE_CHECK_TIMEOUT_IN_MILLISECONDS = 60_000;
-
-vi.setConfig({ testTimeout: TYPE_CHECK_TIMEOUT_IN_MILLISECONDS });
-
 RuleTester.afterAll = afterAll;
 RuleTester.describe = describe;
 RuleTester.it = it;
