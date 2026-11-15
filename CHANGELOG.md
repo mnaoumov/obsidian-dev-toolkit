@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 12.0.0
+
+This release has 1 breaking change and 2 documentation changes.
+
+### Breaking changes
+
+- **linters:** lint the demo vault's setup scripts as source
+
+### Documentation
+
+- link the `stylelint` config source to its `npm` page
+- keep a backslash out of the vault registry summary
+
 ## 11.0.0
 
 This release has 1 breaking change and 4 new features. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
