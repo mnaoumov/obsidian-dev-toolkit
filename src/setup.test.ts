@@ -13,7 +13,8 @@ import {
 
 import { setup } from './setup.ts';
 
-const { mockSetupGeneric } = vi.hoisted(() => ({
+const { mockRestoreNodeTextCodecGlobals, mockSetupGeneric } = vi.hoisted(() => ({
+  mockRestoreNodeTextCodecGlobals: vi.fn(),
   mockSetupGeneric: vi.fn()
 }));
 
@@ -21,9 +22,16 @@ vi.mock('@mnaoumov/typescript-test-toolkit/setup', () => ({
   setup: mockSetupGeneric
 }));
 
+vi.mock('./node-text-codec-globals.ts', () => ({
+  restoreNodeTextCodecGlobals: mockRestoreNodeTextCodecGlobals
+}));
+
 describe('setup', () => {
-  it('should register the Obsidian reset before handing the hooks to the generic setup', () => {
+  it('should restore the text codecs, then register the Obsidian reset before handing the hooks to the generic setup', () => {
     const order: string[] = [];
+    mockRestoreNodeTextCodecGlobals.mockImplementation(() => {
+      order.push('text codecs');
+    });
     const beforeEach = vi.fn<HookRegistrar>(() => {
       order.push('obsidian beforeEach');
     });
@@ -34,7 +42,7 @@ describe('setup', () => {
     const params = { afterAll: noop, afterEach: noop, beforeEach };
     setup(params);
 
-    expect(order).toEqual(['obsidian beforeEach', 'generic setup']);
+    expect(order).toEqual(['text codecs', 'obsidian beforeEach', 'generic setup']);
     expect(mockSetupGeneric).toHaveBeenCalledWith(params);
   });
 
