@@ -45,7 +45,10 @@ const config = defineLibraryVitestConfig({
         include: ['src/**/*.test.ts'],
         name: 'unit-tests',
         server: SHARED_SERVER,
-        setupFiles: []
+        setupFiles: [],
+        // Several cases do real work (a bundler transform, a whole demo vault): under 5 s idle, past 9 s under a
+        // loaded bulk run, where the default 5 s failed the release preflight on a different case each run.
+        testTimeout: BIG_TIMEOUT_IN_MILLISECONDS
       }
     },
     {
