@@ -82,6 +82,18 @@ beforeAll(() => {
       });\n
     `
   );
+  // `jest-environment-jsdom` has no `TextEncoder` / `TextDecoder` of its own, and an `obsidian-lib` plugin's `onload`
+  // encodes text; this package's setup supplies Node's.
+  writeFixtureFile(
+    'src/text-codec.test.ts',
+    dedent`
+      import { expect, it } from '@jest/globals';
+
+      it('has Node text codecs', () => {
+        expect(new TextDecoder().decode(new TextEncoder().encode('Hello'))).toBe('Hello');
+      });\n
+    `
+  );
   // Must never run: integration tests belong to obsidian-integration-testing.
   writeFixtureFile('src/vault.integration.test.ts', 'throw new Error(\'jest ran an integration test\');\n');
   process.chdir(fixtureFolder);

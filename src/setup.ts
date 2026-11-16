@@ -15,15 +15,19 @@ import { ObsidianLibrary } from '@mnaoumov/obsidian-lib/library';
 import { resetObsidianLibState } from '@mnaoumov/obsidian-lib/obsidian-lib-state';
 import { setup as setupGeneric } from '@mnaoumov/typescript-test-toolkit/setup';
 
+import { restoreNodeTextCodecGlobals } from './node-text-codec-globals.ts';
+
 /**
  * Registers the per-test setup for an Obsidian plugin's tests with a test framework's lifecycle hooks.
  *
  * The Obsidian reset is registered first, so it runs before the generic one in every `beforeEach`, in the
- * same order the two ran in before they were split.
+ * same order the two ran in before they were split. Before either, it gives the environment Node's `TextEncoder` and
+ * `TextDecoder` when it lacks them, as `jest-environment-jsdom` does.
  *
  * @param params - The lifecycle hook registrars to wire setup into.
  */
 export function setup(params: SetupParams): void {
+  restoreNodeTextCodecGlobals();
   params.beforeEach(() => {
     resetObsidianLibState();
     ObsidianLibrary.resetToDefault();
