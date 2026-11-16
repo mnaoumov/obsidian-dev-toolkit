@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 12.1.0
+
+This release has 2 new features. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
+
+### New
+
+- **deps:** admit @mnaoumov/obsidian-lib 11 as a peer
+- **linters:** name registerDisposable in no-direct-dispose-call reports
+
 ## 12.0.0
 
 This release has 1 breaking change and 2 documentation changes.
