@@ -33,6 +33,7 @@ import type { ObsidianRuntimeFloor } from '../obsidian-runtime.ts';
 import { ObsidianPluginRepoPaths } from '../obsidian-plugin-repo-paths.ts';
 import { jsonPlugin } from './eslint-rules/manifest-helpers.ts';
 import { obsidianDevToolkitPlugin } from './eslint-rules/obsidian-dev-toolkit-plugin.ts';
+import { warnOnEslintMajorMismatch } from './obsidianmd-eslint-nesting.ts';
 import { stripOwnedRuleCustomMessageEntries } from './obsidianmd-rule-custom-message.ts';
 import { getRuntimeCompatibilityConfig } from './runtime-compatibility.ts';
 
@@ -82,6 +83,9 @@ const DEMO_VAULT_SETUP_FILES = ['demoSetup.ts', 'startup.ts'].map((fileName) => 
  * @returns The ESLint configurations.
  */
 export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): Linter.Config[] {
+  // A nested ESLint of another major silently drops core rules from `obsidianmd.configs.recommended`.
+  warnOnEslintMajorMismatch();
+
   const context = createDefaultEslintConfigContext();
   // Before `editContext`, so a project can take them out again. Without this they match no config object at all.
   context.sourceFiles.push(...DEMO_VAULT_SETUP_FILES);
