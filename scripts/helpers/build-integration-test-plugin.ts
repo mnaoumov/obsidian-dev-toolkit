@@ -28,7 +28,7 @@ import {
   resolve
 } from 'node:path';
 
-import { assertMobileLoadableBundle } from './assert-mobile-loadable-bundle.ts';
+import { assertMobileLoadableBundle } from '../../src/bundlers/obsidian-plugin-mobile-load-check.ts';
 
 const PROJECT_ROOT = join(import.meta.dirname, '../..');
 const PLUGIN_DIR = join(PROJECT_ROOT, 'integration-test-plugin');

@@ -35,6 +35,16 @@ So a production build keeps every line of `main.js` near `lineLimit` characters,
 
 It costs one byte per line it adds: about 0.1%, or 220 bytes on the 225 KB `React` build. Pass `lineLimit: false` to leave the lines as the minifier wrote them.
 
+## Mobile load check
+
+A plugin whose top level reaches a Node builtin loads fine on desktop and dies on a phone before any of its code runs, with nothing but "failed to load" to go on. A dependency that opens with `const { randomFillSync } = require('crypto')` is enough: Obsidian mobile's `require` returns `undefined` for every Node builtin.
+
+So every adapter loads a production `main.js` in a `node:vm` context shaped like Obsidian mobile before the build succeeds, and fails the build with the error and its leading stack frames when the top level throws there. In that context `require` returns `undefined` for a Node builtin and a permissive stand-in for `obsidian`, `electron` and the CodeMirror packages, `process` is renderer-shaped, and the globals a webview and Obsidian provide (`window`, `document`, `HTMLElement`, `localStorage`, `URL`, `TextEncoder`, `moment`, `createDiv`...) are present, while Node's own, such as `Buffer`, are not. Nothing is called, so code that reaches a Node builtin only inside a function, the shape a cross-platform plugin needs, passes.
+
+Executing the bundle rather than scanning its text means it reports what really throws, whatever its spelling, and nothing that does not.
+
+The check is skipped when `manifest.json` declares `"isDesktopOnly": true`, and for a development build. Pass `shouldCheckMobileLoad: false` only when it fails a plugin on a global a phone does have, and report that as a bug.
+
 ## esbuild
 
 For local TypeScript breakpoints, [start Obsidian for debugging and attach to the development build](/obsidian-dev-toolkit/guides/debugging/).

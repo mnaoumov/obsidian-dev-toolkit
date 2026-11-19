@@ -50,6 +50,7 @@ import {
   resolveOptionalPeer
 } from './obsidian-plugin-features.ts';
 import { limitMainJsLineLength } from './obsidian-plugin-line-limit.ts';
+import { assertMainJsLoadsOnMobile } from './obsidian-plugin-mobile-load-check.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
 
 /**
@@ -229,6 +230,7 @@ export class ObsidianPluginWebpackPlugin implements WebpackPluginInstance {
       // Webpack's default minimizer, `terser`, writes a bundle on a few long lines, so it is re-printed onto shorter ones.
       await limitMainJsLineLength(buildContext);
       await completeObsidianPluginDistFolder(buildContext);
+      await assertMainJsLoadsOnMobile(buildContext);
       await deployToObsidianPluginsFolder(buildContext);
     });
   }

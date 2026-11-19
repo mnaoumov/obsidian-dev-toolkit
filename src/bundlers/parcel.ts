@@ -60,6 +60,7 @@ import {
   isPostcssNeeded
 } from './obsidian-plugin-features.ts';
 import { limitMainJsLineLength } from './obsidian-plugin-line-limit.ts';
+import { assertMainJsLoadsOnMobile } from './obsidian-plugin-mobile-load-check.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
 
 /**
@@ -203,6 +204,7 @@ export async function buildObsidianPluginWithParcel(params: BuildObsidianPluginW
       const { buildTime, bundleGraph } = await bundler.run();
       // `swc`, parcel's minifier, has no line limit, so the minified `main.js` is re-printed onto shorter lines.
       await limitMainJsLineLength(buildContext);
+      await assertMainJsLoadsOnMobile(buildContext);
       console.warn(`Built ${String(bundleGraph.getBundles().length)} bundle(s) with parcel in ${String(buildTime)} ms.`);
       return CliTaskResult.Success();
     } catch (error) {

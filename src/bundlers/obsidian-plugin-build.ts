@@ -165,6 +165,11 @@ export interface ObsidianPluginBuildContext {
    * The ECMAScript edition required by the build, when explicitly selected.
    */
   readonly runtimeFloor?: ObsidianRuntimeFloor;
+
+  /**
+   * Whether a production `main.js` is loaded in a stand-in for Obsidian mobile before the build succeeds.
+   */
+  readonly shouldCheckMobileLoad: boolean;
 }
 
 /**
@@ -203,6 +208,15 @@ export interface ObsidianPluginDeploymentOptions {
    * @default `es2022`
    */
   readonly runtimeFloor?: ObsidianRuntimeFloor;
+
+  /**
+   * Whether a production `main.js` is loaded in a `node:vm` stand-in for Obsidian mobile, failing the build when its
+   * top level throws there (a Node builtin unpacked at load time, a `Buffer` read, ...). Skipped when `manifest.json`
+   * declares `"isDesktopOnly": true`. Turn it off only when the check is wrong about a global a phone does have.
+   *
+   * @default `true`
+   */
+  readonly shouldCheckMobileLoad?: boolean;
 }
 
 /**
@@ -391,6 +405,7 @@ export async function resolveObsidianPluginBuildContext(params: ResolveObsidianP
     obsidianConfigFolder: params.obsidianConfigFolder ?? obsidianPluginBuilderEnv.OBSIDIAN_CONFIG_FOLDER ?? '',
     pluginName: packageJson.name ?? '(unknown)',
     reload: params.reload ?? 'hot-reload-plugin',
-    ...(params.runtimeFloor !== undefined && { runtimeFloor: params.runtimeFloor })
+    ...(params.runtimeFloor !== undefined && { runtimeFloor: params.runtimeFloor }),
+    shouldCheckMobileLoad: params.shouldCheckMobileLoad ?? true
   };
 }
