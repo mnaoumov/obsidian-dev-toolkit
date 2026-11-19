@@ -22,4 +22,14 @@ describe('defineEslintConfigs', () => {
     const config: unknown = await eslint.calculateConfigForFile(filePath);
     expect(config).toHaveProperty(['rules', 'typescript-dev-toolkit/no-direct-dispose-call'], [2, { registerHelperName: 'registerDisposable' }]);
   }, CONFIG_TIMEOUT_IN_MILLISECONDS);
+
+  it.each([
+    ['demo-vault/_assets/CodeScriptToolkit/demoSetup.ts', 0],
+    ['demo-vault/_assets/CodeScriptToolkit/startup.ts', 0],
+    ['src/main.ts', 2]
+  ])('sets prefer-dedent for %s to severity %i', async (filePath, severity) => {
+    const eslint = new ESLint({ overrideConfig: defineEslintConfigs(), overrideConfigFile: true });
+    const config: unknown = await eslint.calculateConfigForFile(filePath);
+    expect(config).toHaveProperty(['rules', 'typescript-dev-toolkit/prefer-dedent', 0], severity);
+  }, CONFIG_TIMEOUT_IN_MILLISECONDS);
 });

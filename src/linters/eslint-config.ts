@@ -125,6 +125,15 @@ function getDemoVaultSetupConfigs(): Linter.Config[] {
          */
         'import-x/no-extraneous-dependencies': 'off',
         'import/no-extraneous-dependencies': 'off',
+        /*
+         * The rule asks for, and its fix inserts, `import dedent from 'dedent'`. These files run through
+         * `CodeScript Toolkit` from a vault copied out of the repository (the release zip, the buttons suite's temp
+         * vault), where no `node_modules` holds `dedent`, so that import fails to load the whole setup module and every
+         * demo button with it. The other import-inserting fixes here are safe: `prefer-noop-async` and
+         * `prefer-component-ex` import from `@mnaoumov/typescript-lib` and `@mnaoumov/obsidian-lib`, which
+         * `CodeScript Toolkit` serves itself.
+         */
+        'typescript-dev-toolkit/prefer-dedent': 'off',
         // `CodeScriptToolkit` is the vault's script folder, named in the plugin's settings and in every demo note.
         'unicorn/filename-case': 'off'
       }
