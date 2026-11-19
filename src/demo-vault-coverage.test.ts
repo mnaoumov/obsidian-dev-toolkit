@@ -22,6 +22,7 @@ import {
 } from 'vitest';
 
 import {
+  DEFAULT_DEMO_VAULT_COVERAGE_TIMEOUT_IN_MILLISECONDS,
   DemoVaultCoverageChecker,
   registerDemoVaultCoverageSuite
 } from './demo-vault-coverage.ts';
@@ -234,6 +235,39 @@ describe('a Try it section without a code button, as a warning', () => {
   });
 
   registerDemoVaultCoverageSuite({ authoring: { tryItCodeButtons: 'warn' }, rootFolder: manualTryItRoot });
+});
+
+// The suite sets its own timeout, so a large vault on a busy machine does not fail its first check at
+// `vitest`'s 5 s default: the default one, and an explicit one when the caller passes it.
+describe('the suite timeout, by default', () => {
+  const timeouts: number[] = [];
+
+  beforeEach(({ task }) => {
+    timeouts.push(task.timeout);
+  });
+
+  afterAll(() => {
+    expect(timeouts.length).toBeGreaterThan(0);
+    expect(new Set(timeouts)).toEqual(new Set([DEFAULT_DEMO_VAULT_COVERAGE_TIMEOUT_IN_MILLISECONDS]));
+  });
+
+  registerDemoVaultCoverageSuite({ rootFolder: suiteRoot });
+});
+
+describe('the suite timeout, when given', () => {
+  const EXPLICIT_TIMEOUT_IN_MILLISECONDS = 123_000;
+  const timeouts: number[] = [];
+
+  beforeEach(({ task }) => {
+    timeouts.push(task.timeout);
+  });
+
+  afterAll(() => {
+    expect(timeouts.length).toBeGreaterThan(0);
+    expect(new Set(timeouts)).toEqual(new Set([EXPLICIT_TIMEOUT_IN_MILLISECONDS]));
+  });
+
+  registerDemoVaultCoverageSuite({ rootFolder: suiteRoot, timeoutInMilliseconds: EXPLICIT_TIMEOUT_IN_MILLISECONDS });
 });
 
 afterAll(() => {
