@@ -124,6 +124,8 @@ The `dprint.json` template sets `"useBraces": "always"`, so `dprint` keeps the b
 
 The Obsidian layer of the `ESLint` configuration is `defineEslintConfigs` (`@mnaoumov/obsidian-dev-toolkit/linters/eslint-config`): the generic configuration plus `eslint-plugin-obsidianmd`'s recommended rules, the Node-builtins exemption for `src/**/desktop-*.ts`, the integration-test rules, and lint rules for `manifest.json` and `LICENSE`. Its own rules are registered under `obsidian-dev-toolkit`, so a disable comment names one as `obsidian-dev-toolkit/<rule>`. The `markdownlint` layer is `obsidianMarkdownlintCli2Config` (`@mnaoumov/obsidian-dev-toolkit/linters/markdownlint-cli2-config`).
 
+`eslint-plugin-obsidianmd` builds the core half of its recommended rules from the `ESLint` it resolves from its own folder. When `npm` nests an older `ESLint` major under it than the one the project runs, the core rules only the newer major recommends (such as `preserve-caught-error`) are silently left out of every lint. So `defineEslintConfigs` compares the two majors when it loads and warns on a mismatch. The fix it names is an `overrides` entry in `package.json`, `"eslint": "$eslint"`, followed by `npm install`; `npm dedupe` cannot move it.
+
 ### Lint CSS for Theme Tokens Only
 
 `obsidianTokenOnlyStylelintConfig` (`@mnaoumov/obsidian-dev-toolkit/linters/stylelint-config`) is an opt-in `stylelint` configuration that keeps a plugin's CSS on the theme's variables, so the plugin follows whatever theme the user runs:
