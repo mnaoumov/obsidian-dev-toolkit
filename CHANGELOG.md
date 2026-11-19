@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## 12.2.0
+
+This release has 1 new feature, 2 fixes and 2 documentation changes.
+
+### New
+
+- **deps:** admit `obsidian-integration-testing` 18 as the optional peer
+
+### Fixed
+
+- **eslint-config:** stop asking demo-vault setup scripts for a `dedent` import
+- **test-runners:** give `Jest`'s `jsdom` environment Node's `TextEncoder` and `TextDecoder`
+
+### Documentation
+
+- **demo-vault:** document the `CodeScript Toolkit` script trust the helper seeds
+- **readme:** list obsidian-plugin-dev-kit under See also
+
 ## 12.1.0
 
 This release has 2 new features. 1 maintenance commit (tests, build, CI, refactoring, dependencies) is not listed.
