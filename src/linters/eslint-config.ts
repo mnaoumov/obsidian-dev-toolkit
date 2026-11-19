@@ -478,6 +478,21 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       rules: {
         'obsidian-dev-toolkit/prefer-component-ex': 'error'
       }
+    },
+    {
+      /*
+       * A member read off the bare global `window` reads the MAIN window, never the popout the code may run for, so it
+       * is pointed to `activeWindow`. A binding named `window` in the file, the timers, `open` and the listener methods
+       * are left alone. Tests are exempt: they run outside a popout.
+       */
+      files: context.sourceFiles,
+      ignores: context.testFiles,
+      plugins: {
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+      },
+      rules: {
+        'obsidian-dev-toolkit/prefer-active-window': 'error'
+      }
     }
   ]);
 }
