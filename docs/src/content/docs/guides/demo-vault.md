@@ -270,6 +270,8 @@ registerDemoVaultCoverageSuite({ rootFolder: getRootFolder() ?? process.cwd() })
 
 It then runs every authoring check, plus a guard that the vault is not empty — with no notes to read, the authoring checks would pass by having nothing to look at. Omit the reflection specs, never the suite: the authoring rules apply to every vault, whatever the plugin exposes.
 
+Every check reads the whole vault, and the first read walks it, runs `git check-ignore` and reads every note, so the suite reads it once in a `beforeAll` and gives its tests and that hook a 60 s timeout (`DEFAULT_DEMO_VAULT_COVERAGE_TIMEOUT_IN_MILLISECONDS`) instead of `vitest`'s 5 s default, which a large vault on a busy machine overran. Pass `timeoutInMilliseconds` to change it.
+
 ## Clicking every button
 
 The coverage suite reads the notes; it never runs them. A button whose `require('/demoSetup.ts')` path is wrong, or that calls an API which has since changed shape, fails **at click time** — `lint:md` reads the markdown, the coverage suite checks the conventions, and neither executes anything, so nothing in a normal gate run ever finds out. `registerDemoVaultButtonSuite` (from `@mnaoumov/obsidian-dev-toolkit/demo-vault-buttons`) is the gate that does: it opens every note of the in-repo `demo-vault/` in a real Obsidian, clicks each `code-button`, and fails with the note, the caption and `CodeScript Toolkit`'s own captured error for any button that reports an error or never reports at all.

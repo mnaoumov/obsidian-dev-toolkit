@@ -97,6 +97,7 @@ import {
   readFileSync
 } from 'node:fs';
 import {
+  beforeAll,
   describe,
   expect,
   it
@@ -510,7 +511,20 @@ export interface RegisterDemoVaultCoverageSuiteParams {
    * The absolute path of the plugin repo root. Callers typically pass `getRootFolder() ?? process.cwd()`.
    */
   readonly rootFolder: string;
+
+  /**
+   * The per-test and per-hook timeout of the suite, in milliseconds, or `undefined` for
+   * {@link DEFAULT_DEMO_VAULT_COVERAGE_TIMEOUT_IN_MILLISECONDS}. Every check reads the whole vault, and the
+   * first read walks it and spawns `git`, so `vitest`'s 5 s default is too tight for a large vault on a busy
+   * machine.
+   */
+  readonly timeoutInMilliseconds?: number;
 }
+
+/**
+ * The default per-test and per-hook timeout of {@link registerDemoVaultCoverageSuite}, in milliseconds.
+ */
+export const DEFAULT_DEMO_VAULT_COVERAGE_TIMEOUT_IN_MILLISECONDS = 60_000;
 
 /**
  * What a note's inline `obsidian-dev-toolkit-disable…` directives allow, and what is wrong with them.
@@ -913,8 +927,16 @@ export function registerDemoVaultCoverageSuite(params: RegisterDemoVaultCoverage
   }));
   const startNote = params.authoring?.startNote ?? DEFAULT_START_NOTE;
   const tryItCodeButtons = params.authoring?.tryItCodeButtons ?? DEFAULT_TRY_IT_CODE_BUTTONS_SEVERITY;
+  const timeout = params.timeoutInMilliseconds ?? DEFAULT_DEMO_VAULT_COVERAGE_TIMEOUT_IN_MILLISECONDS;
 
-  describe('demo-vault coverage', () => {
+  describe('demo-vault coverage', { timeout }, () => {
+    // The first read of the vault walks it, spawns `git check-ignore` and reads every note; the checks then
+    // share the cached result. Reading it here charges that cost to a hook named for it, rather than to
+    // whichever check happens to run first, which under load failed `opens every note with an H1` at 5 s.
+    beforeAll(() => {
+      checker.collectNotes();
+    }, timeout);
+
     for (const spec of params.interfaces ?? []) {
       it(`demonstrates every ${spec.interfaceName} ${spec.kind}`, () => {
         const members = checker.getInterfaceMembers(spec);
