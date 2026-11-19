@@ -44,6 +44,7 @@ import {
   OBSIDIAN_PLUGIN_EXTERNALS,
   resolveObsidianPluginBuildContext
 } from '../obsidian-plugin-build.ts';
+import { assertMainJsLoadsOnMobile } from '../obsidian-plugin-mobile-load-check.ts';
 import { copyToObsidianPluginsFolderPlugin } from './copy-to-obsidian-plugins-folder-plugin.ts';
 import {
   getEsbuildFeatureBuildOptions,
@@ -218,6 +219,8 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
 
   const esbuildContext = await context(buildOptions);
   const result = await invokeEsbuild(esbuildContext, isProductionBuild);
+  // Runs once the bundle is written; a development build is never checked.
+  await assertMainJsLoadsOnMobile(buildContext);
   if (!isProductionBuild) {
     watchNodeModulesAndRestart(params, esbuildContext);
   }

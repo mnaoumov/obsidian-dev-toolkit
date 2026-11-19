@@ -38,6 +38,7 @@ import {
 } from './obsidian-plugin-build.ts';
 import { getJsxImportSource } from './obsidian-plugin-features.ts';
 import { limitMainJsLineLength } from './obsidian-plugin-line-limit.ts';
+import { assertMainJsLoadsOnMobile } from './obsidian-plugin-mobile-load-check.ts';
 import { deployToObsidianPluginsFolder } from './obsidian-plugins-folder-deployment.ts';
 import {
   createRollupCompatibleFeaturePlugin,
@@ -221,6 +222,7 @@ export function obsidianPluginRollup(options: ObsidianPluginRollupOptions = {}):
       // Rollup does not minify, but a consumer's minifier plugin writes the few long lines the release scanner reports.
       await limitMainJsLineLength(buildContext);
       await completeObsidianPluginDistFolder(buildContext);
+      await assertMainJsLoadsOnMobile(buildContext);
       await deployToObsidianPluginsFolder(buildContext);
     }
   };

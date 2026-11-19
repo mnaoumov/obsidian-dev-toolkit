@@ -259,8 +259,13 @@ if you want to view the source, please visit the github repository of this plugi
         mainJsPath: join(resolve(getRootFolder(), 'dist/build'), 'main.js'),
         obsidianConfigFolder: '',
         pluginName: 'my-plugin',
-        reload: 'hot-reload-plugin'
+        reload: 'hot-reload-plugin',
+        shouldCheckMobileLoad: true
       });
+    });
+    it('passes a turned-off mobile load check to adapters', async () => {
+      const context = await resolveObsidianPluginBuildContext({ mode: BuildMode.Production, shouldCheckMobileLoad: false });
+      expect(context.shouldCheckMobileLoad).toBe(false);
     });
 
     it('takes the output folder and the Obsidian config folder from the options', async () => {

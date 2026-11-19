@@ -23,7 +23,8 @@ const PRODUCTION_CONTEXT: ObsidianPluginBuildContext = {
   mainJsPath: '/project/dist/build/main.js',
   obsidianConfigFolder: '',
   pluginName: 'my-plugin',
-  reload: 'hot-reload-plugin'
+  reload: 'hot-reload-plugin',
+  shouldCheckMobileLoad: true
 };
 
 const DEVELOPMENT_CONTEXT: ObsidianPluginBuildContext = {
