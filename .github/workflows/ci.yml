@@ -4,6 +4,7 @@ name: CI
 # build, ESLint, the over-exposure check and the unit tests under their 100% coverage gate. Then the integration tests,
 # which build a fixture plugin with every bundler the toolkit supports and load each result as Obsidian would. It is the same code
 # `npm run version` runs as its release preflight, so a green run here is a release that will not abort halfway.
+# Beside it, the `actionlint` job lints every workflow with a pinned, checksum-verified `actionlint`.
 
 on:
   push:
@@ -39,3 +40,31 @@ jobs:
 
       - name: Integration tests
         run: npm run test:integration
+
+  # Lints every workflow, the reusable ones plugins call included: a broken reusable workflow breaks every caller on its
+  # next bump. Re-implemented after obsidian-plugin-dev-kit's ci.yml (v0.4.0, MIT). A pinned release, not `curl | sh`
+  # or `go run ...@latest`: the archive is checked against its SHA-256 before it is unpacked. Bump the version and the
+  # checksum together (the checksum is the linux_amd64 line of the release's actionlint_<version>_checksums.txt);
+  # Dependabot does not update them.
+  actionlint:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Lint the workflows
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl --fail --silent --show-error --location --output "$archive" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum --check --strict -
+          mkdir "$RUNNER_TEMP/actionlint"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/actionlint" actionlint
+          "$RUNNER_TEMP/actionlint/actionlint" -color
