@@ -20,6 +20,7 @@ import type { ValidatePluginReleaseOptions } from './plugin-release-checks.ts';
 import {
   formatPluginCheckFindings,
   hasPluginCheckErrors,
+  validatePackageVersions,
   validatePluginManifest,
   validatePluginRelease,
   validateReleaseAssets,
@@ -117,6 +118,14 @@ describe('validatePluginManifest', () => {
     expect(ruleIds({ ...VALID_MANIFEST, description: 'Fixes the tabs nicely?', name: undefined })).toEqual(['manifest-missing-required-field']);
   });
 
+  // CSpell:ignore Tagé
+  it('should warn on a description starting with the name only when the name is a whole word there', () => {
+    expect(ruleIds({ ...VALID_MANIFEST, description: 'Tagging notes made quick.', name: 'Tag' })).toEqual([]);
+    expect(ruleIds({ ...VALID_MANIFEST, description: 'Tagé notes made quick.', name: 'Tag' })).toEqual([]);
+    expect(ruleIds({ ...VALID_MANIFEST, description: 'Tag notes made quick.', name: 'Tag' })).toEqual(['manifest-description-starts-with-name']);
+    expect(ruleIds({ ...VALID_MANIFEST, description: 'Tag: notes made quick.', name: 'Tag' })).toEqual(['manifest-description-starts-with-name']);
+  });
+
   it('should check minAppVersion only when it is a non-empty string', () => {
     expect(ruleIds({ ...VALID_MANIFEST, minAppVersion: 'latest' })).toEqual(['manifest-invalid-semver']);
     expect(ruleIds({ ...VALID_MANIFEST, minAppVersion: '' })).toEqual([]);
@@ -197,6 +206,32 @@ describe('validateReleaseTag', () => {
 
   it('should only warn on a pre-release tag when there is no manifest version', () => {
     expect(validateReleaseTag('1.2.3-beta.1', undefined)).toEqual([expect.objectContaining({ level: 'warning', ruleId: 'release-tag-not-numeric' })]);
+  });
+});
+
+describe('validatePackageVersions', () => {
+  const LOCK = { packages: { '': { version: '1.2.3' } }, version: '1.2.3' };
+
+  it('should pass when every version present is the manifest version', () => {
+    expect(validatePackageVersions({ packageJson: { version: '1.2.3' }, packageLockJson: LOCK }, '1.2.3')).toEqual([]);
+    expect(validatePackageVersions({ packageJson: undefined, packageLockJson: undefined }, '1.2.3')).toEqual([]);
+    expect(validatePackageVersions({ packageJson: {}, packageLockJson: { packages: 'x' } }, '1.2.3')).toEqual([]);
+    expect(validatePackageVersions({ packageJson: 1, packageLockJson: { packages: { '': 1 } } }, '1.2.3')).toEqual([]);
+    expect(validatePackageVersions({ packageJson: { version: '1.0.0' }, packageLockJson: LOCK }, null)).toEqual([]);
+  });
+
+  it('should report each version that differs', () => {
+    const findings = validatePackageVersions(
+      { packageJson: { version: '1.2.2' }, packageLockJson: { packages: { '': { version: '1.2.1' } }, version: '1.2.0' } },
+      '1.2.3',
+      'manifest-beta.json'
+    );
+    expect(findings.map((finding) => finding.ruleId)).toEqual(['package-version-mismatch', 'package-lock-version-mismatch', 'package-lock-version-mismatch']);
+    expect(findings.every((finding) => finding.level === 'error')).toBe(true);
+    expect(findings[0]?.message).toBe(
+      'package.json version is "1.2.2" but manifest-beta.json version is "1.2.3". Make them equal: the release tag is the manifest version, and the release sets all of them.'
+    );
+    expect(findings[2]?.message).toContain('package-lock.json packages[""].version is "1.2.1"');
   });
 });
 
@@ -287,6 +322,31 @@ describe('validatePluginRelease', () => {
     mockGetRootFolder.mockReturnValue(rootFolder);
     await writeJson('manifest.json', VALID_MANIFEST);
     expect(await validatePluginRelease()).toEqual([]);
+  });
+
+  it('should check that package.json and package-lock.json carry the manifest version', async () => {
+    await writeJson('manifest.json', VALID_MANIFEST);
+    await writeJson('package.json', { version: '1.2.3' });
+    await writeJson('package-lock.json', { packages: { '': { version: '1.2.3' } }, version: '1.2.3' });
+    expect(await releaseRuleIds({ tag: '1.2.3' })).toEqual([]);
+
+    await writeJson('package-lock.json', { packages: { '': { version: '1.2.2' } }, version: '1.2.2' });
+    expect(await releaseRuleIds()).toEqual(['package-lock-version-mismatch', 'package-lock-version-mismatch']);
+    expect(await releaseRuleIds({ shouldCheckVersion: false })).toEqual(['package-lock-version-mismatch', 'package-lock-version-mismatch']);
+  });
+
+  it('should compare a pre-release package version with manifest-beta.json', async () => {
+    await writeJson('manifest.json', VALID_MANIFEST);
+    await writeJson('package.json', { version: '1.2.4-beta.1' });
+    expect(await releaseRuleIds()).toEqual(['package-version-mismatch']);
+
+    await writeJson('manifest-beta.json', { ...VALID_MANIFEST, version: '1.2.4-beta.1' });
+    expect(await releaseRuleIds()).toEqual([]);
+    expect(await releaseRuleIds({ manifestFile: 'manifest-beta.json' })).toEqual([]);
+
+    await writeJson('manifest-beta.json', { ...VALID_MANIFEST, version: '1.2.4-beta.0' });
+    const findings = await validatePluginRelease({ rootFolder });
+    expect(findings).toEqual([expect.objectContaining({ message: expect.stringContaining('but manifest-beta.json version is "1.2.4-beta.0"') as string })]);
   });
 
   it('should check versions.json, the tag and the assets', async () => {

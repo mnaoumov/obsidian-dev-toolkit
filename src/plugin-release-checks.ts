@@ -16,6 +16,10 @@
  * every plugin repository; the check is re-implemented after `obsidian-plugin-validator`'s
  * `lib/check-manifest.mjs` (MIT).
  *
+ * `package.json`'s `version` and `package-lock.json`'s root `version` and `packages[""].version` must equal the
+ * manifest's, so the tag cut from the manifest names the package that was built; re-implemented after
+ * `obsidian-plugin-dev-kit`'s `src/release/version-rules.ts` (v0.4.0, MIT).
+ *
  * As in the action, an ID already listed in the directory (`community-plugins.json`) for the same repository is exempt
  * from the banned-word rule, since a listed ID can never change. The directory is fetched only when that rule fires.
  */
@@ -55,6 +59,21 @@ export interface PluginCheckFinding {
  * The level of a {@link PluginCheckFinding}.
  */
 export type PluginCheckFindingLevel = 'error' | 'warning';
+
+/**
+ * The parsed npm package files {@link validatePackageVersions} compares with the manifest.
+ */
+export interface PluginPackageVersionSources {
+  /**
+   * The parsed `package.json`, or `undefined` when there is none.
+   */
+  readonly packageJson: unknown;
+
+  /**
+   * The parsed `package-lock.json`, or `undefined` when there is none.
+   */
+  readonly packageLockJson: unknown;
+}
 
 /**
  * Options for {@link validatePluginManifest}.
@@ -123,6 +142,12 @@ export interface ValidatePluginReleaseOptions extends ValidatePluginManifestOpti
   readonly tag?: string;
 }
 
+interface PackageVersionEntry {
+  readonly label: string;
+  readonly ruleId: string;
+  readonly value: unknown;
+}
+
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
 const NUMERIC_VERSION_REGEX = /^[0-9.]+$/;
 const BETA_MANIFEST_FILE: string = ObsidianPluginRepoPaths.ManifestBetaJson;
@@ -142,6 +167,7 @@ const MIN_ALL_CAPS_LETTERS = 2;
 const GITHUB_REPO_PATH_SEGMENTS = 2;
 const LICENSE_FILE_REGEX = /^license(?:\.(?:md|txt))?$/i;
 const README_FILE_REGEX = /^readme\.md$/i;
+const WORD_CHARACTER_START_REGEX = /^[\p{L}\p{N}_]/u;
 const COMMUNITY_PLUGINS_JSON_URL = 'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json';
 
 /**
@@ -165,6 +191,51 @@ export function formatPluginCheckFindings(findings: readonly PluginCheckFinding[
  */
 export function hasPluginCheckErrors(findings: readonly PluginCheckFinding[]): boolean {
   return findings.some((finding) => finding.level === 'error');
+}
+
+/**
+ * Validates that the npm package files carry the manifest's version: `package.json`'s `version`, and
+ * `package-lock.json`'s root `version` and `packages[""].version`. The release bumps all of them together, so a
+ * difference means one was edited by hand, and the tag, cut from `manifest.json`'s `version`, no longer names the
+ * package that was built. A file or a field that is absent is not checked.
+ *
+ * @param sources - The parsed package files.
+ * @param manifestVersion - The `version` of the manifest, or `null` / `undefined` when it has none, which skips the
+ *   check.
+ * @param manifestLabel - How the manifest is named in a finding.
+ * @returns The findings, empty when every version present is the manifest's.
+ */
+export function validatePackageVersions(
+  sources: PluginPackageVersionSources,
+  manifestVersion: null | string | undefined,
+  manifestLabel = 'manifest.json'
+): PluginCheckFinding[] {
+  if (typeof manifestVersion !== 'string') {
+    return [];
+  }
+
+  const { packageJson, packageLockJson } = sources;
+  const entries: PackageVersionEntry[] = [];
+  if (isRecord(packageJson)) {
+    entries.push({ label: 'package.json version', ruleId: 'package-version-mismatch', value: packageJson['version'] });
+  }
+  if (isRecord(packageLockJson)) {
+    entries.push({ label: 'package-lock.json version', ruleId: 'package-lock-version-mismatch', value: packageLockJson['version'] });
+    const packages = packageLockJson['packages'];
+    const rootPackage = isRecord(packages) ? packages[''] : undefined;
+    if (isRecord(rootPackage)) {
+      entries.push({ label: 'package-lock.json packages[""].version', ruleId: 'package-lock-version-mismatch', value: rootPackage['version'] });
+    }
+  }
+
+  return entries
+    .filter(({ value }) => typeof value === 'string' && value !== manifestVersion)
+    .map(({ label, ruleId, value }) =>
+      error(
+        ruleId,
+        `${label} is "${String(value)}" but ${manifestLabel} version is "${manifestVersion}". Make them equal: the release tag is the manifest version, and the release sets all of them.`
+      )
+    );
 }
 
 /**
@@ -249,6 +320,7 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
       )
     );
   }
+  findings.push(...await validatePackageVersionsFile(rootFolder, manifestFile, manifestVersion));
   if (tag !== undefined) {
     findings.push(...validateReleaseTag(tag, manifestVersion));
   }
@@ -420,7 +492,7 @@ function validateDescription(description: string, name: string): PluginCheckFind
   if (lower === lowerName) {
     findings.push(error('manifest-description-equals-name', 'Plugin description must not be the same as its name.'));
   }
-  if (lowerName.length > 0 && lower.startsWith(lowerName)) {
+  if (lowerName.length > 0 && lower.startsWith(lowerName) && !WORD_CHARACTER_START_REGEX.test(lower.slice(lowerName.length))) {
     findings.push(warning('manifest-description-starts-with-name', 'Plugin description should not start with the plugin name.'));
   }
   if (/\b(?:this plugin|a plugin that|the plugin)\b/i.test(trimmed)) {
@@ -541,6 +613,20 @@ function validateOptionalFields(manifest: Record<string, unknown>): PluginCheckF
     }
   }
   return findings;
+}
+
+async function validatePackageVersionsFile(rootFolder: string, manifestFile: string, manifestVersion: null | string): Promise<PluginCheckFinding[]> {
+  const packageJson = await readJsonFile(join(rootFolder, ObsidianPluginRepoPaths.PackageJson));
+  const packageLockJson = await readJsonFile(join(rootFolder, ObsidianPluginRepoPaths.PackageLockJson));
+  const packageVersion = isRecord(packageJson) ? packageJson['version'] : undefined;
+  if (manifestFile !== BETA_MANIFEST_FILE && typeof packageVersion === 'string' && packageVersion.includes('-')) {
+    // A pre-release bumps the package files and `manifest-beta.json`, leaving `manifest.json` on the last stable version.
+    const betaManifestVersion = readVersion(await readJsonFile(join(rootFolder, BETA_MANIFEST_FILE)));
+    if (betaManifestVersion !== null) {
+      return validatePackageVersions({ packageJson, packageLockJson }, betaManifestVersion, BETA_MANIFEST_FILE);
+    }
+  }
+  return validatePackageVersions({ packageJson, packageLockJson }, manifestVersion, manifestFile);
 }
 
 async function validateRepositoryFiles(rootFolder: string): Promise<PluginCheckFinding[]> {
