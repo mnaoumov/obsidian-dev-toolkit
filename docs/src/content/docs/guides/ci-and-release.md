@@ -13,9 +13,18 @@ The toolkit ships three reusable `GitHub` workflows, so a plugin repository carr
 
 Each call pins the workflow to a release tag of the toolkit, which is the version number with no `v`. The workflows ship from 3.0.0 on. Pin the same version as the toolkit in your `package.json`, so the commands the workflows run (`generate-coverage-badge`, `archive-demo-vault`) are the ones installed. [Dependabot's `github-actions` ecosystem](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) updates the pin along with your other actions.
 
+## How the workflows protect a release
+
+The workflows are written so that code from a plugin's dependencies, which runs during the install and the build, cannot reach a write token or a signing identity:
+
+1. **Every action is pinned to a full commit SHA**, with its version in a comment, so a moved tag cannot change what runs. `Dependabot` updates such pins along with the comment.
+2. **Every job runs on a fixed runner image**, `ubuntu-24.04` by default (the `runs-on` input), so a new `ubuntu-latest` cannot change a build without notice.
+3. **The job that runs plugin code is read-only.** It has `contents: read` and nothing else, and its checkout keeps no credentials. Only a second job, which runs no checkout, no install and no plugin code, holds the write token: in CI it publishes the coverage badge, and in a release it attests and publishes the assets the first job handed over.
+4. **That second job declares no permissions of its own and takes the caller's.** `GitHub` fails a whole run before it starts when a called job asks for more than the caller grants, even if the job would be skipped, so a declared `contents: write` would break every caller that leaves the badge off and grants `read`.
+
 ## Shared inputs
 
-`obsidian-plugin-ci.yml` and `obsidian-plugin-release.yml` set up the job the same way, from the same four inputs:
+`obsidian-plugin-ci.yml` and `obsidian-plugin-release.yml` set up the job the same way, from the same inputs:
 
 | Input | Default | Meaning |
 | --- | --- | --- |
@@ -23,6 +32,7 @@ Each call pins the workflow to a release tag of the toolkit, which is the versio
 | `node-version` | empty | The Node.js version. When it is empty, the version comes from `node-version-file`. |
 | `node-version-file` | `.nvmrc` | The file naming the Node.js version. When it does not exist either, the latest LTS is used. |
 | `install-command` | empty | The install command. When it is empty, the package manager's frozen install is used: `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable` (Yarn Berry, detected by `.yarnrc.yml`) or `yarn install --frozen-lockfile`, or `bun install --frozen-lockfile`. |
+| `runs-on` | `ubuntu-24.04` | The runner label of every job. The attestation workflow takes it too. |
 
 Both set `HUSKY=0`, so the install does not set up Git hooks on the runner.
 
@@ -45,7 +55,7 @@ jobs:
     uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-ci.yml@3.0.0
 ```
 
-The job checks out the repository, installs the dependencies and runs the gate.
+The `ci` job checks out the repository, installs the dependencies and runs the gate. The `badge` job runs only to publish the coverage badge.
 
 | Input | Default | Meaning |
 | --- | --- | --- |
@@ -89,13 +99,18 @@ git push origin HEAD:main
 
 Obsidian reads the plugin's version from `manifest.json` on the default branch and downloads the assets of the release with that tag. A branch pushed before the release exists names a release users cannot install yet, and one whose release job then fails names it for good. The workflow is triggered by the tag alone, so it cannot push the branch for you; that step stays yours. `npm run version` does it in this order by itself.
 
-The job then does the following, in order:
+The read-only `build` job does the following, in order:
 
 1. **Checks the tag.** Obsidian finds a release by the version in the plugin's manifest, so a tag that is not that version is a release that never reaches anyone. The job fails unless the tag is the `version` of `manifest.json`. For a tag with a `-` in it, it compares against `manifest-beta.json` when the plugin has one.
-2. **Builds the plugin** with `build-command`, into `dist/build`. For a tag with a `-` in it, `manifest-beta.json` then replaces the built `manifest.json` when the plugin has one, because [BRAT](https://community.obsidian.md/plugins/obsidian42-brat) reads the `manifest.json` release asset, so that asset must carry the pre-release version.
-3. **Archives the demo vault** when the plugin has a `demo-vault/` folder, with the toolkit's `archive-demo-vault` command, so the release carries the same archive `npm run version` attaches. See [Demo Vault](/obsidian-dev-toolkit/guides/demo-vault/).
-4. **Publishes the release.** Every file in `dist/build` is attached: `main.js`, `manifest.json`, `styles.css` and the demo vault archive. An empty file is left out with a warning, because `GitHub` refuses a 0-byte asset and rolls the whole release back. A tag with a `-` in it makes a pre-release. When the release exists already, its assets are replaced.
-5. **Attests the assets' build provenance** with `actions/attest`, so anyone can check them with `gh attestation verify <file> --repo <owner>/<repo>`.
+2. **Checks the tag is on the default branch.** The tip of the default branch must be an ancestor of the tagged commit. The tag may be ahead of the branch, since the branch is pushed after the release. The job fails for a tag cut from another branch, or when the default branch has commits the tag lacks.
+3. **Builds the plugin** with `build-command`, into `dist/build`. For a tag with a `-` in it, `manifest-beta.json` then replaces the built `manifest.json` when the plugin has one, because [BRAT](https://community.obsidian.md/plugins/obsidian42-brat) reads the `manifest.json` release asset, so that asset must carry the pre-release version.
+4. **Archives the demo vault** when the plugin has a `demo-vault/` folder, with the toolkit's `archive-demo-vault` command, so the release carries the same archive `npm run version` attaches. See [Demo Vault](/obsidian-dev-toolkit/guides/demo-vault/).
+5. **Collects the release.** Every file in `dist/build` is an asset: `main.js`, `manifest.json`, `styles.css` and the demo vault archive. An empty file is left out with a warning, because `GitHub` refuses a 0-byte asset and rolls the whole release back. The release notes are the tag's section of `CHANGELOG.md`: the lines under `## <version>` (also `## [<version>]`, `## v<version>`, or the version followed by a date) up to the next second-level heading. The job fails when `CHANGELOG.md` has no such section. A plugin without a `CHANGELOG.md` gets notes generated from the changes since the previous release.
+
+The `release` job then receives the assets and the notes, with no checkout and no install, and:
+
+1. **Attests the assets' build provenance** with `actions/attest`, so anyone can check them with `gh attestation verify <file> --repo <owner>/<repo>`. This runs before the release is published, so a failed attestation leaves no public release behind.
+2. **Publishes the release.** A tag with a `-` in it makes a pre-release. When a draft release with the tag exists already, its assets are replaced. A published release is never changed: its assets are what users downloaded and what the attestations name, so the job fails and you release a new version instead.
 
 | Input | Default | Meaning |
 | --- | --- | --- |
@@ -127,7 +142,7 @@ jobs:
     uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-attest-release-assets.yml@3.0.0
 ```
 
-It downloads the assets of the published release and attests their build provenance. Its one input, `tag`, names another release to attest; by default it is the release that triggered the run.
+It downloads the assets of the published release and attests their build provenance. Its `tag` input names another release to attest; by default it is the release that triggered the run. Its job asks for exactly the three permissions above.
 
 ## Coverage badge
 

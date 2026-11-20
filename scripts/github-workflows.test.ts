@@ -29,7 +29,6 @@ import { parse } from 'yaml';
 
 interface PublishResult {
   readonly calls: string[];
-  readonly outputs: string;
   readonly result: StepResult;
 }
 
@@ -54,7 +53,11 @@ interface WorkflowInput {
 }
 
 interface WorkflowJob {
-  readonly steps: WorkflowStep[];
+  readonly 'if'?: string;
+  readonly 'needs'?: string;
+  readonly 'permissions'?: Record<string, string>;
+  readonly 'runs-on': string;
+  readonly 'steps': WorkflowStep[];
 }
 
 interface WorkflowStep {
@@ -63,7 +66,7 @@ interface WorkflowStep {
   readonly name: string;
   readonly run?: string;
   readonly uses?: string;
-  readonly with?: Record<string, string>;
+  readonly with?: Record<string, boolean | number | string>;
 }
 
 interface WorkflowTriggers {
@@ -71,6 +74,8 @@ interface WorkflowTriggers {
 }
 
 const WORKFLOWS_FOLDER = resolve(import.meta.dirname, '../.github/workflows');
+const REUSABLE_WORKFLOWS = ['obsidian-plugin-ci.yml', 'obsidian-plugin-release.yml', 'obsidian-plugin-attest-release-assets.yml'];
+const BADGE_CONDITION = 'inputs.coverage-badge && github.event_name == \'push\' && github.ref == format(\'refs/heads/{0}\', github.event.repository.default_branch)';
 const SHARED_SETUP_STEPS = ['Resolve settings', 'Setup pnpm', 'Setup Bun', 'Enable Corepack', 'Setup Node.js'];
 const BASH = findBash();
 // Every case under bash spawns processes, which a full gate slows by an order of magnitude while the other test projects
@@ -116,7 +121,11 @@ function parseOutputs(text: string): Record<string, string> {
 }
 
 async function readWorkflow(name: string): Promise<Workflow> {
-  return parse(await readFile(join(WORKFLOWS_FOLDER, name), 'utf-8')) as Workflow;
+  return parse(await readWorkflowText(name)) as Workflow;
+}
+
+async function readWorkflowText(name: string): Promise<string> {
+  return readFile(join(WORKFLOWS_FOLDER, name), 'utf-8');
 }
 
 // The runner's default shell for `run`.
@@ -134,7 +143,7 @@ function toPosix(path: string): string {
 }
 
 describe('the reusable workflows', () => {
-  it.each(['obsidian-plugin-ci.yml', 'obsidian-plugin-release.yml', 'obsidian-plugin-attest-release-assets.yml'])(
+  it.each(REUSABLE_WORKFLOWS)(
     '%s should be callable, with every input described and defaulted',
     async (name) => {
       const workflow = await readWorkflow(name);
@@ -153,16 +162,58 @@ describe('the reusable workflows', () => {
     for (const name of SHARED_SETUP_STEPS) {
       expect(getStep(release, name), name).toEqual(getStep(ci, name));
     }
-    for (const name of ['package-manager', 'node-version', 'node-version-file', 'install-command']) {
+    for (const name of ['package-manager', 'node-version', 'node-version-file', 'install-command', 'runs-on']) {
       expect(release.on.workflow_call.inputs[name], name).toEqual(ci.on.workflow_call.inputs[name]);
     }
   });
 
   it('should publish the badge only on a push to the default branch', async () => {
     const ci = await readWorkflow('obsidian-plugin-ci.yml');
-    expect(getStep(ci, 'Publish the coverage badge').if).toBe(
-      'inputs.coverage-badge && github.event_name == \'push\' && github.ref == format(\'refs/heads/{0}\', github.event.repository.default_branch)'
-    );
+    expect(getStep(ci, 'Upload the coverage badge').if).toBe(BADGE_CONDITION);
+    expect(ci.jobs['badge']?.if).toBe(BADGE_CONDITION);
+    expect(ci.jobs['badge']?.needs).toBe('ci');
+  });
+
+  describe('hardening', () => {
+    it.each(REUSABLE_WORKFLOWS)('%s should pin every action to a full commit SHA, with its version in a comment', async (name) => {
+      const text = await readWorkflowText(name);
+      const usesLines = text.split('\n').filter((line) => /^\s*(?:-\s+)?uses:/.test(line));
+      expect(usesLines.length).toBeGreaterThan(0);
+      for (const line of usesLines) {
+        expect(line).toMatch(/uses: [\w.-]+\/[\w.-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/);
+      }
+    });
+
+    it.each(REUSABLE_WORKFLOWS)('%s should run every job on the pinned runner input', async (name) => {
+      const workflow = await readWorkflow(name);
+      expect(workflow.on.workflow_call.inputs['runs-on']?.default).toBe('ubuntu-24.04');
+      for (const [jobName, job] of Object.entries(workflow.jobs)) {
+        // eslint-disable-next-line no-template-curly-in-string -- The workflow's own expression syntax.
+        expect(job['runs-on'], jobName).toBe('${{ inputs.runs-on }}');
+      }
+    });
+
+    it.each(REUSABLE_WORKFLOWS)('%s should check out without keeping the credentials', async (name) => {
+      const workflow = await readWorkflow(name);
+      const checkouts = Object.values(workflow.jobs).flatMap((job) => job.steps).filter((step) => step.uses?.startsWith('actions/checkout@') ?? false);
+      for (const checkout of checkouts) {
+        expect(checkout.with?.['persist-credentials']).toBe(false);
+      }
+    });
+
+    it.each([
+      ['obsidian-plugin-ci.yml', 'ci', 'badge'],
+      ['obsidian-plugin-release.yml', 'build', 'release']
+    ])('%s should run the plugin code read-only in %s, and only %s without a checkout or an install', async (name, codeJob, writeJob) => {
+      const workflow = await readWorkflow(name);
+      expect(workflow.jobs[codeJob]?.permissions).toEqual({ contents: 'read' });
+      const writeSteps = workflow.jobs[writeJob]?.steps ?? [];
+      expect(writeSteps.length).toBeGreaterThan(0);
+      for (const step of writeSteps) {
+        expect(step.uses ?? '', step.name).not.toMatch(/^actions\/(?:checkout|setup-node)@/);
+        expect(step.run ?? '', step.name).not.toMatch(/\b(?:npm|npx|pnpm|yarn|bun)\b/);
+      }
+    });
   });
 });
 
@@ -302,71 +353,185 @@ describe.skipIf(BASH === null)('the workflow steps under bash', { timeout: BASH_
     });
   });
 
-  describe('Publish the release', () => {
-    let ghLog = '';
-
-    async function publish(env: Record<string, string>, isExistingRelease = false): Promise<PublishResult> {
+  // Each case spawns a handful of git processes, which take seconds on Windows.
+  describe('Check the tag is on the default branch', { timeout: GIT_TIMEOUT_IN_MILLISECONDS }, () => {
+    async function runBranchCheck(defaultBranch: string): Promise<StepResult> {
       const release = await readWorkflow('obsidian-plugin-release.yml');
-      const binFolder = join(folder, 'bin');
-      await mkdir(binFolder, { recursive: true });
-      // Records every call; `gh release view` succeeds only for an existing release.
-      await writeFile(
-        join(binFolder, 'gh'),
-        `#!/usr/bin/env bash\necho "$*" >> "${toPosix(ghLog)}"\nif [ "$2" = view ]; then exit ${isExistingRelease ? '0' : '1'}; fi\n`,
-        { mode: 0o755 }
-      );
-      const outputPath = join(folder, 'output');
-      await writeFile(outputPath, '');
-      const result = runStep(getRun(release, 'Publish the release'), folder, {
-        DRAFT: 'false',
-        GITHUB_OUTPUT: toPosix(outputPath),
-        PATH: `${binFolder}${delimiter}${process.env['PATH'] ?? ''}`,
-        TAG: '1.2.3',
-        ...env
+      return runStep(getRun(release, 'Check the tag is on the default branch'), folder, {
+        DEFAULT_BRANCH: defaultBranch,
+        GIT_CONFIG_GLOBAL: join(folder, 'gitconfig'),
+        GIT_CONFIG_NOSYSTEM: '1',
+        TAG: '1.2.3'
       });
-      const ghLogText = existsSync(ghLog) ? await readFile(ghLog, 'utf-8') : '';
-      const calls = ghLogText ? ghLogText.trim().split('\n') : [];
-      const outputs = await readFile(outputPath, 'utf-8');
-      return { calls, outputs, result };
+    }
+
+    function git(...$arguments: string[]): string {
+      return spawnSync('git', ['-C', folder, '-c', 'user.name=t', '-c', 'user.email=t@t', ...$arguments], { encoding: 'utf-8' }).stdout.trim();
+    }
+
+    // A main commit, a tagged release commit on top of it, and a commit on another branch.
+    beforeEach(async () => {
+      await writeFile(join(folder, 'gitconfig'), '');
+      git('init', '-q', '-b', 'main');
+      git('commit', '-q', '--allow-empty', '-m', 'base');
+      git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+      git('switch', '-q', '-c', 'other');
+      git('commit', '-q', '--allow-empty', '-m', 'other');
+      git('update-ref', 'refs/remotes/origin/other', 'HEAD');
+      git('switch', '-q', 'main');
+      git('commit', '-q', '--allow-empty', '-m', 'release');
+    }, GIT_TIMEOUT_IN_MILLISECONDS);
+
+    it('should pass a tag ahead of the default branch, or at its tip', async () => {
+      const ahead = await runBranchCheck('main');
+      expect(ahead.status, ahead.output).toBe(0);
+      git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+      const atTip = await runBranchCheck('main');
+      expect(atTip.status, atTip.output).toBe(0);
+    });
+
+    it('should fail a tag that is not built on top of the default branch', async () => {
+      git('update-ref', 'refs/remotes/origin/main', 'refs/remotes/origin/other');
+      const result = await runBranchCheck('main');
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('::error::The tag \'1.2.3\' is not built on top of origin/main');
+    });
+
+    it('should fail when the default branch cannot be found', async () => {
+      const result = await runBranchCheck('trunk');
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('::error::Cannot find the default branch (origin/trunk)');
+    });
+  });
+
+  describe('Collect the release', () => {
+    async function collect(): Promise<StepResult> {
+      const release = await readWorkflow('obsidian-plugin-release.yml');
+      return runStep(getRun(release, 'Collect the release'), folder, { RUNNER_TEMP: toPosix(join(folder, 'runner-temp')), TAG: '1.2.3' });
+    }
+
+    async function readNotes(): Promise<string> {
+      return readFile(join(folder, 'runner-temp', 'release', 'notes.md'), 'utf-8');
     }
 
     beforeEach(async () => {
-      ghLog = join(folder, 'gh.log');
       await mkdir(join(folder, 'dist', 'build'), { recursive: true });
       await writeFile(join(folder, 'dist', 'build', 'main.js'), 'main');
       await writeFile(join(folder, 'dist', 'build', 'manifest.json'), '{}');
       await writeFile(join(folder, 'dist', 'build', 'styles.css'), '');
     });
 
-    it('should create the release with every non-empty file in dist/build', async () => {
-      const { calls, outputs, result } = await publish({});
+    it('should collect every non-empty file in dist/build, and generate the notes without a CHANGELOG.md', async () => {
+      const result = await collect();
       expect(result.status, result.output).toBe(0);
       expect(result.output).toContain('::warning::Leaving out dist/build/styles.css');
+      expect(result.output).toContain('::notice::There is no CHANGELOG.md');
+      expect(existsSync(join(folder, 'runner-temp', 'release', 'assets', 'main.js'))).toBe(true);
+      expect(existsSync(join(folder, 'runner-temp', 'release', 'assets', 'manifest.json'))).toBe(true);
+      expect(existsSync(join(folder, 'runner-temp', 'release', 'assets', 'styles.css'))).toBe(false);
+      expect(existsSync(join(folder, 'runner-temp', 'release', 'notes.md'))).toBe(false);
+    });
+
+    it('should fail when dist/build has nothing to release', async () => {
+      await rm(join(folder, 'dist'), { recursive: true });
+      const result = await collect();
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('::error::dist/build has no file to release.');
+    });
+
+    it('should take the tag\'s CHANGELOG.md section as the notes', async () => {
+      await writeFile(
+        join(folder, 'CHANGELOG.md'),
+        '# CHANGELOG\n\n## 1.2.4\n\nNewer.\n\n## 1.2.3\n\nThis release has 1 fix.\n\n### Fixed\n\n- **scope:** a fix\n\n## 1.2.2\n\nOlder.\n'
+      );
+      const result = await collect();
+      expect(result.status, result.output).toBe(0);
+      expect(await readNotes()).toBe('This release has 1 fix.\n\n### Fixed\n\n- **scope:** a fix\n\n');
+    });
+
+    it.each(['## [1.2.3] - 2026-11-19', '## v1.2.3', '## 1.2.3 (2026-11-19)'])('should find the section under %s', async (heading) => {
+      await writeFile(join(folder, 'CHANGELOG.md'), `# CHANGELOG\n\n${heading}\n\n- a fix\n\n## [1.2.30]\n\n- another\n`);
+      const result = await collect();
+      expect(result.status, result.output).toBe(0);
+      expect(await readNotes()).toBe('- a fix\n\n');
+    });
+
+    it('should fail when CHANGELOG.md has no section for the tag', async () => {
+      await writeFile(join(folder, 'CHANGELOG.md'), '# CHANGELOG\n\n## 1.2.30\n\n- another\n\n## 1.2.3\n\n');
+      const result = await collect();
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('::error::CHANGELOG.md has no section for 1.2.3');
+    });
+  });
+
+  describe('Publish the release', () => {
+    let ghLog = '';
+
+    async function publish(env: Record<string, string>, existingRelease: 'draft' | 'none' | 'published' = 'none'): Promise<PublishResult> {
+      const release = await readWorkflow('obsidian-plugin-release.yml');
+      const binFolder = join(folder, 'bin');
+      await mkdir(binFolder, { recursive: true });
+      // Records every call; `gh release view` succeeds only for an existing release, printing whether it is a draft.
+      const view = existingRelease === 'none' ? 'exit 1' : `echo ${String(existingRelease === 'draft')}; exit 0`;
+      await writeFile(
+        join(binFolder, 'gh'),
+        `#!/usr/bin/env bash\necho "$*" >> "${toPosix(ghLog)}"\nif [ "$2" = view ]; then ${view}; fi\n`,
+        { mode: 0o755 }
+      );
+      const result = runStep(getRun(release, 'Publish the release'), folder, {
+        DRAFT: 'false',
+        GITHUB_REPOSITORY: 'owner/plugin',
+        PATH: `${binFolder}${delimiter}${process.env['PATH'] ?? ''}`,
+        TAG: '1.2.3',
+        ...env
+      });
+      const ghLogText = existsSync(ghLog) ? await readFile(ghLog, 'utf-8') : '';
+      const calls = ghLogText ? ghLogText.trim().split('\n') : [];
+      return { calls, result };
+    }
+
+    beforeEach(async () => {
+      ghLog = join(folder, 'gh.log');
+      await mkdir(join(folder, 'release', 'assets'), { recursive: true });
+      await writeFile(join(folder, 'release', 'assets', 'main.js'), 'main');
+      await writeFile(join(folder, 'release', 'assets', 'manifest.json'), '{}');
+    });
+
+    it('should create the release with the generated notes when there are none from CHANGELOG.md', async () => {
+      const { calls, result } = await publish({});
+      expect(result.status, result.output).toBe(0);
       expect(calls).toEqual([
-        'release view 1.2.3',
-        'release create 1.2.3 dist/build/main.js dist/build/manifest.json --title 1.2.3 --generate-notes --verify-tag'
+        'release view 1.2.3 --repo owner/plugin --json isDraft --jq .isDraft',
+        'release create 1.2.3 release/assets/main.js release/assets/manifest.json --repo owner/plugin --title 1.2.3 --generate-notes --verify-tag'
       ]);
-      expect(outputs).toBe('assets<<EOF\ndist/build/main.js\ndist/build/manifest.json\nEOF\n');
+    });
+
+    it('should create the release with the CHANGELOG.md notes', async () => {
+      await writeFile(join(folder, 'release', 'notes.md'), '- a fix\n');
+      const { calls } = await publish({});
+      expect(calls.at(-1)).toBe(
+        'release create 1.2.3 release/assets/main.js release/assets/manifest.json --repo owner/plugin --title 1.2.3 --notes-file release/notes.md --verify-tag'
+      );
     });
 
     it('should make a pre-release of a tag with a dash, and a draft on request', async () => {
       const { calls } = await publish({ DRAFT: 'true', TAG: '1.3.0-beta.1' });
       expect(calls.at(-1)).toBe(
-        'release create 1.3.0-beta.1 dist/build/main.js dist/build/manifest.json --title 1.3.0-beta.1 --generate-notes --verify-tag --prerelease --draft'
+        'release create 1.3.0-beta.1 release/assets/main.js release/assets/manifest.json --repo owner/plugin --title 1.3.0-beta.1 --generate-notes --verify-tag --prerelease --draft'
       );
     });
 
-    it('should replace the assets of a release that exists', async () => {
-      const { calls } = await publish({}, true);
-      expect(calls.at(-1)).toBe('release upload 1.2.3 dist/build/main.js dist/build/manifest.json --clobber');
+    it('should replace the assets of a draft release', async () => {
+      const { calls, result } = await publish({}, 'draft');
+      expect(result.status, result.output).toBe(0);
+      expect(calls.at(-1)).toBe('release upload 1.2.3 release/assets/main.js release/assets/manifest.json --repo owner/plugin --clobber');
     });
 
-    it('should fail when dist/build has nothing to release', async () => {
-      await rm(join(folder, 'dist'), { recursive: true });
-      const { calls, result } = await publish({});
+    it('should refuse to touch a published release', async () => {
+      const { calls, result } = await publish({}, 'published');
       expect(result.status).toBe(1);
-      expect(result.output).toContain('::error::dist/build has no file to release.');
-      expect(calls).toEqual([]);
+      expect(result.output).toContain('::error::The release \'1.2.3\' is already published.');
+      expect(calls).toEqual(['release view 1.2.3 --repo owner/plugin --json isDraft --jq .isDraft']);
     });
   });
 
