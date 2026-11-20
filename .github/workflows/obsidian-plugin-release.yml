@@ -160,8 +160,8 @@ jobs:
       - name: Check the tag
         # Obsidian finds a release by the version in the manifest, so a tag that differs is a release nobody receives.
         run: |
-          manifest=manifest.json
-          case "$TAG" in *-*) if [ -f manifest-beta.json ]; then manifest=manifest-beta.json; fi ;; esac
+          manifest="manifest.json"
+          case "$TAG" in *-*) if [ -f manifest-beta.json ]; then manifest="manifest-beta.json"; fi ;; esac
           version="$(node -p "require('./$manifest').version")"
           if [ "$TAG" != "$version" ]; then
             echo "::error::The tag '$TAG' is not the version in $manifest ('$version'). Obsidian finds a release by that version, so they must match."
