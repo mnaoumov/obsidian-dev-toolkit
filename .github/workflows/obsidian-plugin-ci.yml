@@ -23,6 +23,16 @@ name: Obsidian Plugin CI
 #
 # Every input is documented at https://mnaoumov.dev/obsidian-dev-toolkit/guides/ci-and-release/.
 #
+# Two jobs. `ci` runs everything that executes plugin code (the install, the gate, the badge render) with `contents: read`
+# alone and a checkout that keeps no credentials, so no step there can push. `badge` runs only on a push to the default
+# branch with `coverage-badge` on: it runs no plugin code, receives the rendered SVG as an artifact, and is the one job
+# that holds the caller's write token. It declares no permissions of its own on purpose: a called job that requests more
+# than the caller grants fails the whole run before it starts, even when its `if` would skip it, so a declared
+# `contents: write` would break every caller that grants `read` and leaves the badge off.
+#
+# Every action is pinned to a full commit SHA, with its version in a comment, and the runner to a fixed image
+# (`runs-on`, `ubuntu-24.04` by default), so a moved tag or a new image cannot change what runs.
+#
 # The `Resolve settings` and the setup steps are the same in `obsidian-plugin-release.yml`; the workflows' unit test
 # keeps them so.
 
@@ -61,16 +71,24 @@ on:
         description: The branch the badge is published to, as coverage.svg
         type: string
         default: badges
+      runs-on:
+        description: The runner label of every job (a fixed image by default, so a new ubuntu-latest cannot change the build)
+        type: string
+        default: ubuntu-24.04
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
     env:
       # The install runs the `prepare` script, which installs husky -- pointless in CI.
       HUSKY: 0
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Resolve settings
         id: settings
@@ -107,18 +125,18 @@ jobs:
 
       - name: Setup pnpm
         if: inputs.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
       - name: Setup Bun
         if: inputs.package-manager == 'bun'
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Enable Corepack
         if: inputs.package-manager == 'yarn'
         run: corepack enable
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: ${{ steps.settings.outputs.node-version }}
           node-version-file: ${{ steps.settings.outputs.node-version-file }}
@@ -141,8 +159,30 @@ jobs:
           METRIC: ${{ inputs.coverage-badge-metric }}
         run: $EXEC generate-coverage-badge "--metric=$METRIC" --output=coverage/coverage-badge.svg
 
-      - name: Publish the coverage badge
+      - name: Upload the coverage badge
         if: inputs.coverage-badge && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-badge
+          path: coverage/coverage-badge.svg
+          if-no-files-found: error
+          retention-days: 1
+
+  badge:
+    needs: ci
+    if: inputs.coverage-badge && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 10
+    # No `permissions`: this job takes the caller's grant, which is `contents: write` when the badge is on (see the top).
+    steps:
+      # No checkout and no install: nothing of the plugin's runs in the job that holds the write token.
+      - name: Download the coverage badge
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-badge
+          path: coverage
+
+      - name: Publish the coverage badge
         env:
           BRANCH: ${{ inputs.coverage-badge-branch }}
           GH_TOKEN: ${{ github.token }}

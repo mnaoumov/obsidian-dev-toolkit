@@ -1,13 +1,15 @@
 name: Obsidian Plugin Release
 
 # A reusable workflow that releases an Obsidian plugin from a pushed tag: it checks the tag is the version in
-# `manifest.json` (or in `manifest-beta.json` for a pre-release tag), builds the plugin, archives `demo-vault/` when
-# there is one, publishes a GitHub release carrying every file in `dist/build` (`main.js`, `manifest.json`,
-# `styles.css` and the demo vault archive), and attests those files' build provenance.
+# `manifest.json` (or in `manifest-beta.json` for a pre-release tag) and is built on the default branch, builds the
+# plugin, archives `demo-vault/` when there is one, attests the build provenance of every file in `dist/build`
+# (`main.js`, `manifest.json`, `styles.css` and the demo vault archive), and publishes a GitHub release carrying them,
+# with the tag's `CHANGELOG.md` section as its notes.
 #
 # Bump the version first (`npm version`, or the toolkit's `npm run version`, which releases by itself and needs only
-# `obsidian-plugin-attest-release-assets.yml`), then push the tag. A tag with a `-` in it makes a pre-release. When the
-# release already exists, its assets are replaced.
+# `obsidian-plugin-attest-release-assets.yml`), then push the tag. A tag with a `-` in it makes a pre-release. A release
+# that is already published is never changed: its assets are what users downloaded and what the attestations name, so
+# release a new version instead. Only a draft's assets are replaced.
 #
 # Push the tag alone, and the branch only after this workflow has published the release: Obsidian reads the version
 # from `manifest.json` on the default branch, so a branch pushed first names a release that does not exist yet. A
@@ -27,6 +29,16 @@ name: Obsidian Plugin Release
 #       uses: mnaoumov/obsidian-dev-toolkit/.github/workflows/obsidian-plugin-release.yml@3.0.0
 #
 # Every input is documented at https://mnaoumov.dev/obsidian-dev-toolkit/guides/ci-and-release/.
+#
+# Two jobs. `build` runs everything that executes plugin code (the install, the build, the demo vault archive) with
+# `contents: read` alone and a checkout that keeps no credentials, and hands the assets and the notes over as an
+# artifact. `release` runs no checkout and no plugin code: it attests the files it received and publishes them, and it is
+# the one job that holds the caller's write token and signing identity. It declares no permissions of its own on
+# purpose: a called job that requests more than the caller grants fails the whole run before it starts, so declaring
+# `id-token: write` would break a caller that turns `attest` off and grants `contents: write` alone.
+#
+# Every action is pinned to a full commit SHA, with its version in a comment, and the runner to a fixed image
+# (`runs-on`, `ubuntu-24.04` by default), so a moved tag or a new image cannot change what is built.
 #
 # The `Resolve settings` and the setup steps are the same in `obsidian-plugin-ci.yml`; the workflows' unit test keeps
 # them so.
@@ -70,20 +82,28 @@ on:
         description: Create the release as a draft
         type: boolean
         default: false
+      runs-on:
+        description: The runner label of every job (a fixed image by default, so a new ubuntu-latest cannot change the build)
+        type: string
+        default: ubuntu-24.04
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
     env:
-      GH_TOKEN: ${{ github.token }}
       # The install runs the `prepare` script, which installs husky -- pointless in CI.
       HUSKY: 0
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ inputs.tag || github.ref }}
+          # The whole history and every branch: the default-branch check needs origin/<default branch>.
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Resolve settings
         id: settings
@@ -120,18 +140,18 @@ jobs:
 
       - name: Setup pnpm
         if: inputs.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
       - name: Setup Bun
         if: inputs.package-manager == 'bun'
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Enable Corepack
         if: inputs.package-manager == 'yarn'
         run: corepack enable
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: ${{ steps.settings.outputs.node-version }}
           node-version-file: ${{ steps.settings.outputs.node-version-file }}
@@ -145,6 +165,21 @@ jobs:
           version="$(node -p "require('./$manifest').version")"
           if [ "$TAG" != "$version" ]; then
             echo "::error::The tag '$TAG' is not the version in $manifest ('$version'). Obsidian finds a release by that version, so they must match."
+            exit 1
+          fi
+
+      - name: Check the tag is on the default branch
+        # The branch is pushed after the release, so the tagged commit may be ahead of the default branch, never apart
+        # from it: the tip of the default branch must be an ancestor of the tagged commit.
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ -z "$DEFAULT_BRANCH" ] || ! git rev-parse --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH" > /dev/null; then
+            echo "::error::Cannot find the default branch (origin/$DEFAULT_BRANCH) to compare the tag '$TAG' with."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "refs/remotes/origin/$DEFAULT_BRANCH" HEAD; then
+            echo "::error::The tag '$TAG' is not built on top of origin/$DEFAULT_BRANCH: the tag was cut from another branch, or $DEFAULT_BRANCH has commits the tag lacks. Release a new version from an up-to-date $DEFAULT_BRANCH."
             exit 1
           fi
 
@@ -170,37 +205,98 @@ jobs:
           EXEC: ${{ steps.settings.outputs.exec }}
         run: $EXEC archive-demo-vault
 
-      - name: Publish the release
-        id: publish
-        env:
-          DRAFT: ${{ inputs.draft }}
+      - name: Collect the release
+        # The release job receives this folder and nothing else: the assets, and the notes when there is a CHANGELOG.md.
         run: |
-          assets=()
+          folder="$RUNNER_TEMP/release"
+          rm -rf "$folder"
+          mkdir -p "$folder/assets"
+          count=0
           for file in dist/build/*; do
             if [ ! -f "$file" ]; then continue; fi
             # GitHub refuses a 0-byte asset and rolls the whole release back, so an empty placeholder is left out.
-            if [ -s "$file" ]; then assets+=("$file"); else echo "::warning::Leaving out $file: GitHub refuses an empty asset."; fi
+            if [ -s "$file" ]; then
+              cp "$file" "$folder/assets/"
+              count=$((count + 1))
+            else
+              echo "::warning::Leaving out $file: GitHub refuses an empty asset."
+            fi
           done
-          if [ "${#assets[@]}" -eq 0 ]; then
+          if [ "$count" -eq 0 ]; then
             echo '::error::dist/build has no file to release. Does the build write the plugin there?'
             exit 1
           fi
+          if [ ! -f CHANGELOG.md ]; then
+            echo '::notice::There is no CHANGELOG.md, so the release notes are generated from the changes since the previous release.'
+            exit 0
+          fi
+          # The section is the lines under the `## <version>` heading (also `## [<version>]`, `## v<version>` or the
+          # version followed by a date), up to the next `## ` heading, without its leading blank lines.
+          awk -v version="$TAG" '
+            /^## / {
+              if (inside) { exit }
+              heading = $0
+              sub(/^## +/, "", heading)
+              sub(/^\[/, "", heading)
+              sub(/\]/, "", heading)
+              sub(/^v/, "", heading)
+              split(heading, words, /[ \t]/)
+              inside = words[1] == version
+              next
+            }
+            inside && (started || NF) { started = 1; print }
+          ' CHANGELOG.md > "$folder/notes.md"
+          if ! grep -q '[^[:space:]]' "$folder/notes.md"; then
+            echo "::error::CHANGELOG.md has no section for $TAG, so the release would have no notes. Add a '## $TAG' section describing the release."
+            exit 1
+          fi
+
+      - name: Upload the release
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 10
+    # No `permissions`: this job takes the caller's grant (see the top).
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      # No checkout and no install: nothing of the plugin's runs in the job that holds the write token.
+      - name: Download the release
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: release
+
+      # Before the release is published, so a failed attestation leaves no public release behind.
+      - name: Attest the release assets
+        if: inputs.attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: release/assets/*
+
+      - name: Publish the release
+        env:
+          DRAFT: ${{ inputs.draft }}
+        run: |
+          assets=(release/assets/*)
           flags=()
           case "$TAG" in *-*) flags+=(--prerelease) ;; esac
           if [ "$DRAFT" = 'true' ]; then flags+=(--draft); fi
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            gh release upload "$TAG" "${assets[@]}" --clobber
+          if [ -f release/notes.md ]; then notes=(--notes-file release/notes.md); else notes=(--generate-notes); fi
+          if is_draft="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2> /dev/null)"; then
+            if [ "$is_draft" != 'true' ]; then
+              echo "::error::The release '$TAG' is already published. Its assets are what users downloaded and what its attestations name, so they are never replaced: release a new version instead."
+              exit 1
+            fi
+            gh release upload "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
           else
-            gh release create "$TAG" "${assets[@]}" --title "$TAG" --generate-notes --verify-tag "${flags[@]}"
+            gh release create "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --title "$TAG" "${notes[@]}" --verify-tag "${flags[@]}"
           fi
-          {
-            echo 'assets<<EOF'
-            printf '%s\n' "${assets[@]}"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Attest the release assets
-        if: inputs.attest
-        uses: actions/attest@v4
-        with:
-          subject-path: ${{ steps.publish.outputs.assets }}
