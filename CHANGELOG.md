@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## 13.0.0
+
+This release has 2 breaking changes, 5 new features and 2 fixes. 2 maintenance commits (tests, build, CI, refactoring, dependencies) are not listed.
+
+### Breaking changes
+
+- **deps:** move onto @mnaoumov/typescript-dev-toolkit 10
+- **workflows:** harden the reusable plugin workflows
+
+### New
+
+- **deps:** admit @mnaoumov/obsidian-lib 12 as a peer
+- **plugin-checks:** check package.json and package-lock.json versions against the manifest
+- **linters:** add the prefer-active-window rule, which points a bare window read to activeWindow
+- **linters:** warn when `eslint-plugin-obsidianmd` resolves another `ESLint` major
+- **bundlers:** check that a production main.js loads on Obsidian mobile
+
+### Fixed
+
+- **workflows:** quote the manifest assignments in the release tag check
+- **demo-vault-coverage:** stop the first vault read timing out the suite under load
+
 ## 12.2.0
 
 This release has 1 new feature, 2 fixes and 2 documentation changes.
