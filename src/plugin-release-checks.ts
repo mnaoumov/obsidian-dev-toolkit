@@ -20,6 +20,10 @@
  * manifest's, so the tag cut from the manifest names the package that was built; re-implemented after
  * `obsidian-plugin-dev-kit`'s `src/release/version-rules.ts` (v0.4.0, MIT).
  *
+ * Beyond the action's shape check, `versions.json` must map the stable manifest version to the manifest's
+ * `minAppVersion`, and its `minAppVersion` must never go down as the plugin version goes up; both re-implemented after
+ * `obsidian-plugin-dev-kit`'s `src/release/versions-json.ts` (v0.4.0, MIT).
+ *
  * As in the action, an ID already listed in the directory (`community-plugins.json`) for the same repository is exempt
  * from the banned-word rule, since a listed ID can never change. The directory is fetched only when that rule fires.
  */
@@ -32,6 +36,12 @@ import {
   readdir,
   readFile
 } from 'node:fs/promises';
+import {
+  compare,
+  gt,
+  lt,
+  valid
+} from 'semver';
 
 import { ObsidianPluginRepoPaths } from './obsidian-plugin-repo-paths.ts';
 
@@ -305,7 +315,11 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
   const manifestVersion = readVersion(manifest);
   const shouldCheckStableVersion = manifestFile !== BETA_MANIFEST_FILE && (options.shouldCheckVersion ?? true);
   findings.push(
-    ...(await validateVersionsJsonFile(join(rootFolder, ObsidianPluginRepoPaths.VersionsJson), shouldCheckStableVersion ? manifestVersion : null))
+    ...(await validateVersionsJsonFile(
+      join(rootFolder, ObsidianPluginRepoPaths.VersionsJson),
+      shouldCheckStableVersion ? manifestVersion : null,
+      readMinAppVersion(manifest)
+    ))
   );
 
   if (
@@ -380,24 +394,28 @@ export function validateReleaseTag(tag: string, manifestVersion: null | string |
  *
  * When `manifestVersion` is given, a missing entry for it is a warning: Obsidian reads `versions.json` to find the
  * newest plugin version an older app can install, so a version bumped by hand without its entry leaves that lookup
- * stale.
+ * stale. When that entry exists and `minAppVersion` is given, the entry must equal it (an error). And the minimum app
+ * version must never go down as the plugin version goes up (an error per decreasing entry), because Obsidian installs
+ * the newest plugin version an older app can run.
  *
  * @param versions - The parsed `versions.json`.
  * @param manifestVersion - The `version` of `manifest.json` that must have an entry, or `null` / `undefined` to skip
  *   that check.
+ * @param minAppVersion - The `minAppVersion` of `manifest.json` the `manifestVersion` entry must equal, or `null` /
+ *   `undefined` to skip that check.
  * @returns The findings, empty when it maps semver plugin versions to semver app versions.
  */
-export function validateVersionsJson(versions: unknown, manifestVersion?: null | string): PluginCheckFinding[] {
+export function validateVersionsJson(versions: unknown, manifestVersion?: null | string, minAppVersion?: null | string): PluginCheckFinding[] {
   if (!isRecord(versions) || Array.isArray(versions)) {
     return [error('versions-invalid-format', 'versions.json must be a JSON object mapping plugin versions to minimum app versions.')];
   }
 
   const findings: PluginCheckFinding[] = [];
-  for (const [pluginVersion, minAppVersion] of Object.entries(versions)) {
+  for (const [pluginVersion, mappedMinAppVersion] of Object.entries(versions)) {
     if (!SEMVER_REGEX.test(pluginVersion)) {
       findings.push(warning('versions-invalid-semver', `versions.json key "${pluginVersion}" is not valid semver.`));
     }
-    if (typeof minAppVersion !== 'string' || !SEMVER_REGEX.test(minAppVersion)) {
+    if (typeof mappedMinAppVersion !== 'string' || !SEMVER_REGEX.test(mappedMinAppVersion)) {
       findings.push(warning('versions-invalid-semver', `versions.json value for "${pluginVersion}" is not a valid semver string.`));
     }
   }
@@ -409,6 +427,18 @@ export function validateVersionsJson(versions: unknown, manifestVersion?: null |
       )
     );
   }
+  if (typeof manifestVersion === 'string' && typeof minAppVersion === 'string' && Object.hasOwn(versions, manifestVersion)) {
+    const mappedMinAppVersion = versions[manifestVersion];
+    if (mappedMinAppVersion !== minAppVersion) {
+      findings.push(
+        error(
+          'versions-min-app-version-mismatch',
+          `versions.json maps "${manifestVersion}" to ${JSON.stringify(mappedMinAppVersion) ?? 'undefined'}, but manifest.json minAppVersion is "${minAppVersion}". Make them equal; for a version already released, change manifest.json, since a released entry stays as it is.`
+        )
+      );
+    }
+  }
+  findings.push(...validateMinAppVersionNeverDecreases(versions));
   return findings;
 }
 
@@ -448,6 +478,10 @@ async function readJsonFile(path: string): Promise<unknown> {
   } catch {
     return undefined;
   }
+}
+
+function readMinAppVersion(manifest: unknown): null | string {
+  return isRecord(manifest) && typeof manifest['minAppVersion'] === 'string' ? manifest['minAppVersion'] : null;
 }
 
 function readRequiredString(manifest: Record<string, unknown>, field: string, findings: PluginCheckFinding[]): null | string {
@@ -567,6 +601,36 @@ async function validateManifestExemptingListedId(manifest: unknown, options: Val
     return findings;
   }
   return isIdListed ? validatePluginManifest(manifest, { ...options, isIdListed }) : findings;
+}
+
+/**
+ * Reports each `versions.json` entry whose minimum app version is lower than that of an older plugin version.
+ * Obsidian installs the newest plugin version an older app can run, so a lower mapping on a newer version hands that
+ * app a build which needs a newer one. Entries that are not semver on either side are skipped; the format check
+ * reports them.
+ *
+ * @param versions - The parsed `versions.json` object.
+ * @returns The findings, one per decreasing entry.
+ */
+function validateMinAppVersionNeverDecreases(versions: Record<string, unknown>): PluginCheckFinding[] {
+  const entries = Object.entries(versions)
+    .filter((entry): entry is [string, string] => valid(entry[0]) === entry[0] && typeof entry[1] === 'string' && valid(entry[1]) === entry[1])
+    .sort(([a], [b]) => compare(a, b));
+  const findings: PluginCheckFinding[] = [];
+  let highest: [string, string] | null = null;
+  for (const [pluginVersion, minAppVersion] of entries) {
+    if (highest !== null && lt(minAppVersion, highest[1])) {
+      findings.push(
+        error(
+          'versions-min-app-version-decreasing',
+          `versions.json maps "${pluginVersion}" to "${minAppVersion}", lower than "${highest[1]}" for the older "${highest[0]}". minAppVersion must never go down as the plugin version goes up.`
+        )
+      );
+    } else if (highest === null || gt(minAppVersion, highest[1])) {
+      highest = [pluginVersion, minAppVersion];
+    }
+  }
+  return findings;
 }
 
 function validateName(name: string): PluginCheckFinding[] {
@@ -689,12 +753,18 @@ function validateVersion(version: string): PluginCheckFinding[] {
   return findings;
 }
 
-async function validateVersionsJsonFile(versionsJsonPath: string, manifestVersion: null | string): Promise<PluginCheckFinding[]> {
+async function validateVersionsJsonFile(
+  versionsJsonPath: string,
+  manifestVersion: null | string,
+  minAppVersion: null | string
+): Promise<PluginCheckFinding[]> {
   if (!existsSync(versionsJsonPath)) {
     return [];
   }
   const versions = await readJsonFile(versionsJsonPath);
-  return versions === undefined ? [error('versions-invalid-json', 'versions.json is not valid JSON.')] : validateVersionsJson(versions, manifestVersion);
+  return versions === undefined
+    ? [error('versions-invalid-json', 'versions.json is not valid JSON.')]
+    : validateVersionsJson(versions, manifestVersion, minAppVersion);
 }
 
 function warning(ruleId: string, message: string): PluginCheckFinding {

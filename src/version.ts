@@ -308,6 +308,26 @@ async function assertReleasedManifestMatchesTag(newVersion: string): Promise<voi
 }
 
 /**
+ * Refuses a stable release whose version already has a `versions.json` entry, before any file is edited: an entry is
+ * written once, by the release of that version, and Obsidian may already have read it, so silently overwriting it
+ * would change what an installed app was told about a published build.
+ *
+ * @param newVersion - The version being released.
+ */
+async function ensureNoVersionsJsonEntry(newVersion: string): Promise<void> {
+  const versionsJsonPath = resolvePathFromRootSafe({ path: ObsidianPluginRepoPaths.VersionsJson });
+  if (!existsSync(versionsJsonPath)) {
+    return;
+  }
+  const versions = await readJson<Record<string, string>>(versionsJsonPath);
+  if (Object.hasOwn(versions, newVersion)) {
+    throw new Error(
+      `versions.json already has an entry for ${newVersion} ("${String(versions[newVersion])}"). A released entry stays as it is; release a new version instead, or remove the entry by hand if ${newVersion} was never published.`
+    );
+  }
+}
+
+/**
  * Fetches the latest public stable version of Obsidian that the desktop app can actually run.
  *
  * Reads {@link DESKTOP_RELEASES_JSON_URL}, not the GitHub `releases/latest` API. The API returns the newest
@@ -375,6 +395,7 @@ async function updateVersionInFilesForPlugin(
       path: ObsidianPluginRepoPaths.ManifestBetaJson
     });
   } else {
+    await ensureNoVersionsJsonEntry(newVersion);
     const resolvedMinAppVersion = minAppVersion ?? await getLatestPublicObsidianVersion();
     const apiVersionReport = shouldCheckApiVersion ? await analyzePluginApiVersion() : undefined;
     const requiredMinAppVersion = apiVersionReport?.requiredMinAppVersion;
