@@ -1,6 +1,7 @@
 import { toRuleTesterModule } from '@mnaoumov/typescript-dev-toolkit/linters/eslint-rules/rule-tester-helper';
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import dedent from 'dedent';
+import { join } from 'node:path';
 import {
   afterAll,
   describe,
@@ -21,10 +22,10 @@ const ruleTester = new RuleTester();
 const typedRuleTester = new RuleTester({
   languageOptions: {
     parserOptions: {
-      projectService: {
-        allowDefaultProject: ['*.ts'],
-        defaultProject: 'tsconfig.eslint-test.json'
-      }
+      // A one-file program of its own: rooted at the repository, every case paid for the whole repository's program.
+      projectService: true,
+      // eslint-disable-next-line unicorn/name-replacements -- `tsconfigRootDir` is a `typescript-eslint` parser option.
+      tsconfigRootDir: join(import.meta.dirname, '../../../test-fixtures/typed-rule-tester')
     }
   }
 });
