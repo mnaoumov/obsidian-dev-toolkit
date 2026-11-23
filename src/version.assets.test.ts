@@ -34,6 +34,7 @@ import { updateVersion } from './version.ts';
 const state = vi.hoisted(() => ({ rootFolder: '' }));
 
 const { mockUpdateVersionGeneric } = vi.hoisted(() => ({
+  // eslint-disable-next-line unicorn/prefer-options-parameter -- Mirrors the generic `updateVersion`, whose positional signature every consumer calls.
   mockUpdateVersionGeneric: vi.fn<(versionUpdateType?: string, options?: GenericUpdateVersionOptions) => Promise<void>>()
 }));
 
@@ -52,7 +53,7 @@ vi.mock('@mnaoumov/typescript-dev-toolkit/json', async (importOriginal) => {
 });
 
 vi.mock('@mnaoumov/typescript-dev-toolkit/version', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/version')>(),
+  ...(await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/version')>()),
   updateVersion: mockUpdateVersionGeneric
 }));
 

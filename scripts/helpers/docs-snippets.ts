@@ -416,7 +416,7 @@ async function listGuides(directory: string): Promise<string[]> {
     const entryPath = join(directory, entry.name);
     if (entry.isDirectory()) {
       if (entry.name !== 'api') {
-        guides.push(...await listGuides(entryPath));
+        guides.push(...(await listGuides(entryPath)));
       }
     } else if (/\.mdx?$/u.test(entry.name)) {
       guides.push(entryPath);

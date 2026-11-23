@@ -44,6 +44,7 @@ const {
   mockReadJson: vi.fn<(path: string) => Promise<unknown>>(),
   mockResolvePathFromRootSafe: vi.fn<(params: ResolvePathFromRootSafeParams) => string>(),
   mockRm: vi.fn(),
+  // eslint-disable-next-line unicorn/prefer-options-parameter -- Mirrors the generic `updateVersion`, whose positional signature every consumer calls.
   mockUpdateVersionGeneric: vi.fn<(versionUpdateType?: string, options?: GenericUpdateVersionOptions) => Promise<void>>(),
   mockValidatePluginRelease: vi.fn()
 }));
@@ -57,7 +58,7 @@ vi.mock('./demo-vault.ts', () => ({
 }));
 
 vi.mock('./plugin-release-checks.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./plugin-release-checks.ts')>(),
+  ...(await importOriginal<typeof import('./plugin-release-checks.ts')>()),
   validatePluginRelease: mockValidatePluginRelease
 }));
 
@@ -75,17 +76,17 @@ vi.mock('@mnaoumov/typescript-dev-toolkit/root', () => ({
 }));
 
 vi.mock('@mnaoumov/typescript-dev-toolkit/version', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/version')>(),
+  ...(await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/version')>()),
   updateVersion: mockUpdateVersionGeneric
 }));
 
 vi.mock('node:fs', async (importOriginal) => ({
-  ...await importOriginal<typeof import('node:fs')>(),
+  ...(await importOriginal<typeof import('node:fs')>()),
   existsSync: mockExistsSync
 }));
 
 vi.mock('node:fs/promises', async (importOriginal) => ({
-  ...await importOriginal<typeof import('node:fs/promises')>(),
+  ...(await importOriginal<typeof import('node:fs/promises')>()),
   cp: mockCp,
   rm: mockRm
 }));
@@ -167,13 +168,17 @@ describe('parseVersionArguments', () => {
     expect(versionUpdateType).toBe('patch');
     expect(options).toEqual({
       changelogFilePath: undefined,
+      changelogStyle: undefined,
       minAppVersion: undefined,
       shouldArchiveDemoVault: true,
       shouldBuild: true,
       shouldCheckApiVersion: false,
+      shouldCheckToolkits: true,
       shouldCloseReleasedIssues: true,
+      shouldDryRun: false,
       shouldEditChangelog: true,
       shouldRelease: true,
+      shouldResume: false,
       shouldRunChecks: true,
       shouldRunReleaseChecks: true,
       shouldVerifyCommit: true
@@ -198,13 +203,17 @@ describe('parseVersionArguments', () => {
     expect(versionUpdateType).toBe('patch');
     expect(options).toEqual({
       changelogFilePath: 'notes.md',
+      changelogStyle: undefined,
       minAppVersion: '1.9.0',
       shouldArchiveDemoVault: false,
       shouldBuild: false,
       shouldCheckApiVersion: true,
+      shouldCheckToolkits: true,
       shouldCloseReleasedIssues: false,
+      shouldDryRun: false,
       shouldEditChangelog: false,
       shouldRelease: false,
+      shouldResume: false,
       shouldRunChecks: false,
       shouldRunReleaseChecks: false,
       shouldVerifyCommit: false

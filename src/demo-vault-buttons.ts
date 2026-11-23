@@ -775,7 +775,7 @@ async function clickButton(params: ClickButtonParams): Promise<DemoVaultButtonRe
         return view()?.containerEl.querySelector<HTMLElement>(':scope .markdown-preview-view') ?? null;
       }
       function buttons(): HTMLButtonElement[] {
-        return [...view()?.containerEl.querySelectorAll<HTMLButtonElement>(':scope .block-language-code-button button.mod-cta') ?? []];
+        return [...(view()?.containerEl.querySelectorAll<HTMLButtonElement>(':scope .block-language-code-button button.mod-cta') ?? [])];
       }
 
       function findButton(): HTMLButtonElement | null {

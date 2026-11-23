@@ -184,7 +184,7 @@ export function findPluginNameMatches(text: string, pluginNames: readonly string
  * @returns The names, without duplicates.
  */
 export function getPluginNames(params: GetPluginNamesParams): string[] {
-  const names = new Set([...MNAOUMOV_PLUGIN_NAMES, ...THIRD_PARTY_PLUGIN_NAMES, ...params.additionalPluginNames ?? []]);
+  const names = new Set([...MNAOUMOV_PLUGIN_NAMES, ...THIRD_PARTY_PLUGIN_NAMES, ...(params.additionalPluginNames ?? [])]);
   const ownName = readManifestName(params.cwd);
   if (ownName) {
     names.add(ownName);

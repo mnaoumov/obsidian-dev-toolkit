@@ -265,7 +265,7 @@ export function defineWdioObsidianConfig(options: DefineWdioObsidianConfigOption
     reporters: ['obsidian'],
     runner: 'local',
     services: ['obsidian'],
-    specs: [...options.specs ?? [DEFAULT_END_TO_END_SPECS]]
+    specs: [...(options.specs ?? [DEFAULT_END_TO_END_SPECS])]
   };
 }
 

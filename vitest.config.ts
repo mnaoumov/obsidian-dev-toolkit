@@ -136,7 +136,7 @@ const vitestConfig = {
   ...config,
   test: {
     ...config.test,
-    ...process.env['BULK_CORES'] !== undefined && { maxWorkers: Number(process.env['BULK_CORES']) }
+    ...(process.env['BULK_CORES'] !== undefined && { maxWorkers: Number(process.env['BULK_CORES']) })
   }
 };
 

@@ -18,7 +18,7 @@ vi.mock('@mnaoumov/typescript-dev-toolkit/root', () => ({
 }));
 
 vi.mock('./e2e-runner-support.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./e2e-runner-support.ts')>(),
+  ...(await importOriginal<typeof import('./e2e-runner-support.ts')>()),
   assertProjectPackagesInstalled: mocks.assertProjectPackagesInstalled
 }));
 

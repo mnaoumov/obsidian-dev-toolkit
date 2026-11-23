@@ -228,7 +228,7 @@ if you want to view the source, please visit the github repository of this plugi
 
     it('tolerates a project with no root to read the manifest from', async () => {
       const distFolder = join(getRootFolder(), 'out');
-      const context = { ...await resolveObsidianPluginBuildContext({ mode: BuildMode.Production }), distFolder };
+      const context = { ...(await resolveObsidianPluginBuildContext({ mode: BuildMode.Production })), distFolder };
       state.rootFolder = null;
 
       await completeObsidianPluginDistFolder(context);

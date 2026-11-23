@@ -105,12 +105,12 @@ export async function findOutdatedReferences(rootDirectory: string): Promise<Out
   const files = [
     join(rootDirectory, 'README.md'),
     join(rootDirectory, 'AGENTS.md'),
-    ...await listFiles(join(rootDirectory, 'docs', 'src', 'content', 'docs'), (name) => /\.mdx?$/u.test(name), ['api']),
-    ...await listFiles(join(rootDirectory, 'src'), isScannedSource, []),
-    ...await listFiles(join(rootDirectory, 'scripts'), isScannedSource, []),
-    ...await listFiles(join(rootDirectory, 'demo-vault-helper'), isScannedSource, []),
-    ...await listFiles(join(rootDirectory, 'integration-test-plugin'), isScannedSource, []),
-    ...await listFiles(join(rootDirectory, 'templates'), () => true, [])
+    ...(await listFiles(join(rootDirectory, 'docs', 'src', 'content', 'docs'), (name) => /\.mdx?$/u.test(name), ['api'])),
+    ...(await listFiles(join(rootDirectory, 'src'), isScannedSource, [])),
+    ...(await listFiles(join(rootDirectory, 'scripts'), isScannedSource, [])),
+    ...(await listFiles(join(rootDirectory, 'demo-vault-helper'), isScannedSource, [])),
+    ...(await listFiles(join(rootDirectory, 'integration-test-plugin'), isScannedSource, [])),
+    ...(await listFiles(join(rootDirectory, 'templates'), () => true, []))
   ];
   const references: OutdatedReference[] = [];
   for (const file of files) {
@@ -162,7 +162,7 @@ async function listFiles(directory: string, isIncluded: (name: string) => boolea
     const entryPath = join(directory, entry.name);
     if (entry.isDirectory()) {
       if (!excludedDirectories.includes(entry.name)) {
-        files.push(...await listFiles(entryPath, isIncluded, excludedDirectories));
+        files.push(...(await listFiles(entryPath, isIncluded, excludedDirectories)));
       }
     } else if (isIncluded(entry.name)) {
       files.push(entryPath);

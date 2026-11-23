@@ -56,8 +56,8 @@ export async function testEndToEndWithObsidianTest(options: TestEndToEndWithObsi
     'obsidian-test',
     '--testPattern',
     options.testPattern ?? DEFAULT_END_TO_END_SPECS,
-    ...options.vaultPath === undefined ? [] : ['--vault-path', options.vaultPath],
-    ...options.obsidianCommand === undefined ? [] : ['--obsidian-cmd', options.obsidianCommand],
-    ...options.shouldUseCache ?? true ? [] : ['--force']
+    ...(options.vaultPath === undefined ? [] : ['--vault-path', options.vaultPath]),
+    ...(options.obsidianCommand === undefined ? [] : ['--obsidian-cmd', options.obsidianCommand]),
+    ...(options.shouldUseCache ?? true ? [] : ['--force'])
   ], { isInteractive: true });
 }

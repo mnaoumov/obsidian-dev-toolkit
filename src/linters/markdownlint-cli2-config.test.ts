@@ -26,7 +26,7 @@ describe('obsidianMarkdownlintCli2Config', () => {
   });
 
   it('should register the plugin-name rule, switched on', () => {
-    expect(obsidianMarkdownlintCli2Config.customRules).toEqual([...obsidianDevUtilsConfig.customRules ?? [], pluginNameAsCodeRule, toolNameAsCodeRule]);
+    expect(obsidianMarkdownlintCli2Config.customRules).toEqual([...(obsidianDevUtilsConfig.customRules ?? []), pluginNameAsCodeRule, toolNameAsCodeRule]);
     expect(obsidianMarkdownlintCli2Config.config?.[PLUGIN_NAME_AS_CODE_RULE_NAME]).toBe(true);
   });
 

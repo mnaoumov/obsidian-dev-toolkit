@@ -28,7 +28,7 @@ const { mockGetRootFolder } = vi.hoisted(() => ({
 }));
 
 vi.mock('@mnaoumov/typescript-dev-toolkit/root', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/root')>(),
+  ...(await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/root')>()),
   getRootFolder: mockGetRootFolder
 }));
 

@@ -94,7 +94,7 @@ interface RewriteBundleParams {
 export function addIgnoreList(sourceMap: SourceMap, isSourceIgnored: (source: string) => boolean): SourceMap {
   const ignoreList = [
     ...new Set([
-      ...sourceMap.ignoreList ?? [],
+      ...(sourceMap.ignoreList ?? []),
       ...sourceMap.sources.flatMap((source, index) => isSourceIgnored(source) ? index : [])
     ])
   ];
