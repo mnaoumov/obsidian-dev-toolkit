@@ -399,6 +399,27 @@ describe('updateVersion', () => {
       expect(versions).toEqual({ '1.0.0': '1.0.0', '1.5.0': '1.5.0', '2.0.0': '1.9.0' });
     });
 
+    it('should refuse to overwrite an existing versions.json entry before editing any file', async () => {
+      mockExistsSync.mockImplementation((path) => path === '/root/versions.json');
+      mockReadJson.mockResolvedValue({ '1.0.0': '1.5.0', '1.0.1': '1.6.0' });
+      const mockFetch = stubDesktopReleasesFeed({ latestVersion: '1.7.0' });
+
+      await expect(updateVersionInExtraFiles('1.0.1')).rejects.toThrow('versions.json already has an entry for 1.0.1 ("1.6.0")');
+      expect(mockReadJson).toHaveBeenCalledWith('/root/versions.json');
+      expect(mockEditJson).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should add the entry when versions.json exists without it', async () => {
+      mockExistsSync.mockImplementation((path) => path === '/root/versions.json');
+      mockReadJson.mockResolvedValue({ '1.0.0': '1.5.0' });
+
+      await updateVersionInExtraFiles('1.0.1', { minAppVersion: '1.9.0' });
+      const versions: Record<string, string> = { '1.0.0': '1.5.0' };
+      await getEditJsonParams(1).editFunction(versions);
+      expect(versions).toEqual({ '1.0.0': '1.5.0', '1.0.1': '1.9.0' });
+    });
+
     it('should copy manifest.json to manifest-beta.json with the new version for a pre-release', async () => {
       const mockFetch = stubDesktopReleasesFeed({ latestVersion: '1.7.0' });
       await updateVersionInExtraFiles('1.0.1-beta.0');

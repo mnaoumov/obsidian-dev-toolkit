@@ -189,6 +189,41 @@ describe('validateVersionsJson', () => {
     expect(validateVersionsJson({ '1.0.0': '1.5.0' }, null)).toEqual([]);
     expect(validateVersionsJson({}, 'toString')).toEqual([expect.objectContaining({ ruleId: 'versions-missing-manifest-version' })]);
   });
+
+  it('should require the manifest version entry to equal minAppVersion', () => {
+    expect(validateVersionsJson({ '1.0.0': '1.5.0' }, '1.0.0', '1.5.0')).toEqual([]);
+    expect(validateVersionsJson({ '1.0.0': '1.4.0' }, '1.0.0', '1.5.0')).toEqual([
+      expect.objectContaining({
+        level: 'error',
+        message: expect.stringContaining('maps "1.0.0" to "1.4.0", but manifest.json minAppVersion is "1.5.0"') as string,
+        ruleId: 'versions-min-app-version-mismatch'
+      })
+    ]);
+    expect(validateVersionsJson({ '1.0.0': '1.4.0' }, '1.0.0', null)).toEqual([]);
+    expect(validateVersionsJson({ '1.0.0': '1.4.0' }, null, '1.5.0')).toEqual([]);
+    expect(validateVersionsJson({ '1.0.0': '1.5.0' }, '1.0.1', '1.5.0').map((finding) => finding.ruleId)).toEqual([
+      'versions-missing-manifest-version'
+    ]);
+  });
+
+  it('should report every entry whose minAppVersion is lower than an older entry', () => {
+    expect(validateVersionsJson({ '1.0.0': '1.5.0', '1.0.1': '1.5.0', '1.10.0': '1.7.0', '1.2.0': '1.6.0' })).toEqual([]);
+    expect(validateVersionsJson({ '1.0.0': '1.5.0', '1.1.0': '1.6.0', '1.10.0': '1.5.5', '1.2.0': '1.4.0' })).toEqual([
+      expect.objectContaining({
+        level: 'error',
+        message: 'versions.json maps "1.2.0" to "1.4.0", lower than "1.6.0" for the older "1.1.0". minAppVersion must never go down as the plugin version goes up.',
+        ruleId: 'versions-min-app-version-decreasing'
+      }),
+      expect.objectContaining({ message: expect.stringContaining('"1.10.0" to "1.5.5", lower than "1.6.0"') as string })
+    ]);
+  });
+
+  it('should leave entries that are not semver out of the never-decreasing check', () => {
+    expect(validateVersionsJson({ '1.0.0': '1.6.0', '1.1.0': 'x', 'v2': '1.0.0' }).map((finding) => finding.ruleId)).toEqual([
+      'versions-invalid-semver',
+      'versions-invalid-semver'
+    ]);
+  });
 });
 
 describe('validateReleaseTag', () => {
@@ -356,6 +391,7 @@ describe('validatePluginRelease', () => {
     await writeJson('dist/build/manifest.json', { ...VALID_MANIFEST, version: '1.2.2' });
     expect(await releaseRuleIds({ tag: 'v1.2.3' })).toEqual([
       'versions-invalid-semver',
+      'versions-min-app-version-mismatch',
       'release-tag-v-prefix',
       'release-manifest-version-mismatch',
       'release-tag-not-numeric',
@@ -374,6 +410,18 @@ describe('validatePluginRelease', () => {
 
     await writeJson('versions.json', { '1.2.2': '1.5.0', '1.2.3': '1.5.0' });
     expect(await releaseRuleIds()).toEqual([]);
+  });
+
+  it('should compare the stable manifest version entry with its minAppVersion, but not for a beta or unchecked version', async () => {
+    await writeJson('manifest.json', VALID_MANIFEST);
+    await writeJson('manifest-beta.json', { ...VALID_MANIFEST, minAppVersion: '1.6.0', version: '1.2.4-beta.1' });
+    await writeJson('versions.json', { '1.2.3': '1.4.0' });
+    expect(await releaseRuleIds()).toEqual(['versions-min-app-version-mismatch']);
+    expect(await releaseRuleIds({ shouldCheckVersion: false })).toEqual([]);
+    expect(await releaseRuleIds({ manifestFile: 'manifest-beta.json' })).toEqual([]);
+
+    await writeJson('manifest.json', { ...VALID_MANIFEST, minAppVersion: 1 });
+    expect(await releaseRuleIds()).not.toContain('versions-min-app-version-mismatch');
   });
 
   it('should report a versions.json that does not parse', async () => {
