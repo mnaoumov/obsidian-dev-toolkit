@@ -199,6 +199,14 @@ describe('validateVersionsJson', () => {
         ruleId: 'versions-min-app-version-mismatch'
       })
     ]);
+    expect(validateVersionsJson({ '1.0.0': undefined }, '1.0.0', '1.5.0')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: expect.stringContaining('maps "1.0.0" to undefined, but') as string,
+          ruleId: 'versions-min-app-version-mismatch'
+        })
+      ])
+    );
     expect(validateVersionsJson({ '1.0.0': '1.4.0' }, '1.0.0', null)).toEqual([]);
     expect(validateVersionsJson({ '1.0.0': '1.4.0' }, null, '1.5.0')).toEqual([]);
     expect(validateVersionsJson({ '1.0.0': '1.5.0' }, '1.0.1', '1.5.0').map((finding) => finding.ruleId)).toEqual([
