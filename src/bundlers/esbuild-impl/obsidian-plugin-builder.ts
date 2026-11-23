@@ -202,14 +202,14 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
     plugins: [
       customEsbuildOptionsPlugin(params.customizeEsbuildOptions?.bind(params)),
       svelteWrapperPlugin(isProductionBuild),
-      ...await getEsbuildFeaturePlugins(featureParams),
+      ...(await getEsbuildFeaturePlugins(featureParams)),
       ...getSassPluginOptionsList(featureParams).map((sassPluginOptions) => sassPlugin(sassPluginOptions)),
       renameCssPlugin(distFolder),
       preprocessPlugin(),
       fixEsmPlugin(),
       fixSourceMapsPlugin({ distPaths: [distPath, cssPath], isProductionBuild, pluginName }),
-      ...params.customEsbuildPlugins ?? [],
-      ...params.ignoreListSources === false ? [] : [ignoreListSourceMapPlugin(params.ignoreListSources)],
+      ...(params.customEsbuildPlugins ?? []),
+      ...(params.ignoreListSources === false ? [] : [ignoreListSourceMapPlugin(params.ignoreListSources)]),
       copyToObsidianPluginsFolderPlugin({ distFolder, isProductionBuild, obsidianConfigFolder, pluginName, reload })
     ],
     sourcemap: !isProductionBuild && 'inline',

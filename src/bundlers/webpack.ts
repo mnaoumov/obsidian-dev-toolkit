@@ -305,7 +305,7 @@ export function getWebpackFeatureRules(params: GetWebpackFeatureRulesParams): Ru
             modules: features.styles.cssModules ? { auto: true, namedExport: false } : false
           }
         },
-        ...isPostcssNeeded(features.styles) ? featureLoader('stylesheet', features.styles) : []
+        ...(isPostcssNeeded(features.styles) ? featureLoader('stylesheet', features.styles) : [])
       ]
     });
   }

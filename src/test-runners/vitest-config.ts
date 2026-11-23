@@ -439,7 +439,7 @@ export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVi
   const globalStubTestFiles = [...context.globalStubTestFiles];
   const unitTests: ObsidianPluginVitestProjectConfig = globalStubTestFiles.length === 0
     ? context.unitTests
-    : { ...context.unitTests, exclude: [...context.unitTests.exclude ?? [], ...globalStubTestFiles] };
+    : { ...context.unitTests, exclude: [...(context.unitTests.exclude ?? []), ...globalStubTestFiles] };
   const globalStubsProjects: TestProjectConfiguration[] = globalStubTestFiles.length === 0
     ? []
     : [{

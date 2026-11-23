@@ -37,7 +37,7 @@ vi.mock('@mnaoumov/typescript-dev-toolkit/exec', () => ({
 }));
 
 vi.mock('@mnaoumov/typescript-dev-toolkit/root', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/root')>(),
+  ...(await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/root')>()),
   getRootFolder: mockGetRootFolder
 }));
 

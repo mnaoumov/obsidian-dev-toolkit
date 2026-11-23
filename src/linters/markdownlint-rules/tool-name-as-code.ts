@@ -44,7 +44,7 @@ export const toolNameAsCodeRule: Rule = {
   function: (params, onError) => {
     const options = params.config as ToolNameRuleOptions;
     const excluded = new Set(options.excludedToolNames);
-    const names = [...new Set([...TOOL_NAMES, ...options.additionalToolNames ?? []])].filter((name) => name !== '' && !excluded.has(name));
+    const names = [...new Set([...TOOL_NAMES, ...(options.additionalToolNames ?? [])])].filter((name) => name !== '' && !excluded.has(name));
     if (names.length === 0) {
       return;
     }

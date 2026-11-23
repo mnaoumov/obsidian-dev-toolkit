@@ -221,6 +221,7 @@ export function parseVersionArguments($arguments: string[]): ParsedVersionArgume
  * @param options - The {@link UpdateVersionOptions} controlling the release behavior.
  * @returns A {@link Promise} that resolves when the release is complete.
  */
+// eslint-disable-next-line unicorn/prefer-options-parameter -- Every plugin's `scripts/version.ts` calls this positional signature, as `@mnaoumov/typescript-dev-toolkit`'s `updateVersion` keeps it; folding the type into the options would break them all.
 export async function updateVersion(versionUpdateType?: string, options: UpdateVersionOptions = {}): Promise<void> {
   const {
     minAppVersion,

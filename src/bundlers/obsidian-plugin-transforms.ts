@@ -324,7 +324,7 @@ export async function loadPostcssConfig(params: LoadPostcssConfigParams): Promis
         cause: error
       });
     }
-    plugins.push(...config.plugins as AcceptedPlugin[]);
+    plugins.push(...(config.plugins as AcceptedPlugin[]));
     options = config.options;
     dependencies.push(config.file);
   }

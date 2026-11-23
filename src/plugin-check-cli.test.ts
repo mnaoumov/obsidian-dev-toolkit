@@ -20,7 +20,7 @@ const { mockAnalyzePluginApiVersion, mockRunScannerCheck, mockValidatePluginRele
 }));
 
 vi.mock('./plugin-release-checks.ts', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./plugin-release-checks.ts')>(),
+  ...(await importOriginal<typeof import('./plugin-release-checks.ts')>()),
   validatePluginRelease: mockValidatePluginRelease
 }));
 

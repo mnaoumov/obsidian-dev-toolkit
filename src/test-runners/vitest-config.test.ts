@@ -659,7 +659,7 @@ describe('defineObsidianPluginVitestConfig project isolation', { timeout: PROJEC
       watch: false,
       // Spread rather than assigned, because `exactOptionalPropertyTypes` makes an explicit
       // `project: undefined` a different thing from an absent `project`.
-      ...projectFilter && { project: projectFilter }
+      ...(projectFilter && { project: projectFilter })
     }, config);
 
     try {
@@ -703,7 +703,7 @@ describe('defineObsidianPluginVitestConfig project isolation', { timeout: PROJEC
       config.test = { ...config.test, maxWorkers: 2 };
       const vitest = await createVitest({
         config: false,
-        ...source === 'cli' && { maxWorkers: 2 },
+        ...(source === 'cli' && { maxWorkers: 2 }),
         reporters: [],
         root: fixtureRoot,
         watch: false

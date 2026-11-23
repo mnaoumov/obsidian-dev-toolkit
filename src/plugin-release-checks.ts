@@ -305,7 +305,7 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
   const manifestVersion = readVersion(manifest);
   const shouldCheckStableVersion = manifestFile !== BETA_MANIFEST_FILE && (options.shouldCheckVersion ?? true);
   findings.push(
-    ...await validateVersionsJsonFile(join(rootFolder, ObsidianPluginRepoPaths.VersionsJson), shouldCheckStableVersion ? manifestVersion : null)
+    ...(await validateVersionsJsonFile(join(rootFolder, ObsidianPluginRepoPaths.VersionsJson), shouldCheckStableVersion ? manifestVersion : null))
   );
 
   if (
@@ -320,13 +320,13 @@ export async function validatePluginRelease(options: ValidatePluginReleaseOption
       )
     );
   }
-  findings.push(...await validatePackageVersionsFile(rootFolder, manifestFile, manifestVersion));
+  findings.push(...(await validatePackageVersionsFile(rootFolder, manifestFile, manifestVersion)));
   if (tag !== undefined) {
     findings.push(...validateReleaseTag(tag, manifestVersion));
   }
 
   if (shouldCheckAssets) {
-    findings.push(...await validateDistFolder(rootFolder, manifestVersion, options));
+    findings.push(...(await validateDistFolder(rootFolder, manifestVersion, options)));
   }
 
   return findings;

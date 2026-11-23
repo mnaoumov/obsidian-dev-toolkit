@@ -110,7 +110,7 @@ describe('every bundler adapter builds a loadable Obsidian plugin', () => {
 
     // An Obsidian release ships these files and nothing else, so a sibling chunk or an extracted license
     // file would be missing from the installed plugin. A development build adds HotReload's marker.
-    expect(readdirSync(distFolder).sort()).toEqual([...isDevelopment ? ['.hotreload'] : [], 'main.js', 'manifest.json', 'styles.css']);
+    expect(readdirSync(distFolder).sort()).toEqual([...(isDevelopment ? ['.hotreload'] : []), 'main.js', 'manifest.json', 'styles.css']);
     expect(readFileSync(join(distFolder, 'styles.css'), 'utf-8')).toContain('bundler fixture');
 
     const mainJs = readFileSync(join(distFolder, 'main.js'), 'utf-8');
@@ -142,7 +142,7 @@ describe('every bundler adapter builds each build feature', () => {
     fixtureFolders.push(fixtureFolder);
     const distFolder = buildFixture(fixtureFolder, bundler, isDevelopment);
     const hasStyles = feature === 'styles';
-    expect(readdirSync(distFolder).sort()).toEqual([...isDevelopment ? ['.hotreload'] : [], 'main.js', 'manifest.json', ...hasStyles ? ['styles.css'] : []]);
+    expect(readdirSync(distFolder).sort()).toEqual([...(isDevelopment ? ['.hotreload'] : []), 'main.js', 'manifest.json', ...(hasStyles ? ['styles.css'] : [])]);
 
     const dom = new JSDOM('', { runScripts: 'outside-only' });
     const { plugin } = loadPlugin(readFileSync(join(distFolder, 'main.js'), 'utf-8'), dom.getInternalVMContext());

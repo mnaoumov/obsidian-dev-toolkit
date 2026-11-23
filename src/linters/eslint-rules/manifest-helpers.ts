@@ -17,7 +17,6 @@ import type {
   Rule
 } from 'eslint';
 
-// eslint-disable-next-line import-x/no-rename-default -- The default export name `plugin` is too confusing.
 import json from '@eslint/json';
 
 /**

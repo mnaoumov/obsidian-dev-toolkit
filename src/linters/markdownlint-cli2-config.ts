@@ -33,7 +33,7 @@ export const obsidianMarkdownlintCli2Config: MarkdownlintCli2ConfigSchema = {
     [TOOL_NAME_AS_CODE_RULE_NAME]: true
   },
   customRules: [
-    ...obsidianDevUtilsConfig.customRules ?? [],
+    ...(obsidianDevUtilsConfig.customRules ?? []),
     pluginNameAsCodeRule,
     toolNameAsCodeRule
   ]

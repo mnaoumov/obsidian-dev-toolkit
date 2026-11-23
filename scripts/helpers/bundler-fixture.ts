@@ -86,7 +86,7 @@ export function buildFixture(fixtureFolder: string, bundler: string, isDevelopme
   delete env['OBSIDIAN_CONFIG_FOLDER'];
   // Vitest sets it to `test`, which a bundler takes for its own mode; a project's build runs without it.
   delete env['NODE_ENV'];
-  execFileSync(process.execPath, [JITI_CLI, BUILD_SCRIPT, bundler, ...isDevelopment ? ['development'] : []], {
+  execFileSync(process.execPath, [JITI_CLI, BUILD_SCRIPT, bundler, ...(isDevelopment ? ['development'] : [])], {
     cwd: fixtureFolder,
     env,
     stdio: 'pipe'
@@ -124,7 +124,7 @@ export function createFixtureFolder(feature?: string): string {
   cpSync(TSCONFIG_PRESETS_FOLDER, join(fixtureFolder, 'toolkit-tsconfig'), { recursive: true });
   const tsconfig = {
     compilerOptions: { allowImportingTsExtensions: true, module: 'esnext', moduleResolution: 'bundler', noEmit: true, target: 'es2022' },
-    ...framework !== undefined && { extends: `./toolkit-tsconfig/${framework}.json` }
+    ...(framework !== undefined && { extends: `./toolkit-tsconfig/${framework}.json` })
   };
   writeFileSync(join(fixtureFolder, 'tsconfig.json'), JSON.stringify(tsconfig));
   return fixtureFolder;

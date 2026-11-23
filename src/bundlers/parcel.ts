@@ -271,7 +271,7 @@ export function getParcelConfigFiles(params: GetParcelConfigFilesParams): Parcel
   }
   const defines = getFrameworkDefines({ framework: features.framework, isProductionBuild: true });
   transformers['*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}'] = [
-    ...Object.keys(defines).length > 0 ? [featureTransformer] : [],
+    ...(Object.keys(defines).length > 0 ? [featureTransformer] : []),
     `./${INLINE_IMPORTS_FILE_NAME}`,
     '...'
   ];
