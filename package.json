@@ -273,7 +273,6 @@
     "js-yaml": "4.3.2",
     "katex": "^0.18.2",
     "moment": "^2.31.0",
-    "obsidian-integration-testing": "$obsidian-integration-testing",
     "smol-toml": "^1.8.0",
     "typescript": "$typescript"
   },
@@ -306,7 +305,7 @@
     "@babel/core": "^7.29.7",
     "@commitlint/cli": "^21.2.2",
     "@jest/globals": "^30.5.2",
-    "@mnaoumov/obsidian-lib": "^11.0.0",
+    "@mnaoumov/obsidian-lib": "^12.0.0",
     "@obsidian-typings/obsidian-public-latest": "^6.37.0",
     "@parcel/config-default": "^2.16.4",
     "@parcel/core": "^2.16.4",
@@ -374,7 +373,7 @@
   "peerDependencies": {
     "@babel/core": "^7.29.7 || ^8.0.0",
     "@jest/globals": "^30.5.2",
-    "@mnaoumov/obsidian-lib": "^6.0.0 || ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0",
+    "@mnaoumov/obsidian-lib": "^6.0.0 || ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0",
     "@parcel/config-default": "^2.16.4",
     "@parcel/core": "^2.16.4",
     "@parcel/plugin": "^2.16.4",
