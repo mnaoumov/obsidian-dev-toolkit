@@ -13,10 +13,11 @@ import {
   runCheckPluginCli
 } from './plugin-check-cli.ts';
 
-const { mockAnalyzePluginApiVersion, mockRunScannerCheck, mockValidatePluginRelease } = vi.hoisted(() => ({
+const { mockAnalyzePluginApiVersion, mockRunScannerCheck, mockValidatePluginRelease, mockValidateProjectWorkflowPins } = vi.hoisted(() => ({
   mockAnalyzePluginApiVersion: vi.fn(),
   mockRunScannerCheck: vi.fn(),
-  mockValidatePluginRelease: vi.fn()
+  mockValidatePluginRelease: vi.fn(),
+  mockValidateProjectWorkflowPins: vi.fn()
 }));
 
 vi.mock('./plugin-release-checks.ts', async (importOriginal) => ({
@@ -29,6 +30,8 @@ vi.mock('./plugin-scanner-check.ts', () => ({
 }));
 
 vi.mock('./plugin-api-version-check.ts', () => ({ analyzePluginApiVersion: mockAnalyzePluginApiVersion }));
+
+vi.mock('./workflow-pins.ts', () => ({ validateProjectWorkflowPins: mockValidateProjectWorkflowPins }));
 
 describe('parseCheckPluginArguments', () => {
   it('should leave every option out by default', () => {
@@ -83,6 +86,8 @@ describe('runCheckPluginCli', () => {
     });
     mockValidatePluginRelease.mockReset();
     mockRunScannerCheck.mockReset();
+    mockValidateProjectWorkflowPins.mockReset();
+    mockValidateProjectWorkflowPins.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -103,6 +108,13 @@ describe('runCheckPluginCli', () => {
 
     mockValidatePluginRelease.mockResolvedValue([{ level: 'error', message: 'e', ruleId: 'r' }]);
     expect(await runCheckPluginCli([])).toBe(1);
+  });
+
+  it('should report and fail on a workflow pin finding', async () => {
+    mockValidatePluginRelease.mockResolvedValue([]);
+    mockValidateProjectWorkflowPins.mockResolvedValue([{ level: 'error', message: 'pin', ruleId: 'workflow-pin-version-mismatch' }]);
+    expect(await runCheckPluginCli([])).toBe(1);
+    expect(stdout.join('')).toBe('error: pin (workflow-pin-version-mismatch)\n');
   });
 
   it('should run the scanner when asked and fail on its exit code', async () => {

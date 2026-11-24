@@ -13,6 +13,8 @@ The toolkit ships three reusable `GitHub` workflows, so a plugin repository carr
 
 Each call pins the workflow to a release tag of the toolkit, which is the version number with no `v`. The workflows ship from 3.0.0 on. Pin the same version as the toolkit in your `package.json`, so the commands the workflows run (`generate-coverage-badge`, `archive-demo-vault`) are the ones installed. [Dependabot's `github-actions` ecosystem](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) updates the pin along with your other actions.
 
+`npx check-plugin` fails when a pin and the installed toolkit name different releases, and `npx update-workflow-pins` moves every pin to the installed version; see [Keep the Workflow Pins on the Installed Release](/obsidian-dev-toolkit/guides/cli-commands/#keep-the-workflow-pins-on-the-installed-release).
+
 ## How the workflows protect a release
 
 The workflows are written so that code from a plugin's dependencies, which runs during the install and the build, cannot reach a write token or a signing identity:

@@ -210,7 +210,8 @@
     "deploy-to-device": "bin/deploy-to-device.mjs",
     "generate-coverage-badge": "bin/generate-coverage-badge.mjs",
     "generate-vscode-debug-config": "bin/generate-vscode-debug-config.mjs",
-    "start-obsidian-for-debugging": "bin/start-obsidian-for-debugging.mjs"
+    "start-obsidian-for-debugging": "bin/start-obsidian-for-debugging.mjs",
+    "update-workflow-pins": "bin/update-workflow-pins.mjs"
   },
   "files": [
     "**/package.json",
