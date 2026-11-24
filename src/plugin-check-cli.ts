@@ -1,7 +1,8 @@
 /**
  * @file
  *
- * The `check-plugin` command: runs {@link validatePluginRelease}, {@link validateProjectWorkflowPins} and, with `--scanner`,
+ * The `check-plugin` command: runs {@link validatePluginRelease}, {@link validateProjectWorkflowPins},
+ * {@link validateProjectBuildScript} and, with `--scanner`,
  * {@link runScannerCheck}, prints what they found and turns it into an exit code. A plugin runs it before a release, or
  * to reproduce a scanner finding on its own machine.
  */
@@ -13,6 +14,7 @@ import type { ValidatePluginReleaseOptions } from './plugin-release-checks.ts';
 import type { RunScannerCheckOptions } from './plugin-scanner-check.ts';
 
 import { analyzePluginApiVersion } from './plugin-api-version-check.ts';
+import { validateProjectBuildScript } from './plugin-build-script-check.ts';
 import {
   formatPluginCheckFindings,
   hasPluginCheckErrors,
@@ -100,7 +102,11 @@ export function parseCheckPluginArguments($arguments: string[], env: NodeJS.Proc
 export async function runCheckPluginCli($arguments: string[]): Promise<number> {
   try {
     const { releaseParams, scannerParams, shouldCheckApiVersion } = parseCheckPluginArguments($arguments);
-    const findings = [...(await validatePluginRelease(releaseParams)), ...(await validateProjectWorkflowPins())];
+    const findings = [
+      ...(await validatePluginRelease(releaseParams)),
+      ...(await validateProjectWorkflowPins()),
+      ...(await validateProjectBuildScript())
+    ];
     const hasErrors = hasPluginCheckErrors(findings);
     process.stdout.write(findings.length === 0 ? 'Manifest and release checks passed.\n' : `${formatPluginCheckFindings(findings)}\n`);
 
