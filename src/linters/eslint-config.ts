@@ -191,7 +191,15 @@ function getIntegrationTestConfigs(context: EslintConfigContext): Linter.Config[
         'obsidian-dev-toolkit': obsidianDevToolkitPlugin
       },
       rules: {
-        'obsidian-dev-toolkit/no-untrusted-input-events': 'error'
+        'obsidian-dev-toolkit/no-untrusted-input-events': 'error',
+        /*
+         * An integration test reaches Obsidian through `evalInObsidian` / `pollInObsidian` closures, which run in the
+         * renderer, where `window` and `document` always exist. The file itself is linted with the Node test globals,
+         * which declare neither, so every `window.requireAsync?.(...)` or `(window as X).__obsidianLib?.y` in such a
+         * closure was reported as optional chaining on an undeclared variable. Declaring the browser globals for the
+         * file instead would hide a real `window` read in its Node half, so the rule gives way here.
+         */
+        'unicorn/no-optional-chaining-on-undeclared-variable': 'off'
       }
     }
   ]);
