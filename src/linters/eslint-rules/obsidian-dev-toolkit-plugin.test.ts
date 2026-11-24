@@ -25,6 +25,7 @@ describe('obsidianDevToolkitPlugin', () => {
       'no-dynamic-node-builtin-import',
       'no-local-obsidian-internals',
       'no-over-cap-wait-in-eval-in-obsidian',
+      'no-split-sentence-locale-keys',
       'no-untrusted-input-events',
       'plugin-name-as-code',
       'plugin-name-as-code-in-ui',

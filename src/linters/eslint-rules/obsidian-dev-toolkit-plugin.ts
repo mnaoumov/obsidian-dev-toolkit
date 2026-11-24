@@ -13,6 +13,7 @@ import { noBareCodeElement } from './no-bare-code-element.ts';
 import { noDynamicNodeBuiltinImport } from './no-dynamic-node-builtin-import.ts';
 import { noLocalObsidianInternals } from './no-local-obsidian-internals.ts';
 import { noOverCapWaitInEvalInObsidian } from './no-over-cap-wait-in-eval-in-obsidian.ts';
+import { noSplitSentenceLocaleKeys } from './no-split-sentence-locale-keys.ts';
 import { noUntrustedInputEvents } from './no-untrusted-input-events.ts';
 import { pluginNameAsCodeInUi } from './plugin-name-as-code-in-ui.ts';
 import { pluginNameAsCode } from './plugin-name-as-code.ts';
@@ -40,6 +41,7 @@ export const obsidianDevToolkitPlugin: ESLint.Plugin = {
     'no-dynamic-node-builtin-import': noDynamicNodeBuiltinImport,
     'no-local-obsidian-internals': noLocalObsidianInternals,
     'no-over-cap-wait-in-eval-in-obsidian': noOverCapWaitInEvalInObsidian,
+    'no-split-sentence-locale-keys': noSplitSentenceLocaleKeys,
     'no-untrusted-input-events': noUntrustedInputEvents,
     'plugin-name-as-code': pluginNameAsCode,
     'plugin-name-as-code-in-ui': pluginNameAsCodeInUi,
