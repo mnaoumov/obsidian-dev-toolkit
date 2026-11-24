@@ -217,13 +217,20 @@ function getLicenseConfigs(): Linter.Config[] {
  * The root `manifest.json` is what the Community directory's automated review actually reads.
  * `obsidianmd/validate-manifest` checks it the way that review does (the keys, their types, and the words and
  * format of the id, name and description); `obsidianmd.configs.recommended` turns it on at `warn`, and this
- * block raises it to an error, with `checkId` so a new plugin's id is checked as the developer docs ask.
+ * block raises it to an error.
+ *
+ * Its `checkId` option stays at upstream's default, off. A published plugin's id can never change (a new id orphans
+ * every install, its settings and its hotkeys), and most listed plugins' ids hold `obsidian`, so `checkId: true` failed
+ * every such repository's lint with a finding it can never fix. Lint cannot tell a listed plugin from a new one without
+ * the network, so the id's words are checked where it can: `check-plugin` and the release guard
+ * (`plugin-release-checks.ts`) report them unless the id is listed in the community directory. A new plugin that
+ * wants the lint-time check too passes `['error', { checkId: true }]` in its own config.
  *
  * The in-house `manifest-*` rules hold only what upstream does not check, and report nothing it already does.
  * `manifest.json` is strict JSON, so an `eslint-disable` comment in it is a parse error AND would stop Obsidian
  * loading the plugin. That makes the config the only place a check can be waived, which is why each in-house
- * check is a rule of its own, and why a grandfathered id is waived through `validate-manifest`'s own options:
- * `checkId: false`, or `allowedWords` for one word in one field.
+ * check is a rule of its own, and why a grandfathered word is waived through `validate-manifest`'s own options:
+ * `allowedWords` for one word in one field.
  */
 function getManifestConfigs(): Linter.Config[] {
   return defineConfig([
@@ -240,7 +247,7 @@ function getManifestConfigs(): Linter.Config[] {
         'obsidian-dev-toolkit/manifest-funding-url': 'error',
         'obsidian-dev-toolkit/manifest-id': 'error',
         'obsidian-dev-toolkit/manifest-name': 'error',
-        'obsidianmd/validate-manifest': ['error', { checkId: true }]
+        'obsidianmd/validate-manifest': 'error'
       }
     }
   ]);

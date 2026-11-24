@@ -6,9 +6,10 @@
  * Enforces the character set of a plugin's `manifest.json` `id`: lowercase letters, digits and hyphens only.
  *
  * `obsidianmd/validate-manifest` checks the rest of the id - no `obsidian`, no trailing `plugin` - under its
- * `checkId` option, which the shared config turns on, but not its characters. A published id can never be
- * changed, so a violation in an already-listed plugin is permanent and the only remedy is turning this rule
- * off for that repo with the reason written beside it.
+ * `checkId` option, but not its characters. The shared config leaves `checkId` off, because a published id can
+ * never be changed; the release checks report those words for an id the community directory does not list. For
+ * the same reason a violation of this rule in an already-listed plugin is permanent, and the only remedy is
+ * turning it off for that repo with the reason written beside it.
  *
  * Runs on the `@eslint/json` `json/json` language; see `manifest-helpers.ts` for why the AST is Momoa
  * rather than ESTree.
