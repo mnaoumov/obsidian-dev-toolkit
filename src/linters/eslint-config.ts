@@ -74,6 +74,12 @@ const DEMO_VAULT_SCRIPTS_FOLDER = join(DEMO_VAULT_ASSETS_FOLDER, 'CodeScriptTool
 const DEMO_VAULT_SETUP_FILES = ['demoSetup.ts', 'startup.ts'].map((fileName) => join(DEMO_VAULT_SCRIPTS_FOLDER, fileName));
 
 /**
+ * A plugin's translation files, where `obsidian-dev-toolkit/no-split-sentence-locale-keys` runs: `part1` is an ordinary
+ * key anywhere else.
+ */
+const SPLIT_SENTENCE_LOCALE_FILES = '**/i18n/locales/**/*.{cjs,cts,js,mjs,mts,ts}';
+
+/**
  * Build ESLint configurations.
  *
  * This function builds the ESLint configurations of an Obsidian plugin: the generic configuration of
@@ -454,6 +460,21 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       },
       rules: {
         'obsidian-dev-toolkit/no-bare-code-element': 'error'
+      }
+    },
+    {
+      /*
+       * A translated sentence is one string with named placeholders, never `part1` + an inline value + `part2`: a
+       * translator cannot reorder fragments. Only the translation files under an `i18n/locales/` folder are checked,
+       * since `part1` is an ordinary key anywhere else. Tests are exempt.
+       */
+      files: [SPLIT_SENTENCE_LOCALE_FILES],
+      ignores: context.testFiles,
+      plugins: {
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+      },
+      rules: {
+        'obsidian-dev-toolkit/no-split-sentence-locale-keys': 'error'
       }
     },
     {
