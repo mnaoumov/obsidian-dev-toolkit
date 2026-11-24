@@ -13,10 +13,11 @@ import {
   runCheckPluginCli
 } from './plugin-check-cli.ts';
 
-const { mockAnalyzePluginApiVersion, mockRunScannerCheck, mockValidatePluginRelease, mockValidateProjectWorkflowPins } = vi.hoisted(() => ({
+const { mockAnalyzePluginApiVersion, mockRunScannerCheck, mockValidatePluginRelease, mockValidateProjectBuildScript, mockValidateProjectWorkflowPins } = vi.hoisted(() => ({
   mockAnalyzePluginApiVersion: vi.fn(),
   mockRunScannerCheck: vi.fn(),
   mockValidatePluginRelease: vi.fn(),
+  mockValidateProjectBuildScript: vi.fn(),
   mockValidateProjectWorkflowPins: vi.fn()
 }));
 
@@ -32,6 +33,8 @@ vi.mock('./plugin-scanner-check.ts', () => ({
 vi.mock('./plugin-api-version-check.ts', () => ({ analyzePluginApiVersion: mockAnalyzePluginApiVersion }));
 
 vi.mock('./workflow-pins.ts', () => ({ validateProjectWorkflowPins: mockValidateProjectWorkflowPins }));
+
+vi.mock('./plugin-build-script-check.ts', () => ({ validateProjectBuildScript: mockValidateProjectBuildScript }));
 
 describe('parseCheckPluginArguments', () => {
   it('should leave every option out by default', () => {
@@ -88,6 +91,8 @@ describe('runCheckPluginCli', () => {
     mockRunScannerCheck.mockReset();
     mockValidateProjectWorkflowPins.mockReset();
     mockValidateProjectWorkflowPins.mockResolvedValue([]);
+    mockValidateProjectBuildScript.mockReset();
+    mockValidateProjectBuildScript.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -115,6 +120,13 @@ describe('runCheckPluginCli', () => {
     mockValidateProjectWorkflowPins.mockResolvedValue([{ level: 'error', message: 'pin', ruleId: 'workflow-pin-version-mismatch' }]);
     expect(await runCheckPluginCli([])).toBe(1);
     expect(stdout.join('')).toBe('error: pin (workflow-pin-version-mismatch)\n');
+  });
+
+  it('should report a build script warning without failing', async () => {
+    mockValidatePluginRelease.mockResolvedValue([]);
+    mockValidateProjectBuildScript.mockResolvedValue([{ level: 'warning', message: 'script', ruleId: 'build-script-not-toolkit' }]);
+    expect(await runCheckPluginCli([])).toBe(0);
+    expect(stdout.join('')).toBe('warning: script (build-script-not-toolkit)\n');
   });
 
   it('should run the scanner when asked and fail on its exit code', async () => {

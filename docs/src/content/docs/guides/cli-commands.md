@@ -126,6 +126,10 @@ Moves every pin to the installed version, and prints each changed line. A tag pi
 
 The same are `validateProjectWorkflowPins` and `updateWorkflowPins` (`@mnaoumov/obsidian-dev-toolkit/workflow-pins`). The check is not one of the community directory checks, so a release does not run it.
 
+### Keep the Build Script on the Toolkit Build
+
+The community directory rebuilds `main.js` from your tagged commit with the first of the `build`, `build:plugin` and `compile` scripts that `package.json` defines, and compares it with the released file. So `check-plugin` warns when that script does not run this toolkit's production build, because a hand-written script there can produce other bytes than the ones you release. The script passes when it runs a script file that calls `build()` from `@mnaoumov/obsidian-dev-toolkit/bundlers/<bundler>`, such as `jiti scripts/build.ts`, or runs `vite`, rollup or `webpack` with a config file that uses the toolkit's adapter. A script that runs another `npm` script (`npm run build:plugin`) is followed. A watch or development build (`--watch`, `-w`, `--mode development`) does not pass. It also warns when none of the three scripts exists. Both findings are warnings, so the command still exits `0`. The same check is `validateProjectBuildScript` (`@mnaoumov/obsidian-dev-toolkit/plugin-build-script-check`).
+
 ### Check the API Version Floor
 
 Run `npx check-plugin --api-version` before a release to compare your declared `minAppVersion` with the highest version required by an unguarded API use. It runs only `obsidianmd/no-unsupported-api` from your typed `ESLint` configuration, overriding its minimum to `0.0.0`, and prints the comparison and source locations. An insufficient manifest fails the command; a higher manifest gets advice that it could be lowered after reviewing other requirements. Recognized `requireApiVersion()` guards retain the upstream rule's behavior. Inline lint suppressions are disabled for this analysis, and neither the manifest nor `versions.json` is rewritten.
