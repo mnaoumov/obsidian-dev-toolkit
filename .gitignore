@@ -39,3 +39,6 @@ docs/dist
 docs/src/content/docs/api
 docs/src/generated-sidebar.json
 docs/public/og
+
+# Claude Code eval reports (claude plugin eval), local and per run.
+plugins/*/evals/results/
