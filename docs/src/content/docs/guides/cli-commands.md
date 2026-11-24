@@ -104,6 +104,28 @@ Two more errors come from [`obsidian-plugin-dev-kit`](https://github.com/Dimagio
 
 [Version Management](#version-management) runs the same manifest, tag and asset checks by itself, and stops the release on an error before it is tagged. The checks are also the `validatePluginRelease` function (`@mnaoumov/obsidian-dev-toolkit/plugin-release-checks`), and the scanner run is `runScannerCheck` (`@mnaoumov/obsidian-dev-toolkit/plugin-scanner-check`).
 
+### Keep the Workflow Pins on the Installed Release
+
+`check-plugin` also compares every `uses:` line in `.github/workflows` that calls one of this toolkit's [reusable workflows](/obsidian-dev-toolkit/guides/ci-and-release/) with the `@mnaoumov/obsidian-dev-toolkit` version you install, read from `package-lock.json` (or, without one, from an exact, `^` or `~` version in `package.json`). The workflows run the toolkit's own commands from your `node_modules`, so a pin left at an older release runs an older workflow against newer commands and misses every fix made to the workflow since. It reads no network:
+
+- `workflow-pin-version-mismatch` (error): a pin names another release. A tag pin (`@13.0.0`) is compared directly; a commit SHA pin (`@<sha> # 13.0.0`) through the version in its comment.
+- `workflow-pin-not-release` (error): a pin is neither a release tag nor a full commit SHA, such as `@main`, so the workflow changes under the plugin.
+- `workflow-pin-comment-missing` (warning): a SHA pin has no `# <version>` comment, so it cannot be compared.
+- `workflow-pin-toolkit-version-unknown` (error): a workflow calls the toolkit, but no installed version can be read.
+
+```sh
+npx update-workflow-pins
+```
+
+Moves every pin to the installed version, and prints each changed line. A tag pin gets the new tag; a SHA pin gets the commit of the new release's tag, looked up with `git ls-remote`, and the version in its comment. Other lines, comments and line endings are kept, and nothing is committed. A release workflow of the toolkit is tagged with every release, so a pin on the installed version always exists. Run it after `npm install` moves the toolkit, and commit the two together.
+
+| Flag | Effect |
+| --- | --- |
+| `--version=<version>` | Moves the pins to this release instead of the installed one. |
+| `--dry-run` | Prints the changes without writing them. |
+
+The same are `validateProjectWorkflowPins` and `updateWorkflowPins` (`@mnaoumov/obsidian-dev-toolkit/workflow-pins`). The check is not one of the community directory checks, so a release does not run it.
+
 ### Check the API Version Floor
 
 Run `npx check-plugin --api-version` before a release to compare your declared `minAppVersion` with the highest version required by an unguarded API use. It runs only `obsidianmd/no-unsupported-api` from your typed `ESLint` configuration, overriding its minimum to `0.0.0`, and prints the comparison and source locations. An insufficient manifest fails the command; a higher manifest gets advice that it could be lowered after reviewing other requirements. Recognized `requireApiVersion()` guards retain the upstream rule's behavior. Inline lint suppressions are disabled for this analysis, and neither the manifest nor `versions.json` is rewritten.
