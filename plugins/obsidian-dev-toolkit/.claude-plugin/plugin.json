@@ -1,0 +1,12 @@
+{
+  "name": "obsidian-dev-toolkit",
+  "version": "13.0.0",
+  "description": "Agent skills for Obsidian plugins built with @mnaoumov/obsidian-dev-toolkit: build, test, release and the demo vault.",
+  "author": {
+    "name": "Michael Naumov"
+  },
+  "homepage": "https://mnaoumov.dev/obsidian-dev-toolkit/guides/claude-code-skills/",
+  "repository": "https://github.com/mnaoumov/obsidian-dev-toolkit",
+  "license": "MIT",
+  "keywords": ["obsidian", "obsidian-plugin", "esbuild", "vitest", "release", "demo-vault"]
+}

@@ -16,6 +16,16 @@ Run `npx start-obsidian-for-debugging` to start Obsidian with its renderer debug
 
 `esbuild` builds include source-map ignore lists for shared debug and patching wrappers, so DevTools can link console messages to their callers. Extend the defaults with `ignoreListSources` or disable them with `ignoreListSources: false`; see the [bundler guide](https://mnaoumov.dev/obsidian-dev-toolkit/guides/bundlers/#esbuild).
 
+## Claude Code skills
+
+This repository is also a `Claude Code` plugin marketplace. Its plugin gives an agent working on your plugin four skills, `build`, `test`, `release` and `demo-vault`, written from the guides:
+
+```text
+/plugin install obsidian-dev-toolkit --marketplace mnaoumov/obsidian-dev-toolkit
+```
+
+See [Claude Code skills](docs/src/content/docs/guides/claude-code-skills.md).
+
 ## Where it fits
 
 It is one of five packages that replace [`obsidian-dev-utils`](https://github.com/mnaoumov/obsidian-dev-utils): [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-test-toolkit`](https://github.com/mnaoumov/typescript-test-toolkit), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) and [`@mnaoumov/obsidian-dev-toolkit`](https://github.com/mnaoumov/obsidian-dev-toolkit). It depends on [`@mnaoumov/typescript-lib`](https://github.com/mnaoumov/typescript-lib), [`@mnaoumov/typescript-dev-toolkit`](https://github.com/mnaoumov/typescript-dev-toolkit), and takes [`@mnaoumov/obsidian-lib`](https://github.com/mnaoumov/obsidian-lib) as a peer dependency, accepting any major from 6 through 11, so a plugin and its tooling share one copy. It moved here from that repository with its history.

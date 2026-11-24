@@ -15,5 +15,10 @@ export const config: MarkdownlintCli2ConfigSchema = {
     // Turned ON here, against the shared default of OFF: every paragraph in this repository's markdown is one
     // physical line, and the rule is what keeps hard wrapping from coming back.
     'no-soft-break-in-paragraph': true
-  }
+  },
+  ignores: [
+    ...(obsidianMarkdownlintCli2Config.ignores ?? []),
+    // The plain request a Claude Code eval sends to the model, not a document: a heading would change the request.
+    'plugins/*/evals/*/prompt.md'
+  ]
 };
