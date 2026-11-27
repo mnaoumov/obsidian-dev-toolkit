@@ -44,6 +44,26 @@ describe('findClaudePluginProblems', () => {
   it('should find no problem in the shipped plugin', () => {
     expect(findClaudePluginProblems(ROOT_DIR)).toEqual([]);
   });
+
+  it('should not read the claude plugin eval results folder as an eval case', () => {
+    const rootDirectory = makeManifestRoot('{ "name": "x", "version": "1.0.0" }\n');
+    const pluginFolder = join(rootDirectory, CLAUDE_PLUGIN_FOLDER);
+    writeFileSync(join(rootDirectory, 'package.json'), '{ "bin": {}, "version": "1.0.0" }\n');
+    mkdirSync(join(rootDirectory, '.claude-plugin'));
+    writeFileSync(
+      join(rootDirectory, '.claude-plugin/marketplace.json'),
+      `{ "name": "m", "plugins": [{ "name": "x", "source": "./${CLAUDE_PLUGIN_FOLDER}" }] }\n`
+    );
+    mkdirSync(join(pluginFolder, 'skills/build'), { recursive: true });
+    writeFileSync(join(pluginFolder, 'skills/build/SKILL.md'), '---\nname: build\ndescription: Build.\n---\n');
+    mkdirSync(join(pluginFolder, 'evals/select-build/graders'), { recursive: true });
+    writeFileSync(join(pluginFolder, 'evals/select-build/prompt.md'), 'Build it.\n');
+    writeFileSync(join(pluginFolder, 'evals/select-build/graders/skill-fired.md'), '"(?:obsidian-dev-toolkit:)?build"\n');
+    writeFileSync(join(pluginFolder, 'evals/select-build/graders/no-other-skill.md'), '"(?:obsidian-dev-toolkit:)?(?:)"\n');
+    mkdirSync(join(pluginFolder, 'evals/results/2026-11-24'), { recursive: true });
+
+    expect(findClaudePluginProblems(rootDirectory)).toEqual([]);
+  });
 });
 
 describe('slugifyHeading', () => {
