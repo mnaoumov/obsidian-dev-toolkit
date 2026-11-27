@@ -35,7 +35,10 @@ import { jsonPlugin } from './eslint-rules/manifest-helpers.ts';
 import { obsidianDevToolkitPlugin } from './eslint-rules/obsidian-dev-toolkit-plugin.ts';
 import { warnOnEslintMajorMismatch } from './obsidianmd-eslint-nesting.ts';
 import { stripOwnedRuleCustomMessageEntries } from './obsidianmd-rule-custom-message.ts';
-import { getRuntimeCompatibilityConfig } from './runtime-compatibility.ts';
+import {
+  getRuntimeCompatibilityConfig,
+  getRuntimeDependentRuleOverrides
+} from './runtime-compatibility.ts';
 
 /**
  * Options for the Obsidian ESLint configuration.
@@ -111,6 +114,11 @@ export function defineEslintConfigs(options: DefineEslintConfigsOptions = {}): L
       ...getRuntimeCompatibilityConfig(options.runtimeFloor),
       files: context.sourceFiles,
       ignores: [...context.testFiles, ...context.scriptFiles]
+    },
+    {
+      files: context.sourceFiles,
+      ignores: [...context.testFiles, ...context.scriptFiles],
+      rules: getRuntimeDependentRuleOverrides(options.runtimeFloor)
     },
     ...getObsidianOverrideConfigs(context),
     ...getNodeBuiltinsConfigs(context),
