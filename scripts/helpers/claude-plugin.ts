@@ -26,6 +26,10 @@ import { join } from 'node:path';
 export const CLAUDE_PLUGIN_FOLDER = 'plugins/obsidian-dev-toolkit';
 
 const PACKAGE_NAME = '@mnaoumov/obsidian-dev-toolkit';
+/**
+ * The folder `claude plugin eval` writes its local reports into, beside the cases. It is gitignored and holds no case.
+ */
+const EVAL_RESULTS_FOLDER = 'results';
 const DOCS_SITE_GUIDES_URL = 'https://mnaoumov.dev/obsidian-dev-toolkit/guides/';
 const GUIDES_FOLDER = 'docs/src/content/docs/guides';
 const PLUGIN_MANIFEST_PATH = `${CLAUDE_PLUGIN_FOLDER}/.claude-plugin/plugin.json`;
@@ -134,7 +138,7 @@ function findCommandProblems(skillPath: string, text: string, packageJson: Packa
 function findEvalProblems(rootDirectory: string, skillNames: readonly string[]): string[] {
   const problems: string[] = [];
   const evalsFolder = join(rootDirectory, CLAUDE_PLUGIN_FOLDER, 'evals');
-  const evalNames = listFolders(evalsFolder);
+  const evalNames = listFolders(evalsFolder).filter((name) => name !== EVAL_RESULTS_FOLDER);
 
   for (const skillName of skillNames) {
     if (!evalNames.includes(`select-${skillName}`)) {
