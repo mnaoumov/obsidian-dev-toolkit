@@ -4,7 +4,7 @@
     "name": "Michael Naumov"
   },
   "metadata": {
-    "description": "Claude Code skills for building, testing and releasing Obsidian plugins with @mnaoumov/obsidian-dev-toolkit."
+    "description": "Agent skills for building, testing and releasing Obsidian plugins with @mnaoumov/obsidian-dev-toolkit."
   },
   "plugins": [
     {

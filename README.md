@@ -18,15 +18,20 @@ Run `npx start-obsidian-for-debugging` to start Obsidian with its renderer debug
 
 `esbuild` builds include source-map ignore lists for shared debug and patching wrappers, so DevTools can link console messages to their callers. Extend the defaults with `ignoreListSources` or disable them with `ignoreListSources: false`; see the [bundler guide](https://mnaoumov.dev/obsidian-dev-toolkit/guides/bundlers/#esbuild).
 
-## Claude Code skills
+## AI agent skills
 
-This repository is also a `Claude Code` plugin marketplace. Its plugin gives an agent working on your plugin four skills, `build`, `test`, `release` and `demo-vault`, written from the guides:
+This repository also ships four agent skills for an AI coding agent working on your plugin, `build`, `test`, `release` and `demo-vault`, written from the guides in the open Agent Skills format. The repository is a plugin marketplace that `Claude Code` and `Codex` both install:
 
 ```text
 /plugin install obsidian-dev-toolkit --marketplace mnaoumov/obsidian-dev-toolkit
 ```
 
-See [Claude Code skills](docs/src/content/docs/guides/claude-code-skills.md).
+```shell
+codex plugin marketplace add mnaoumov/obsidian-dev-toolkit
+codex plugin add obsidian-dev-toolkit@obsidian-dev-toolkit
+```
+
+Another agent that reads the format takes the skill folders as they are. See [AI agent skills](docs/src/content/docs/guides/agent-skills.md).
 
 ## Where it fits
 

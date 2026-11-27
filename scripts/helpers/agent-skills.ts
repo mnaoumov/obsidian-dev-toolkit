@@ -1,15 +1,16 @@
 /**
  * @file
  *
- * The Claude Code plugin this repository ships for plugin authors: `.claude-plugin/marketplace.json` at the root and
- * the plugin in `plugins/obsidian-dev-toolkit/`, with one skill per area (build, test, release, demo vault) and one
- * skill-selection eval per skill. The skill set and the eval format are re-implemented after
+ * The agent skills this repository ships for plugin authors: one skill per area (build, test, release, demo vault) in
+ * the open Agent Skills format, under `plugins/obsidian-dev-toolkit/skills/`, the only copy. The same folder is the
+ * plugin that `.claude-plugin/marketplace.json` at the root lists, which both Claude Code and Codex install, and it
+ * holds one skill-selection eval per skill. The skill set and the eval format are re-implemented after
  * `obsidian-plugin-dev-kit`'s `plugins/opdk/` (v0.4.0, MIT).
  *
  * The skills are hand-written from the guides, so this module holds what keeps them honest instead: the release
- * writes the package version into `plugin.json` (Claude Code updates an installed plugin only when that string
- * changes), and {@link findClaudePluginProblems} reports every skill, link, command and import that no longer matches
- * the package.
+ * writes the package version into `plugin.json` (an agent updates an installed plugin only when that string changes),
+ * and {@link findAgentSkillProblems} reports every skill, link, command and import that no longer matches the package,
+ * and every skill that stops being agent-neutral.
  */
 
 import {
@@ -21,9 +22,27 @@ import {
 import { join } from 'node:path';
 
 /**
- * The plugin's folder, relative to the repository root.
+ * The skills plugin's folder, relative to the repository root.
  */
-export const CLAUDE_PLUGIN_FOLDER = 'plugins/obsidian-dev-toolkit';
+export const SKILLS_PLUGIN_FOLDER = 'plugins/obsidian-dev-toolkit';
+
+/**
+ * The comment that opens a section of a skill written for one agent only. The section runs to the next heading of the
+ * same or a higher level, and the agent-neutral check skips it.
+ */
+const AGENT_SPECIFIC_MARKER_REGEXP = /^<!-- agent-specific: \S[^>]*-->$/u;
+
+/**
+ * What only one agent has: agent names, their own memory files and folders, their slash commands and argument
+ * placeholders, and tool names that exist in one agent only. A skill names none of them outside an agent-specific
+ * section, so it reads the same in every agent.
+ */
+const AGENT_SPECIFIC_TERM_REGEXP = /\b(?:Claude|Codex|Cursor|Gemini|Copilot|Windsurf|AskUserQuestion|TodoWrite|WebFetch|apply_patch)\b|CLAUDE\.md|GEMINI\.md|\.claude\/|\.codex\/|\.cursor\/|\$ARGUMENTS|(?:^|\s)\/(?:plugin|skills?|mcp|clear|compact|init)\b/u;
+
+/**
+ * The frontmatter fields every agent reads. Others, such as a tool allow-list, are honored by some agents only.
+ */
+const NEUTRAL_FRONTMATTER_FIELDS = ['description', 'name'];
 
 const PACKAGE_NAME = '@mnaoumov/obsidian-dev-toolkit';
 /**
@@ -32,7 +51,7 @@ const PACKAGE_NAME = '@mnaoumov/obsidian-dev-toolkit';
 const EVAL_RESULTS_FOLDER = 'results';
 const DOCS_SITE_GUIDES_URL = 'https://mnaoumov.dev/obsidian-dev-toolkit/guides/';
 const GUIDES_FOLDER = 'docs/src/content/docs/guides';
-const PLUGIN_MANIFEST_PATH = `${CLAUDE_PLUGIN_FOLDER}/.claude-plugin/plugin.json`;
+const PLUGIN_MANIFEST_PATH = `${SKILLS_PLUGIN_FOLDER}/.claude-plugin/plugin.json`;
 const VERSION_PROPERTY_REGEXP = /"version":\s*"[^"]*"/u;
 
 interface MarketplaceJson {
@@ -56,12 +75,12 @@ interface PluginJson {
 }
 
 /**
- * Lists every problem that makes the Claude Code plugin disagree with the package it describes.
+ * Lists every problem that makes the agent skills disagree with the package they describe, or stop being agent-neutral.
  *
  * @param rootDirectory - The repository root.
  * @returns The problems, one line each; empty when the plugin is consistent.
  */
-export function findClaudePluginProblems(rootDirectory: string): string[] {
+export function findAgentSkillProblems(rootDirectory: string): string[] {
   const problems: string[] = [];
   const packageJson = readJson(join(rootDirectory, 'package.json')) as PackageJson;
   const pluginJson = readJson(join(rootDirectory, PLUGIN_MANIFEST_PATH)) as PluginJson;
@@ -74,13 +93,13 @@ export function findClaudePluginProblems(rootDirectory: string): string[] {
   const listed = marketplaceJson.plugins.find((plugin) => plugin.name === pluginJson.name);
   if (listed === undefined) {
     problems.push(`.claude-plugin/marketplace.json does not list the plugin ${pluginJson.name}.`);
-  } else if (join(rootDirectory, listed.source) !== join(rootDirectory, CLAUDE_PLUGIN_FOLDER)) {
-    problems.push(`.claude-plugin/marketplace.json: ${pluginJson.name} has source ${listed.source}, not ./${CLAUDE_PLUGIN_FOLDER}.`);
+  } else if (join(rootDirectory, listed.source) !== join(rootDirectory, SKILLS_PLUGIN_FOLDER)) {
+    problems.push(`.claude-plugin/marketplace.json: ${pluginJson.name} has source ${listed.source}, not ./${SKILLS_PLUGIN_FOLDER}.`);
   }
 
-  const skillNames = listFolders(join(rootDirectory, CLAUDE_PLUGIN_FOLDER, 'skills'));
+  const skillNames = listFolders(join(rootDirectory, SKILLS_PLUGIN_FOLDER, 'skills'));
   if (skillNames.length === 0) {
-    problems.push(`${CLAUDE_PLUGIN_FOLDER}/skills has no skill.`);
+    problems.push(`${SKILLS_PLUGIN_FOLDER}/skills has no skill.`);
   }
 
   for (const skillName of skillNames) {
@@ -113,7 +132,7 @@ export function slugifyHeading(heading: string): string {
  * @param rootDirectory - The repository root.
  * @param newVersion - The version being released.
  */
-export function updateClaudePluginVersion(rootDirectory: string, newVersion: string): void {
+export function updateSkillsPluginVersion(rootDirectory: string, newVersion: string): void {
   const manifestPath = join(rootDirectory, PLUGIN_MANIFEST_PATH);
   const text = readFileSync(manifestPath, 'utf-8');
   if (!VERSION_PROPERTY_REGEXP.test(text)) {
@@ -121,6 +140,50 @@ export function updateClaudePluginVersion(rootDirectory: string, newVersion: str
   }
 
   writeFileSync(manifestPath, text.replace(VERSION_PROPERTY_REGEXP, () => `"version": "${newVersion}"`));
+}
+
+function findAgentSpecificProblems(skillPath: string, text: string): string[] {
+  const problems: string[] = [];
+  const body = text.replace(/^---\n[\s\S]*?\n---\n/u, (frontmatter) => '\n'.repeat(frontmatter.split('\n').length - 1));
+  let agentSpecificLevel: null | number = null;
+  let isPendingMarker = false;
+  let isInFence = false;
+  for (const [index, line] of body.split('\n').entries()) {
+    if (/^(?:```|~~~)/u.test(line)) {
+      isInFence = !isInFence;
+    }
+
+    const headingLevel = isInFence ? undefined : /^(?<marks>#{1,6}) /u.exec(line)?.groups?.['marks']?.length;
+    if (headingLevel !== undefined) {
+      if (isPendingMarker) {
+        agentSpecificLevel = headingLevel;
+        isPendingMarker = false;
+        continue;
+      }
+
+      if (agentSpecificLevel !== null && headingLevel <= agentSpecificLevel) {
+        agentSpecificLevel = null;
+      }
+    }
+
+    if (!isInFence && AGENT_SPECIFIC_MARKER_REGEXP.test(line)) {
+      isPendingMarker = true;
+      continue;
+    }
+
+    if (agentSpecificLevel !== null) {
+      continue;
+    }
+
+    const match = AGENT_SPECIFIC_TERM_REGEXP.exec(line);
+    if (match !== null) {
+      problems.push(
+        `${skillPath}:${String(index + 1)}: "${match[0].trim()}" is specific to one agent; reword it, or put it in a section opened by <!-- agent-specific: <agent> -->.`
+      );
+    }
+  }
+
+  return problems;
 }
 
 function findCommandProblems(skillPath: string, text: string, packageJson: PackageJson): string[] {
@@ -137,18 +200,18 @@ function findCommandProblems(skillPath: string, text: string, packageJson: Packa
 
 function findEvalProblems(rootDirectory: string, skillNames: readonly string[]): string[] {
   const problems: string[] = [];
-  const evalsFolder = join(rootDirectory, CLAUDE_PLUGIN_FOLDER, 'evals');
+  const evalsFolder = join(rootDirectory, SKILLS_PLUGIN_FOLDER, 'evals');
   const evalNames = listFolders(evalsFolder).filter((name) => name !== EVAL_RESULTS_FOLDER);
 
   for (const skillName of skillNames) {
     if (!evalNames.includes(`select-${skillName}`)) {
-      problems.push(`${CLAUDE_PLUGIN_FOLDER}/evals has no select-${skillName} case for the ${skillName} skill.`);
+      problems.push(`${SKILLS_PLUGIN_FOLDER}/evals has no select-${skillName} case for the ${skillName} skill.`);
     }
   }
 
   for (const evalName of evalNames) {
     const skillName = evalName.replace(/^select-/u, '');
-    const evalPath = `${CLAUDE_PLUGIN_FOLDER}/evals/${evalName}`;
+    const evalPath = `${SKILLS_PLUGIN_FOLDER}/evals/${evalName}`;
     if (!skillNames.includes(skillName)) {
       problems.push(`${evalPath} selects ${skillName}, which is not a skill.`);
       continue;
@@ -205,7 +268,7 @@ function findGuideLinkProblems(rootDirectory: string, skillPath: string, text: s
 
 function findSkillProblems(rootDirectory: string, skillName: string, packageJson: PackageJson): string[] {
   const problems: string[] = [];
-  const skillPath = `${CLAUDE_PLUGIN_FOLDER}/skills/${skillName}/SKILL.md`;
+  const skillPath = `${SKILLS_PLUGIN_FOLDER}/skills/${skillName}/SKILL.md`;
   const fullPath = join(rootDirectory, skillPath);
   if (!existsSync(fullPath)) {
     return [`${skillPath} is missing.`];
@@ -221,7 +284,15 @@ function findSkillProblems(rootDirectory: string, skillName: string, packageJson
     problems.push(`${skillPath}: the frontmatter has no description.`);
   }
 
+  for (const line of frontmatter.split('\n')) {
+    const field = /^(?<field>[\w-]+):/u.exec(line)?.groups?.['field'];
+    if (field !== undefined && !NEUTRAL_FRONTMATTER_FIELDS.includes(field)) {
+      problems.push(`${skillPath}: the frontmatter field ${field} is not one every agent reads; keep only ${NEUTRAL_FRONTMATTER_FIELDS.join(' and ')}.`);
+    }
+  }
+
   problems.push(
+    ...findAgentSpecificProblems(skillPath, text),
     ...findGuideLinkProblems(rootDirectory, skillPath, text),
     ...findCommandProblems(skillPath, text, packageJson),
     ...findSubpathProblems(rootDirectory, skillPath, text)

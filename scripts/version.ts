@@ -5,8 +5,8 @@
  *
  * The generic release bumps the version, settles `CHANGELOG.md`, commits, tags, pushes and creates the GitHub
  * release. The release carries no assets: the package is distributed through NPM, which
- * `.github/workflows/publish-npm.yml` publishes to from a fresh build when the release is published. The Claude Code
- * plugin's `plugin.json` carries the same version, written into the release commit, because Claude Code updates an
+ * `.github/workflows/publish-npm.yml` publishes to from a fresh build when the release is published. The agent skills
+ * plugin's `plugin.json` carries the same version, written into the release commit, because an agent updates an
  * installed plugin only when that string changes.
  */
 
@@ -19,7 +19,7 @@ import { noopAsync } from '@mnaoumov/typescript-lib/function';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { updateClaudePluginVersion } from './helpers/claude-plugin.ts';
+import { updateSkillsPluginVersion } from './helpers/agent-skills.ts';
 
 await wrapCliTask(async () => {
   const [, , ...versionArguments] = process.argv;
@@ -28,7 +28,7 @@ await wrapCliTask(async () => {
     ...options,
     getReleaseAssetPaths: () => Promise.resolve([]),
     updateVersionInExtraFiles: (newVersion) => {
-      updateClaudePluginVersion(fileURLToPath(new URL('..', import.meta.url)), newVersion);
+      updateSkillsPluginVersion(fileURLToPath(new URL('..', import.meta.url)), newVersion);
       return noopAsync();
     }
   });
