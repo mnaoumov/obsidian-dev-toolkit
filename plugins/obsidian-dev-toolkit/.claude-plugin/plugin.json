@@ -5,7 +5,7 @@
   "author": {
     "name": "Michael Naumov"
   },
-  "homepage": "https://mnaoumov.dev/obsidian-dev-toolkit/guides/claude-code-skills/",
+  "homepage": "https://mnaoumov.dev/obsidian-dev-toolkit/guides/agent-skills/",
   "repository": "https://github.com/mnaoumov/obsidian-dev-toolkit",
   "license": "MIT",
   "keywords": ["obsidian", "obsidian-plugin", "esbuild", "vitest", "release", "demo-vault"]

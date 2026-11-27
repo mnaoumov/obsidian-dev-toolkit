@@ -9,7 +9,7 @@ Run every command from the plugin root. The id and version come from `manifest.j
 
 ## Safety
 
-- A release pushes a tag and a commit and publishes a `GitHub` release. Do not run `npm run version` unless the owner asked for that release.
+- A release pushes a tag and a commit and publishes a `GitHub` release. Do not run `npm run version` unless the user asked for that release.
 - Never force-push, and never move or delete a published tag or release. A bad release is fixed by the next version.
 - `npx check-plugin` and `npx update-workflow-pins --dry-run` change nothing, so they are always safe.
 
