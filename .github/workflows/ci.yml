@@ -38,6 +38,12 @@ jobs:
       - name: Gate
         run: npm run gate
 
+      # The gate built `dist/`, so this packs what a release would publish, installs it into an empty project, loads
+      # every exported module as ESM and as CommonJS and runs the bins. It installs the package's dependencies from
+      # the registry, so it stays out of the gate.
+      - name: Pack smoke
+        run: npm run smoke:pack
+
       - name: Integration tests
         run: npm run test:integration
 

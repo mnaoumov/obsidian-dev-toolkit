@@ -253,6 +253,7 @@
     "lint:md": "jiti scripts/lint-md.ts",
     "lint:md:fix": "jiti scripts/lint-md-fix.ts",
     "prepare": "jiti scripts/prepare.ts",
+    "smoke:pack": "jiti scripts/smoke-pack.ts",
     "publish:npm": "jiti scripts/publish-npm.ts",
     "spellcheck": "jiti scripts/spellcheck.ts",
     "test": "jiti scripts/test.ts",
@@ -280,7 +281,7 @@
   "dependencies": {
     "@eslint/json": "^2.1.0",
     "@jridgewell/sourcemap-codec": "^1.6.0",
-    "@mnaoumov/typescript-dev-toolkit": "^10.0.0",
+    "@mnaoumov/typescript-dev-toolkit": "^11.1.1",
     "@mnaoumov/typescript-lib": "^4.0.0",
     "@mnaoumov/typescript-test-toolkit": "^1.1.0",
     "@types/eslint": "^9.6.1",
