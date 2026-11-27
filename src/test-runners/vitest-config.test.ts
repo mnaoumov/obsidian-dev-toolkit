@@ -58,6 +58,33 @@ function mockAllowedNodeEnvironmentFlags(flags: string[]): void {
   vi.spyOn(process, 'allowedNodeEnvironmentFlags', 'get').mockReturnValue(new Set(flags));
 }
 
+const { assertVitestPeerVersionsSpy } = vi.hoisted(() => ({
+  assertVitestPeerVersionsSpy: vi.fn()
+}));
+
+vi.mock('@mnaoumov/typescript-dev-toolkit/test-runners/vitest-peers', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@mnaoumov/typescript-dev-toolkit/test-runners/vitest-peers')>();
+  assertVitestPeerVersionsSpy.mockImplementation(original.assertVitestPeerVersions);
+  return { ...original, assertVitestPeerVersions: assertVitestPeerVersionsSpy };
+});
+
+describe('defineObsidianPluginVitestConfig vitest peer check', () => {
+  it('should check the vitest companion package versions under its own name', () => {
+    assertVitestPeerVersionsSpy.mockClear();
+    defineObsidianPluginVitestConfig();
+    expect(assertVitestPeerVersionsSpy).toHaveBeenCalledWith({ callerName: 'defineObsidianPluginVitestConfig()' });
+  });
+
+  it('should fail with the check error before building any project', () => {
+    assertVitestPeerVersionsSpy.mockImplementationOnce(() => {
+      throw new Error('mismatched');
+    });
+    const editContext = vi.fn();
+    expect(() => defineObsidianPluginVitestConfig({ editContext })).toThrow('mismatched');
+    expect(editContext).not.toHaveBeenCalled();
+  });
+});
+
 describe('ObsidianPluginVitestConfigContext', () => {
   beforeEach(() => {
     vi.stubEnv('OBSIDIAN_VERSION', undefined);

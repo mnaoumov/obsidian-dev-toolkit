@@ -26,6 +26,7 @@ import {
   DEFAULT_VITEST_REPORTERS,
   DEFAULT_VITEST_TEST_EXCLUDE
 } from '@mnaoumov/typescript-dev-toolkit/test-runners/vitest-config';
+import { assertVitestPeerVersions } from '@mnaoumov/typescript-dev-toolkit/test-runners/vitest-peers';
 import process from 'node:process';
 
 import {
@@ -422,6 +423,9 @@ export class ObsidianPluginVitestConfigContext {
  * @returns The vitest configuration.
  */
 export function defineObsidianPluginVitestConfig(options: DefineObsidianPluginVitestConfigOptions = {}): ViteUserConfig {
+  // A `vitest` / `@vitest/coverage-v8` pair at different versions fails here, naming the `npm install` line that fixes it.
+  assertVitestPeerVersions({ callerName: 'defineObsidianPluginVitestConfig()' });
+
   const context = new ObsidianPluginVitestConfigContext();
 
   if (options.editContext) {
