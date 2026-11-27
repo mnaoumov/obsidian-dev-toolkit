@@ -130,6 +130,27 @@ The same are `validateProjectWorkflowPins` and `updateWorkflowPins` (`@mnaoumov/
 
 The community directory rebuilds `main.js` from your tagged commit with the first of the `build`, `build:plugin` and `compile` scripts that `package.json` defines, and compares it with the released file. So `check-plugin` warns when that script does not run this toolkit's production build, because a hand-written script there can produce other bytes than the ones you release. The script passes when it runs a script file that calls `build()` from `@mnaoumov/obsidian-dev-toolkit/bundlers/<bundler>`, such as `jiti scripts/build.ts`, or runs `vite`, rollup or `webpack` with a config file that uses the toolkit's adapter. A script that runs another `npm` script (`npm run build:plugin`) is followed. A watch or development build (`--watch`, `-w`, `--mode development`) does not pass. It also warns when none of the three scripts exists. Both findings are warnings, so the command still exits `0`. The same check is `validateProjectBuildScript` (`@mnaoumov/obsidian-dev-toolkit/plugin-build-script-check`).
 
+### Check That the Committed Tree Builds the Same `main.js`
+
+The build script being right is half of it; the other half is that the tagged commit alone produces your bytes. `assertObsidianPluginReproducibleBuild` (`@mnaoumov/obsidian-dev-toolkit/plugin-reproducible-build`) builds the working tree, then extracts `git archive HEAD` into a temporary folder, reaches your `node_modules` from there through a junction, builds it again with `NODE_PRESERVE_SYMLINKS=1`, and requires `dist/build/main.js` and `dist/build/styles.css` (when the build writes one) to match byte for byte. A difference names the file, the first differing byte and the likely causes: a file the build reads that `git` does not hold, an uncommitted change, or an absolute path of this machine in the output.
+
+```typescript
+// scripts/check-reproducible.ts
+import { assertObsidianPluginReproducibleBuild } from '@mnaoumov/obsidian-dev-toolkit/plugin-reproducible-build';
+import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
+import process from 'node:process';
+
+await wrapCliTask(() =>
+  assertObsidianPluginReproducibleBuild({
+    shouldBuildWorkingTree: !process.argv.includes('--no-build')
+  })
+);
+```
+
+The template ships this file as `scripts/check/check-reproducible.ts`; run it as `"check:reproducible": "jiti scripts/check/check-reproducible.ts"`. `--no-build` compares the output the last build left, for a run straight after the gate. Pass `distFolder` when your build writes elsewhere, `buildCommand` when it is not `npm run build`, or `outputPaths` to compare other files. Commit first: an uncommitted change is the most common difference, and the error lists the uncommitted files.
+
+The `esbuild` adapter sets `preserveSymlinks` while `NODE_PRESERVE_SYMLINKS` is `1`, so a bundle's `// node_modules/...` comments and source map paths stay the copy's own rather than the project's real folder. The `vite`, rollup, `webpack` and parcel adapters do not yet, so a build with one of them that is not minified can report such a path as a difference. The check is not part of `npm run version`: it builds the plugin twice, and a production build of the toolkit already carries no path of the build machine.
+
 ### Check the API Version Floor
 
 Run `npx check-plugin --api-version` before a release to compare your declared `minAppVersion` with the highest version required by an unguarded API use. It runs only `obsidianmd/no-unsupported-api` from your typed `ESLint` configuration, overriding its minimum to `0.0.0`, and prints the comparison and source locations. An insufficient manifest fails the command; a higher manifest gets advice that it could be lowered after reviewing other requirements. Recognized `requireApiVersion()` guards retain the upstream rule's behavior. Inline lint suppressions are disabled for this analysis, and neither the manifest nor `versions.json` is rewritten.

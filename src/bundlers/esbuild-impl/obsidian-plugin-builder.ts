@@ -42,7 +42,8 @@ import {
   completeObsidianPluginDistFolder,
   getObsidianPluginBanner,
   OBSIDIAN_PLUGIN_EXTERNALS,
-  resolveObsidianPluginBuildContext
+  resolveObsidianPluginBuildContext,
+  shouldPreserveSymlinks
 } from '../obsidian-plugin-build.ts';
 import { assertMainJsLoadsOnMobile } from '../obsidian-plugin-mobile-load-check.ts';
 import { copyToObsidianPluginsFolderPlugin } from './copy-to-obsidian-plugins-folder-plugin.ts';
@@ -212,6 +213,9 @@ export async function buildObsidianPlugin(params: BuildObsidianPluginParams): Pr
       ...(params.ignoreListSources === false ? [] : [ignoreListSourceMapPlugin(params.ignoreListSources)]),
       copyToObsidianPluginsFolderPlugin({ distFolder, isProductionBuild, obsidianConfigFolder, pluginName, reload })
     ],
+    // The reproducible-build check builds a copy that reaches `node_modules` through a junction; resolving it would write
+    // the project's real folder into the copy's module comments and source maps.
+    preserveSymlinks: shouldPreserveSymlinks(),
     sourcemap: !isProductionBuild && 'inline',
     target: params.runtimeFloor ?? DEFAULT_OBSIDIAN_RUNTIME_FLOOR,
     treeShaking: true

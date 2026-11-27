@@ -34,7 +34,8 @@ import {
   mergeCssAssets,
   OBSIDIAN_PLUGIN_EXTERNALS,
   resolveFromRoot,
-  resolveObsidianPluginBuildContext
+  resolveObsidianPluginBuildContext,
+  shouldPreserveSymlinks
 } from './obsidian-plugin-build.ts';
 
 interface MockState {
@@ -86,6 +87,23 @@ describe('obsidian-plugin-build', () => {
     }
     return state.rootFolder;
   }
+
+  describe('shouldPreserveSymlinks', () => {
+    it('is true only when NODE_PRESERVE_SYMLINKS is 1', () => {
+      expect(shouldPreserveSymlinks({ NODE_PRESERVE_SYMLINKS: '1' })).toBe(true);
+      expect(shouldPreserveSymlinks({ NODE_PRESERVE_SYMLINKS: '0' })).toBe(false);
+      expect(shouldPreserveSymlinks({})).toBe(false);
+    });
+
+    it('reads the process environment by default', () => {
+      vi.stubEnv('NODE_PRESERVE_SYMLINKS', '1');
+      try {
+        expect(shouldPreserveSymlinks()).toBe(true);
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+  });
 
   describe('isObsidianPluginExternal', () => {
     it.each([

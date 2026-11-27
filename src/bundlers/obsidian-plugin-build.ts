@@ -409,3 +409,17 @@ export async function resolveObsidianPluginBuildContext(params: ResolveObsidianP
     shouldCheckMobileLoad: params.shouldCheckMobileLoad ?? true
   };
 }
+
+/**
+ * Tells whether a build must keep symlinked paths as they are, as Node does under `NODE_PRESERVE_SYMLINKS=1`.
+ *
+ * The reproducible-build check builds a copy of the committed tree that reaches the project's `node_modules` through a
+ * junction, with that variable set. A bundler that resolves the junction writes the project's real folder into the
+ * module path comments and source maps of the copy's bundle, so the two builds differ although nothing else does.
+ *
+ * @param env - The environment to read `NODE_PRESERVE_SYMLINKS` from.
+ * @returns `true` when `NODE_PRESERVE_SYMLINKS` is `1`.
+ */
+export function shouldPreserveSymlinks(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env['NODE_PRESERVE_SYMLINKS'] === '1';
+}
