@@ -21,6 +21,7 @@ import { preferActiveWindow } from './prefer-active-window.ts';
 import { preferComponentEx } from './prefer-component-ex.ts';
 import { requireComponentSuffix } from './require-component-suffix.ts';
 import { requirePluginApiContractSchemas } from './require-plugin-api-contract-schemas.ts';
+import { workaroundCanary } from './workaround-canary.ts';
 
 /**
  * The namespace the Obsidian in-house rules are registered under: the name of the package that defines them. The
@@ -48,6 +49,7 @@ export const obsidianDevToolkitPlugin: ESLint.Plugin = {
     'prefer-active-window': preferActiveWindow,
     'prefer-component-ex': preferComponentEx,
     'require-component-suffix': requireComponentSuffix,
-    'require-plugin-api-contract-schemas': requirePluginApiContractSchemas
+    'require-plugin-api-contract-schemas': requirePluginApiContractSchemas,
+    'workaround-canary': workaroundCanary
   }
 };

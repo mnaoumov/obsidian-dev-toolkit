@@ -529,6 +529,19 @@ function getObsidianOverrideConfigs(context: EslintConfigContext): Linter.Config
       rules: {
         'obsidian-dev-toolkit/prefer-active-window': 'error'
       }
+    },
+    {
+      /*
+       * Every Obsidian workaround marker has a canary integration test that proves the workaround is still needed, and
+       * every canary names a marked workaround. Tests are NOT exempt: the canaries live in them.
+       */
+      files: context.sourceFiles,
+      plugins: {
+        'obsidian-dev-toolkit': obsidianDevToolkitPlugin
+      },
+      rules: {
+        'obsidian-dev-toolkit/workaround-canary': 'error'
+      }
     }
   ]);
 }

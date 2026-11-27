@@ -256,3 +256,41 @@ export const { setup, teardown } = createSetup({
 ```
 
 The assets are downloaded once per version into `node_modules/.cache/obsidian-dev-toolkit/released-plugins/<plugin id>/<version>`, so later runs do no network I/O and nothing needs a `.gitignore` entry. `downloadReleasedPlugin` returns the two files' contents when you need to place them yourself.
+
+## Workaround canaries: retiring an Obsidian workaround once Obsidian fixes the bug
+
+A workaround for an Obsidian bug tends to outlive the bug, because nothing says when Obsidian fixed it. A **canary** says so. Mark the workaround once, in a comment of the module that holds it, with the Obsidian version you saw the bug on:
+
+<!-- snippet-check: skip a comment-only fragment -->
+
+```typescript
+/**
+ * Obsidian workaround `vault-rename-case`, seen in Obsidian `1.15.1`: a rename that only changes case is reported as a delete.
+ */
+```
+
+Then add an integration test titled `workaround canary <id>: <the bug, still present>`. It reproduces the bug **without** the workaround and asserts that the bug is still there:
+
+<!-- snippet-check: skip it() and the vault are the harness's -->
+
+```typescript
+it('workaround canary vault-rename-case: a case-only rename is still reported as a delete', async () => {
+  // Rename without the workaround and expect the buggy event.
+});
+```
+
+When an Obsidian release fixes the bug, the canary goes red and its title names the workaround to retire. The shared `ESLint` config pairs the two through `obsidian-dev-toolkit/workaround-canary`: a marker with no canary, an id marked twice, and a canary naming no marker are errors where they are written. It reads the `.ts` files under `src/` (the `sourceFolder` option changes that), takes a canary from any `*.integration.test.ts`, declared with `it(` or `test(`, and skips markers in tests and `.d.ts` files.
+
+To run only the canaries, for example against a new Obsidian release, add a `test:canaries` script, `jiti scripts/test-canaries.ts`, copied from `dist/templates/scripts/test-runners/vitest/test-canaries.ts`:
+
+```typescript
+import { testWorkaroundCanaries } from '@mnaoumov/obsidian-dev-toolkit/test-runners/workaround-canaries';
+import { wrapCliTask } from '@mnaoumov/typescript-dev-toolkit/cli-utils';
+import process from 'node:process';
+
+const [, , ...additionalArguments] = process.argv;
+
+await wrapCliTask(() => testWorkaroundCanaries({ additionalArguments }));
+```
+
+It runs the `integration-tests:desktop` projects with `--testNamePattern 'workaround canary'`. Pass `projects` to run the canaries elsewhere, such as `integration-tests:android`. The readers and the pairing check itself are exported from `@mnaoumov/obsidian-dev-toolkit/obsidian-workarounds`.
