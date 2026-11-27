@@ -32,7 +32,8 @@ describe('obsidianDevToolkitPlugin', () => {
       'prefer-active-window',
       'prefer-component-ex',
       'require-component-suffix',
-      'require-plugin-api-contract-schemas'
+      'require-plugin-api-contract-schemas',
+      'workaround-canary'
     ]);
   });
 
