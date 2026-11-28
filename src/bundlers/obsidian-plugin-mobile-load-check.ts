@@ -127,8 +127,364 @@ const SHARED_WEB_GLOBAL_NAMES: readonly string[] = [
 ];
 
 /**
+ * A constructor a DOM interface class can extend.
+ */
+type DomInterfaceConstructor = new (...arguments_: never[]) => object;
+
+/**
+ * A DOM interface the context models as a real class, so its `prototype` is a real object.
+ */
+interface DomInterfaceDefinition {
+  /**
+   * The accessor properties its prototype declares, each a getter answering `null` and a setter doing nothing.
+   */
+  readonly accessors?: readonly string[];
+
+  /**
+   * The methods its prototype declares, each answering a permissive stand-in.
+   */
+  readonly methods?: readonly string[];
+
+  /**
+   * The interface's global name.
+   */
+  readonly name: string;
+
+  /**
+   * The interface it extends: another entry of {@link DOM_INTERFACES} defined before it, or a shared web global
+   * (`EventTarget`, `Event`), which every supported Node has.
+   */
+  readonly parent: string;
+}
+
+/**
+ * The `nodeType` constants `Node` carries both as statics and on its prototype.
+ */
+/* eslint-disable no-magic-numbers -- The values are the DOM's own `nodeType` numbers. */
+const NODE_TYPE_CONSTANTS: Readonly<Record<string, number>> = {
+  ATTRIBUTE_NODE: 2,
+  CDATA_SECTION_NODE: 4,
+  COMMENT_NODE: 8,
+  DOCUMENT_FRAGMENT_NODE: 11,
+  DOCUMENT_NODE: 9,
+  DOCUMENT_TYPE_NODE: 10,
+  ELEMENT_NODE: 1,
+  PROCESSING_INSTRUCTION_NODE: 7,
+  TEXT_NODE: 3
+};
+/* eslint-enable no-magic-numbers -- The `nodeType` table ends here. */
+
+const CHILD_NODE_METHODS = ['after', 'before', 'remove', 'replaceWith'];
+const PARENT_NODE_ACCESSORS = ['childElementCount', 'children', 'firstElementChild', 'lastElementChild'];
+const PARENT_NODE_METHODS = ['append', 'prepend', 'querySelector', 'querySelectorAll', 'replaceChildren'];
+
+/**
+ * The DOM interfaces a framework runtime reads at load time, modeled as real classes rather than as stand-ins.
+ *
+ * A stand-in is not enough for them: `Svelte` 5 runs `Object.getOwnPropertyDescriptor(Node.prototype, 'firstChild').get`
+ * and writes cache slots onto `Element.prototype` and `Text.prototype` at load, and a `Proxy` answers neither the way a
+ * webview's prototype does. So each one is a class whose prototype declares its interface's accessors and methods, in
+ * the hierarchy a webview has. An entry's parent is defined before it.
+ */
+const DOM_INTERFACES: readonly DomInterfaceDefinition[] = [
+  {
+    accessors: [
+      'baseURI',
+      'childNodes',
+      'firstChild',
+      'isConnected',
+      'lastChild',
+      'nextSibling',
+      'nodeName',
+      'nodeType',
+      'nodeValue',
+      'ownerDocument',
+      'parentElement',
+      'parentNode',
+      'previousSibling',
+      'textContent'
+    ],
+    methods: [
+      'appendChild',
+      'cloneNode',
+      'compareDocumentPosition',
+      'contains',
+      'getRootNode',
+      'hasChildNodes',
+      'insertBefore',
+      'isEqualNode',
+      'isSameNode',
+      'normalize',
+      'removeChild',
+      'replaceChild'
+    ],
+    name: 'Node',
+    parent: 'EventTarget'
+  },
+  { accessors: ['localName', 'name', 'namespaceURI', 'ownerElement', 'prefix', 'specified', 'value'], name: 'Attr', parent: 'Node' },
+  {
+    accessors: ['data', 'length', 'nextElementSibling', 'previousElementSibling'],
+    methods: [...CHILD_NODE_METHODS, 'appendData', 'deleteData', 'insertData', 'replaceData', 'substringData'],
+    name: 'CharacterData',
+    parent: 'Node'
+  },
+  { accessors: ['assignedSlot', 'wholeText'], methods: ['splitText'], name: 'Text', parent: 'CharacterData' },
+  { name: 'CDATASection', parent: 'Text' },
+  { name: 'Comment', parent: 'CharacterData' },
+  {
+    accessors: [
+      ...PARENT_NODE_ACCESSORS,
+      'activeElement',
+      'body',
+      'characterSet',
+      'contentType',
+      'cookie',
+      'defaultView',
+      'documentElement',
+      'fonts',
+      'head',
+      'hidden',
+      'readyState',
+      'styleSheets',
+      'title',
+      'URL',
+      'visibilityState'
+    ],
+    methods: [
+      ...PARENT_NODE_METHODS,
+      'adoptNode',
+      'createAttribute',
+      'createComment',
+      'createDocumentFragment',
+      'createElement',
+      'createElementNS',
+      'createEvent',
+      'createRange',
+      'createTextNode',
+      'createTreeWalker',
+      'elementFromPoint',
+      'getElementById',
+      'getElementsByClassName',
+      'getElementsByTagName',
+      'getSelection',
+      'importNode'
+    ],
+    name: 'Document',
+    parent: 'Node'
+  },
+  {
+    accessors: PARENT_NODE_ACCESSORS,
+    methods: [...PARENT_NODE_METHODS, 'getElementById'],
+    name: 'DocumentFragment',
+    parent: 'Node'
+  },
+  {
+    accessors: ['activeElement', 'adoptedStyleSheets', 'delegatesFocus', 'host', 'innerHTML', 'mode', 'slotAssignment'],
+    methods: ['getSelection'],
+    name: 'ShadowRoot',
+    parent: 'DocumentFragment'
+  },
+  {
+    accessors: [
+      ...PARENT_NODE_ACCESSORS,
+      'attributes',
+      'classList',
+      'className',
+      'clientHeight',
+      'clientLeft',
+      'clientTop',
+      'clientWidth',
+      'id',
+      'innerHTML',
+      'localName',
+      'namespaceURI',
+      'nextElementSibling',
+      'outerHTML',
+      'part',
+      'prefix',
+      'previousElementSibling',
+      'scrollHeight',
+      'scrollLeft',
+      'scrollTop',
+      'scrollWidth',
+      'shadowRoot',
+      'slot',
+      'tagName'
+    ],
+    methods: [
+      ...CHILD_NODE_METHODS,
+      ...PARENT_NODE_METHODS,
+      'animate',
+      'attachShadow',
+      'closest',
+      'getAttribute',
+      'getAttributeNames',
+      'getAttributeNS',
+      'getBoundingClientRect',
+      'getClientRects',
+      'getElementsByClassName',
+      'getElementsByTagName',
+      'hasAttribute',
+      'hasAttributes',
+      'insertAdjacentElement',
+      'insertAdjacentHTML',
+      'insertAdjacentText',
+      'matches',
+      'releasePointerCapture',
+      'removeAttribute',
+      'removeAttributeNS',
+      'requestFullscreen',
+      'scroll',
+      'scrollBy',
+      'scrollIntoView',
+      'scrollTo',
+      'setAttribute',
+      'setAttributeNS',
+      'setPointerCapture',
+      'toggleAttribute'
+    ],
+    name: 'Element',
+    parent: 'Node'
+  },
+  {
+    accessors: [
+      'accessKey',
+      'autofocus',
+      'contentEditable',
+      'dataset',
+      'dir',
+      'draggable',
+      'enterKeyHint',
+      'hidden',
+      'inert',
+      'innerText',
+      'inputMode',
+      'isContentEditable',
+      'lang',
+      'nonce',
+      'offsetHeight',
+      'offsetLeft',
+      'offsetParent',
+      'offsetTop',
+      'offsetWidth',
+      'outerText',
+      'spellcheck',
+      'style',
+      'tabIndex',
+      'title',
+      'translate'
+    ],
+    methods: ['attachInternals', 'blur', 'click', 'focus', 'hidePopover', 'showPopover', 'togglePopover'],
+    name: 'HTMLElement',
+    parent: 'Element'
+  },
+  { accessors: ['download', 'href', 'rel', 'target', 'text'], name: 'HTMLAnchorElement', parent: 'HTMLElement' },
+  { name: 'HTMLBodyElement', parent: 'HTMLElement' },
+  { name: 'HTMLBRElement', parent: 'HTMLElement' },
+  { accessors: ['disabled', 'form', 'name', 'type', 'value'], name: 'HTMLButtonElement', parent: 'HTMLElement' },
+  { accessors: ['height', 'width'], methods: ['getContext', 'toBlob', 'toDataURL'], name: 'HTMLCanvasElement', parent: 'HTMLElement' },
+  { accessors: ['open', 'returnValue'], methods: ['close', 'show', 'showModal'], name: 'HTMLDialogElement', parent: 'HTMLElement' },
+  { name: 'HTMLDivElement', parent: 'HTMLElement' },
+  { accessors: ['elements', 'length'], methods: ['reportValidity', 'requestSubmit', 'reset', 'submit'], name: 'HTMLFormElement', parent: 'HTMLElement' },
+  { name: 'HTMLHeadElement', parent: 'HTMLElement' },
+  { name: 'HTMLHeadingElement', parent: 'HTMLElement' },
+  { name: 'HTMLHtmlElement', parent: 'HTMLElement' },
+  { accessors: ['allow', 'contentDocument', 'contentWindow', 'sandbox', 'src', 'srcdoc'], name: 'HTMLIFrameElement', parent: 'HTMLElement' },
+  { accessors: ['alt', 'complete', 'height', 'naturalHeight', 'naturalWidth', 'src', 'width'], methods: ['decode'], name: 'HTMLImageElement', parent: 'HTMLElement' },
+  {
+    accessors: [
+      'checked',
+      'defaultValue',
+      'disabled',
+      'files',
+      'form',
+      'indeterminate',
+      'max',
+      'min',
+      'name',
+      'placeholder',
+      'readOnly',
+      'selectionEnd',
+      'selectionStart',
+      'type',
+      'value',
+      'valueAsNumber'
+    ],
+    methods: ['select', 'setCustomValidity', 'setSelectionRange', 'showPicker'],
+    name: 'HTMLInputElement',
+    parent: 'HTMLElement'
+  },
+  { accessors: ['control', 'htmlFor'], name: 'HTMLLabelElement', parent: 'HTMLElement' },
+  { name: 'HTMLLIElement', parent: 'HTMLElement' },
+  { accessors: ['href', 'media', 'rel', 'sheet'], name: 'HTMLLinkElement', parent: 'HTMLElement' },
+  {
+    accessors: ['autoplay', 'controls', 'currentTime', 'duration', 'loop', 'muted', 'paused', 'src', 'volume'],
+    methods: ['load', 'pause', 'play'],
+    name: 'HTMLMediaElement',
+    parent: 'HTMLElement'
+  },
+  { name: 'HTMLAudioElement', parent: 'HTMLMediaElement' },
+  { accessors: ['height', 'poster', 'videoHeight', 'videoWidth', 'width'], name: 'HTMLVideoElement', parent: 'HTMLMediaElement' },
+  { accessors: ['defaultSelected', 'disabled', 'index', 'label', 'selected', 'text', 'value'], name: 'HTMLOptionElement', parent: 'HTMLElement' },
+  { name: 'HTMLParagraphElement', parent: 'HTMLElement' },
+  { name: 'HTMLPreElement', parent: 'HTMLElement' },
+  { accessors: ['async', 'defer', 'src', 'text', 'type'], name: 'HTMLScriptElement', parent: 'HTMLElement' },
+  {
+    accessors: ['disabled', 'form', 'length', 'multiple', 'name', 'options', 'selectedIndex', 'selectedOptions', 'value'],
+    methods: ['add', 'item'],
+    name: 'HTMLSelectElement',
+    parent: 'HTMLElement'
+  },
+  { accessors: ['name'], methods: ['assign', 'assignedElements', 'assignedNodes'], name: 'HTMLSlotElement', parent: 'HTMLElement' },
+  { name: 'HTMLSpanElement', parent: 'HTMLElement' },
+  { accessors: ['media', 'sheet'], name: 'HTMLStyleElement', parent: 'HTMLElement' },
+  { name: 'HTMLTableElement', parent: 'HTMLElement' },
+  { accessors: ['content'], name: 'HTMLTemplateElement', parent: 'HTMLElement' },
+  {
+    accessors: ['cols', 'defaultValue', 'disabled', 'form', 'name', 'placeholder', 'readOnly', 'rows', 'selectionEnd', 'selectionStart', 'value'],
+    methods: ['select', 'setSelectionRange'],
+    name: 'HTMLTextAreaElement',
+    parent: 'HTMLElement'
+  },
+  { name: 'HTMLUListElement', parent: 'HTMLElement' },
+  { name: 'HTMLUnknownElement', parent: 'HTMLElement' },
+  {
+    accessors: ['dataset', 'nonce', 'ownerSVGElement', 'style', 'tabIndex', 'viewportElement'],
+    methods: ['blur', 'focus'],
+    name: 'SVGElement',
+    parent: 'Element'
+  },
+  { accessors: ['transform'], methods: ['getBBox', 'getCTM', 'getScreenCTM'], name: 'SVGGraphicsElement', parent: 'SVGElement' },
+  { accessors: ['height', 'viewBox', 'width', 'x', 'y'], methods: ['createSVGPoint'], name: 'SVGSVGElement', parent: 'SVGGraphicsElement' },
+  { name: 'Window', parent: 'EventTarget' },
+  // The event interfaces Node lacks, over Node's real `Event`, so `new KeyboardEvent('keydown')` works as a webview's.
+  { accessors: ['detail', 'view'], name: 'UIEvent', parent: 'Event' },
+  { accessors: ['relatedTarget'], name: 'FocusEvent', parent: 'UIEvent' },
+  { accessors: ['data', 'inputType', 'isComposing'], methods: ['getTargetRanges'], name: 'InputEvent', parent: 'UIEvent' },
+  {
+    accessors: ['altKey', 'code', 'ctrlKey', 'isComposing', 'key', 'location', 'metaKey', 'repeat', 'shiftKey'],
+    methods: ['getModifierState'],
+    name: 'KeyboardEvent',
+    parent: 'UIEvent'
+  },
+  {
+    accessors: ['altKey', 'button', 'buttons', 'clientX', 'clientY', 'ctrlKey', 'metaKey', 'offsetX', 'offsetY', 'pageX', 'pageY', 'relatedTarget', 'screenX', 'screenY', 'shiftKey'],
+    methods: ['getModifierState'],
+    name: 'MouseEvent',
+    parent: 'UIEvent'
+  },
+  { accessors: ['dataTransfer'], name: 'DragEvent', parent: 'MouseEvent' },
+  { accessors: ['height', 'isPrimary', 'pointerId', 'pointerType', 'pressure', 'width'], name: 'PointerEvent', parent: 'MouseEvent' },
+  { accessors: ['deltaMode', 'deltaX', 'deltaY', 'deltaZ'], name: 'WheelEvent', parent: 'MouseEvent' },
+  { accessors: ['altKey', 'changedTouches', 'ctrlKey', 'metaKey', 'shiftKey', 'targetTouches', 'touches'], name: 'TouchEvent', parent: 'UIEvent' },
+  { accessors: ['clipboardData'], name: 'ClipboardEvent', parent: 'Event' },
+  { accessors: ['data'], name: 'CompositionEvent', parent: 'UIEvent' }
+];
+
+/**
  * Globals a webview, or Obsidian itself, provides and Node does not. Each is a permissive stand-in, so a top level that
- * subclasses `HTMLElement` or reads `localStorage` is not failed for a name a phone does have.
+ * reads `localStorage` or calls `customElements.define()` is not failed for a name a phone does have. The DOM
+ * interfaces whose prototypes a runtime inspects are real classes instead, from {@link DOM_INTERFACES}.
  */
 const STUBBED_GLOBAL_NAMES: readonly string[] = [
   // The DOM.
@@ -136,31 +492,30 @@ const STUBBED_GLOBAL_NAMES: readonly string[] = [
   'activeWindow',
   'cancelAnimationFrame',
   'CSS',
+  'CSSStyleSheet',
   'customElements',
   'document',
-  'DocumentFragment',
   'DOMParser',
-  'Element',
   'FileReader',
   'getComputedStyle',
+  'getSelection',
   'history',
-  'HTMLElement',
   'Image',
   'indexedDB',
   'IntersectionObserver',
-  'KeyboardEvent',
   'localStorage',
   'location',
   'matchMedia',
-  'MouseEvent',
   'MutationObserver',
   'navigator',
-  'Node',
+  'NodeFilter',
   'Range',
   'requestAnimationFrame',
+  'requestIdleCallback',
   'ResizeObserver',
+  'screen',
+  'Selection',
   'sessionStorage',
-  'SVGElement',
   'WebSocket',
   'Worker',
   'XMLHttpRequest',
@@ -233,6 +588,40 @@ export function assertMobileLoadableBundle(params: AssertMobileLoadableBundlePar
 }
 
 /**
+ * Builds one DOM interface class, named as the interface, with its accessors and methods on its prototype.
+ *
+ * @param definition - The interface.
+ * @param parent - The constructor it extends.
+ * @returns The class.
+ */
+function createDomInterface(definition: DomInterfaceDefinition, parent: DomInterfaceConstructor): DomInterfaceConstructor {
+  const domInterface = {
+    // A computed key names the class after the interface, so `Text.name` is `'Text'`, as in a webview.
+    [definition.name]: class extends parent {}
+  }[definition.name] as DomInterfaceConstructor;
+
+  for (const accessor of definition.accessors ?? []) {
+    Object.defineProperty(domInterface.prototype, accessor, {
+      configurable: true,
+      enumerable: true,
+      get: (): null => null,
+      set: noop
+    });
+  }
+
+  for (const method of definition.methods ?? []) {
+    Object.defineProperty(domInterface.prototype, method, {
+      configurable: true,
+      enumerable: true,
+      value: (): unknown => createMobileStub(),
+      writable: true
+    });
+  }
+
+  return domInterface;
+}
+
+/**
  * Builds the `node:vm` context that stands in for Obsidian mobile.
  *
  * @returns The `node:vm` context standing in for a phone.
@@ -245,6 +634,7 @@ function createMobileContext(): object {
     ...SHARED_WEB_GLOBAL_NAMES.filter((name) => Object.hasOwn(nodeGlobals, name)).map((name): [string, unknown] => [name, nodeGlobals[name]]),
     ...STUBBED_GLOBAL_NAMES.map((name): [string, unknown] => [name, createMobileStub()])
   ]);
+  defineDomInterfaces(sandbox);
 
   sandbox['exports'] = {};
   sandbox['module'] = { exports: {} };
@@ -271,12 +661,17 @@ function createMobileContext(): object {
  * @returns The stand-in.
  */
 function createMobileStub(): unknown {
-  return new Proxy(noop, {
+  return new Proxy(createMobileStubTarget(), {
     apply: (): unknown => createMobileStub(),
     construct: (): object => createMobileStub() as object,
     // `then` must stay `undefined`: a stand-in that answers it looks like a thenable, so awaiting one
     // would hang instead of resolving.
-    get: (_target, property): unknown => {
+    get: (target, property, receiver): unknown => {
+      // A property the bundle defined on this stand-in reads back as defined. That is also the `Proxy` invariant for a
+      // non-configurable, non-writable one, which a fresh stand-in would otherwise break with a `TypeError`.
+      if (Object.hasOwn(target, property)) {
+        return Reflect.get(target, property, receiver);
+      }
       if (property === 'then') {
         return undefined;
       }
@@ -288,6 +683,42 @@ function createMobileStub(): unknown {
     },
     has: (): boolean => true
   });
+}
+
+/**
+ * Builds the target of one stand-in: a constructible function of its own with no own properties at all.
+ *
+ * Every stand-in used to share `noop` as its target, so whatever a bundle defined on one landed on all of them: a
+ * second `Object.defineProperty(X.prototype, Symbol('class'), ...)` on another stand-in threw `Cannot redefine
+ * property`, a failure no webview produces.
+ *
+ * @returns The target.
+ */
+function createMobileStubTarget(): object {
+  // A bound function is a fresh object on every call, constructible as `construct` needs, and has no `prototype`.
+  const target = noop.bind(undefined);
+  Reflect.deleteProperty(target, 'length');
+  Reflect.deleteProperty(target, 'name');
+  return target;
+}
+
+/**
+ * Defines the {@link DOM_INTERFACES} on the sandbox as real classes, made afresh for each context so what one bundle
+ * writes onto a prototype never reaches the next check.
+ *
+ * @param sandbox - The sandbox, already holding the shared web globals the interfaces extend.
+ */
+function defineDomInterfaces(sandbox: Record<string, unknown>): void {
+  for (const definition of DOM_INTERFACES) {
+    sandbox[definition.name] = createDomInterface(definition, sandbox[definition.parent] as DomInterfaceConstructor);
+  }
+
+  const nodeInterface = sandbox['Node'] as DomInterfaceConstructor;
+  for (const [constantName, value] of Object.entries(NODE_TYPE_CONSTANTS)) {
+    const descriptor: PropertyDescriptor = { enumerable: true, value };
+    Object.defineProperty(nodeInterface, constantName, descriptor);
+    Object.defineProperty(nodeInterface.prototype, constantName, descriptor);
+  }
 }
 
 /**

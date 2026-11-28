@@ -77,6 +77,42 @@ describe('assertMobileLoadableBundle', () => {
     }).not.toThrow();
   });
 
+  it('accepts a top level that inspects the DOM prototypes the way `Svelte` 5 does at load', () => {
+    expect(() => {
+      loadBundle(
+        '"use strict"; var getDescriptor = Object.getOwnPropertyDescriptor;'
+          + ' var firstChild = getDescriptor(Node.prototype, "firstChild").get; var nextSibling = getDescriptor(Node.prototype, "nextSibling").get;'
+          + ' if (typeof firstChild !== "function" || typeof nextSibling !== "function") { throw new Error("no getter"); }'
+          + ' if (!Object.isExtensible(Element.prototype) || !Object.isExtensible(Text.prototype)) { throw new Error("frozen"); }'
+          + ' var CLASS = Symbol("class"); Element.prototype[CLASS] = undefined; Element.prototype.__e = undefined; Text.prototype[CLASS] = undefined;'
+          + ' if (!(Text.prototype instanceof CharacterData) || !(HTMLElement.prototype instanceof Node) || !(Comment.prototype instanceof Node)) { throw new Error("hierarchy"); }'
+          + ' if (Text.name !== "Text" || Node.TEXT_NODE !== 3 || Node.prototype.ELEMENT_NODE !== 1) { throw new Error("shape"); }'
+          + ' if (typeof HTMLTemplateElement.prototype.cloneNode !== "function" || !("content" in HTMLTemplateElement.prototype)) { throw new Error("members"); }'
+          + ' var text = new Text(); text.data = "ignored"; if (text.firstChild !== null || text.data !== null) { throw new Error("accessor"); }'
+          + ' if (typeof text.cloneNode().anything !== "function") { throw new Error("method"); }'
+          + ' var event = new KeyboardEvent("keydown"); if (!(event instanceof Event) || event.type !== "keydown") { throw new Error("event"); }'
+      );
+    }).not.toThrow();
+  });
+
+  it('keeps what one check writes onto a DOM prototype out of the next one', () => {
+    loadBundle('"use strict"; Object.defineProperty(Element.prototype, "marker", { value: 1 });');
+    expect(() => {
+      loadBundle('"use strict"; if ("marker" in Element.prototype) { throw new Error("leaked"); } Object.defineProperty(Element.prototype, "marker", { value: 2 });');
+    }).not.toThrow();
+  });
+
+  it('lets a bundle define the same property on two stand-ins and read back what it defined', () => {
+    expect(() => {
+      loadBundle(
+        '"use strict"; var CLASS = Symbol("class");'
+          + ' Object.defineProperty(customElements, CLASS, { value: 1 }); Object.defineProperty(document, CLASS, { value: 2 });'
+          + ' if (customElements[CLASS] !== 1 || document[CLASS] !== 2) { throw new Error("not read back"); }'
+          + ' if (typeof document.prototype !== "function" || typeof document.length !== "function") { throw new Error("stand-in"); }'
+      );
+    }).not.toThrow();
+  });
+
   it('rejects a top level that reads Node\'s own `Buffer`, which a phone does not have', () => {
     expect(() => {
       loadBundle('"use strict"; var bytes = Buffer.from("a");');
