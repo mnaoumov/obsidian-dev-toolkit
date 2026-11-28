@@ -78,7 +78,7 @@ it('enables worker loaders in webpack and keeps parcel JavaScript parsing after 
   expect(getWebpackFeatureRules({ cssLoaderPath: '', features: { workers: true }, isProductionBuild: true, loaderPath: '/loader', miniCssExtractLoaderPath: '' }))
     .toEqual([expect.objectContaining({ resourceQuery: /^\?worker-source$/u, use: [{ loader: '/loader', options: { isProductionBuild: true, kind: 'worker' } }] })]);
   const files = getParcelConfigFiles({ consumerParcelrcPath: undefined, features: { workers: true } });
-  expect(JSON.parse(files['.parcelrc'] ?? '')).toMatchObject({ transformers: { '*.worker.{js,ts}': ['./obsidian-plugin-features.cjs', '...'] } });
+  expect(JSON.parse(files['.parcelrc'] ?? '')).toMatchObject({ transformers: { '*.worker.{js,ts}': ['./obsidian-plugin-features.cjs', '...', './obsidian-plugin-helper-imports.cjs'] } });
 });
 
 it('returns bundled worker source and registers dependencies in webpack', async () => {
