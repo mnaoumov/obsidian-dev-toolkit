@@ -73,6 +73,7 @@ interface PluginExports {
  * What each feature fixture's `render` command returns once built and loaded, or a check of it.
  */
 const FEATURE_RESULTS: Readonly<Record<string, unknown>> = {
+  decorators: 'decorated class!',
   preact: 'Hello from preact',
   react: 'Hello from react',
   solid: 'Hello from solid',
@@ -83,7 +84,7 @@ const FEATURE_RESULTS: Readonly<Record<string, unknown>> = {
 
 // Every bundler in production, and the adapters with a `mode` option in development too, which compiles each
 // Framework's development build and carries the transforms' source maps.
-const FEATURE_CASES: readonly FeatureCase[] = ['preact', 'react', 'solid', 'styles', 'svelte', 'vue', 'wasm'].flatMap((feature) => [
+const FEATURE_CASES: readonly FeatureCase[] = ['decorators', 'preact', 'react', 'solid', 'styles', 'svelte', 'vue', 'wasm'].flatMap((feature) => [
   ...BUNDLERS.map((bundler) => ({ bundler, feature, isDevelopment: false })),
   ...BUNDLERS_WITH_MODE.map((bundler) => ({ bundler, feature, isDevelopment: true }))
 ]);

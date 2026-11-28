@@ -9,6 +9,7 @@
 import { execFileSync } from 'node:child_process';
 import {
   cpSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
@@ -38,6 +39,10 @@ export interface BundlerCase {
 
 interface FixtureFeatures {
   readonly framework?: string;
+}
+
+interface FixtureTsconfig {
+  readonly compilerOptions?: Readonly<Record<string, unknown>>;
 }
 
 const REPO_ROOT = join(import.meta.dirname, '../..');
@@ -122,8 +127,18 @@ export function createFixtureFolder(feature?: string): string {
   cpSync(join(FEATURE_FIXTURES_FOLDER, feature), fixtureFolder, { recursive: true });
   const { framework } = JSON.parse(readFileSync(join(fixtureFolder, 'features.json'), 'utf-8')) as FixtureFeatures;
   cpSync(TSCONFIG_PRESETS_FOLDER, join(fixtureFolder, 'toolkit-tsconfig'), { recursive: true });
+  // A feature fixture's own `tsconfig.json` adds compiler options, such as `experimentalDecorators`, to the shared ones.
+  const tsconfigPath = join(fixtureFolder, 'tsconfig.json');
+  const featureTsconfig = existsSync(tsconfigPath) ? JSON.parse(readFileSync(tsconfigPath, 'utf-8')) as FixtureTsconfig : {};
   const tsconfig = {
-    compilerOptions: { allowImportingTsExtensions: true, module: 'esnext', moduleResolution: 'bundler', noEmit: true, target: 'es2022' },
+    compilerOptions: {
+      allowImportingTsExtensions: true,
+      module: 'esnext',
+      moduleResolution: 'bundler',
+      noEmit: true,
+      target: 'es2022',
+      ...featureTsconfig.compilerOptions
+    },
     ...(framework !== undefined && { extends: `./toolkit-tsconfig/${framework}.json` })
   };
   writeFileSync(join(fixtureFolder, 'tsconfig.json'), JSON.stringify(tsconfig));
